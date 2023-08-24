@@ -1,1 +1,1 @@
-This code is for the motherboard
+Code for UI testing of display.
