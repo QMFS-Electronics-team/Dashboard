@@ -68,3 +68,14 @@ The below table are for components used for evaluating the feasibility of the Da
 |     5V         |     5V        |   RED      |
 |     GND        |     GND       |   BLACK    |
 |     Din        |     G4        |   GREEN    |
+
+### CAN Bus Module
+
+| **Device Pin** | **ESP32 Pin** | **Colour** |
+|----------------|---------------|------------|
+|                |               |            |
+|                |               |            |
+|                |               |            |
+|                |               |            |
+|                |               |            |
+|                |               |            |
