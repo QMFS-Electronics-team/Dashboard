@@ -10,11 +10,11 @@ This repoistory is for a Formula Student Dashboard project. The intent of the da
 ├── README.md   (This document)\
 ├── Release Hex\
 ├── images\
-└── lvygfx_user_setting_dash_plex\
+└── lvygfx_user_setting_dash_plex
 
 ## Images
 
-!["Display Module"](/Images/img_screens.PNG)
+!["Display Module"](/images/img_screens.PNG)
 
 ### Project Contributors
 Bhargav Maniar\
