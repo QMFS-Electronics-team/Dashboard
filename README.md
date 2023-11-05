@@ -8,6 +8,10 @@ This repoistory is for a Formula Student Dashboard project. The intent of the da
 ├── Libraries  (Directory for libraries needed for Arduino code)\
 └── README.md  (This document)
 
+## Images
+
+<img src="images/img_screens.PNG" alt="disp" width="800"/>
+
 ### Project Contributors
 Bhargav Maniar\
 Raymond Zhen
