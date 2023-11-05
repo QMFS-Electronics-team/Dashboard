@@ -57,7 +57,7 @@ The below table are for components used for evaluating the feasibility of the Da
 Note the numbers are from left to right based on the barcode sticker on the GPS module.
 
 
-!["GPS Module"](/Images/BN-880-GPS.PNG){width=800px;}
+!["GPS Module"](/Images/BN-880-GPS.PNG)
 
 | **Device Pin** | **ESP32 Pin** | **Colour** |
 |----------------|---------------|------------|

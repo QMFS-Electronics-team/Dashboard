@@ -14,7 +14,7 @@ This repoistory is for a Formula Student Dashboard project. The intent of the da
 
 ## Images
 
-<img src="Images/img_screens.PNG" alt="disp" width="800"/>
+!["Display Module"](/Images/img_screens.PNG)
 
 ### Project Contributors
 Bhargav Maniar\
