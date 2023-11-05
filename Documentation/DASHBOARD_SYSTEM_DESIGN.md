@@ -54,12 +54,17 @@ The below table are for components used for evaluating the feasibility of the Da
 
 ### GPS to ESP32
 
+Note the numbers are from left to right based on the barcode sticker on the GPS module.
+
+
+!["GPS Module"](/Images/BN-880-GPS.PNG){width=800px;}
+
 | **Device Pin** | **ESP32 Pin** | **Colour** |
 |----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     SDA        |     G21       |   BLUE     |
-|     SCL        |     G22       |   BLUE     |
+|   V - 5V       |     5V        |   RED      |
+|   G - GND      |     GND       |   BLACK    |
+|   D - SDA      |     G21       |   BLUE     |
+|   C - SCL      |     G22       |   BLUE     |
 
 ### RGB LEDs to ESP32
 
