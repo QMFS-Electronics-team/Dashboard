@@ -49,8 +49,8 @@ The below table are for components used for evaluating the feasibility of the Da
 |----------------|---------------|------------|
 |     5V         |     5V        |   RED      |
 |     GND        |     GND       |   BLACK    |
-|     SDA        |     G21       |   BLUE     |
 |     SCL        |     G22       |   BLUE     |
+|     SDA        |     G21       |   BLUE     |
 
 ### GPS to ESP32
 
