@@ -63,8 +63,8 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |----------------|---------------|------------|
 |   D - SDA      |     Gx        |   BLACK    |
 |   G - GND      |     GND       |   WHITE    |
-|   T - TX       |     Gx        |   GREEN    |
-|   R - RX       |     Gx        |   RED      |
+|   T - TX       |     G35       |   GREEN    |
+|   R - RX       |     G34       |   RED      |
 |   V - 5V       |     5V        |   YELLOW   |
 |   C - SCL      |     Gx        |   BLUE     |
 
