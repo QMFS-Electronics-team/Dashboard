@@ -41,7 +41,7 @@ The below table are for components used for evaluating the feasibility of the Da
 |     MISO       |     G19       |   YELLOW   |
 |     MOSI       |     G23       |   YELLOW   |
 |     SCK        |     G18       |   YELLOW   |
-|     CS         |     G5        |   YELLOW   |
+|     CS         |     G22       |   YELLOW   |
 
 ### 3 Axis Gyro to ESP32
 
