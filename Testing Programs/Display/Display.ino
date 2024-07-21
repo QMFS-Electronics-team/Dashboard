@@ -9,7 +9,7 @@
 #define TFT_MOSI   23
 #define TFT_MISO   19
 #define TFT_CS     22
-#define TFT_DC     21
+#define TFT_DC     3
 #define TFT_RESET  15
 
 // Default values
