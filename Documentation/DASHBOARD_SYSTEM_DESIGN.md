@@ -26,7 +26,7 @@ The below table are for components used for evaluating the feasibility of the Da
 |     GND        |     GND       |   BLACK    |
 |     CS         |     G22       |   ORANGE   |
 |     RESET      |     G15       |   ORANGE   |
-|     DC         |     G21       |   ORANGE   |
+|     DC         |     G3        |   ORANGE   |
 |     SDI (MOSI) |     G23       |   ORANGE   |
 |     SCK        |     G18       |   ORANGE   |
 |     LED        |     5V        |   RED      |
