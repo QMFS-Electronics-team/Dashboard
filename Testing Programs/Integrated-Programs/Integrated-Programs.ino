@@ -23,7 +23,7 @@
 #define TFT_MOSI   23
 #define TFT_MISO   19
 #define TFT_CS     22
-#define TFT_DC     21
+#define TFT_DC     3
 #define TFT_RESET  15
 
 // LEDs
@@ -65,7 +65,7 @@
  
 // GPS
 #include <TinyGPS++.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 
 const int TXPin = 35; //22; // T Green Wire
 const int RXPin = 34; //21; // R Red Wire
