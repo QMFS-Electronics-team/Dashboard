@@ -73,7 +73,7 @@ public:
       cfg.pin_sclk = 18;            // SPIのSCLKピン番号を設定
       cfg.pin_mosi = 23;            // SPIのMOSIピン番号を設定
       cfg.pin_miso = 19;            // SPIのMISOピン番号を設定 (-1 = disable)
-      cfg.pin_dc   = 16;            // SPIのD/Cピン番号を設定  (-1 = disable)
+      cfg.pin_dc   = 3;            // SPIのD/Cピン番号を設定  (-1 = disable)
      // SDカードと共通のSPIバスを使う場合、MISOは省略せず必ず設定してください。
 //*/
 /*
@@ -109,7 +109,7 @@ public:
     { // 表示パネル制御の設定を行います。
       auto cfg = _panel_instance.config();    // 表示パネル設定用の構造体を取得します。
 
-      cfg.pin_cs           =    5;  // CSが接続されているピン番号   (-1 = disable)
+      cfg.pin_cs           =    22;  // CSが接続されているピン番号   (-1 = disable)
       cfg.pin_rst          =    17;  // RSTが接続されているピン番号  (-1 = disable)
       cfg.pin_busy         =    -1;  // BUSYが接続されているピン番号 (-1 = disable)
 
