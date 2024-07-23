@@ -43,7 +43,7 @@
 #define HORIZONTAL 3
 
 // LEDs
-#define NUM_LEDS    14
+#define NUM_LEDS    30
 #define BRIGHTNESS  64
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
@@ -73,15 +73,15 @@ const char *gpsStream =
 #include <Wire.h>
  
 // GPS
-#include <TinyGPS++.h>
-//#include <SoftwareSerial.h>
-
-//const int TXPin = 35; //22; // T Green Wire
-//const int RXPin = 34; //21; // R Red Wire
-//const uint32_t GPSBaud = 9600; //Default baud of NEO-6M is 9600
+#include <TinyGPSPlus.h>
 
 // LEDs
 #include <FastLED.h>
+
+// SD
+#include "FS.h"
+#include "SD.h"
+#include "SPI.h"
 
 
 //----------------
@@ -107,15 +107,13 @@ TBlendType    currentBlending;
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
 
+String outputString;
+
 
 
 //----------------
 // Setup Functions
 //----------------
-
-void setup_display(void)
-{
-}
 
 void setup_three_axis_gyro(void) {
   while (!Serial)
@@ -210,42 +208,6 @@ void setup_leds() {
     currentBlending = LINEARBLEND;
 }
 
-
-
-//----------------
-// Device Control
-//----------------
-void get_three_axis_gyro_data() {
- 
-  /* Get new sensor events with the readings */
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
- 
-  /* Print out the values */
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
- 
-  Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
-  Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
-  Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
- 
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println(" degC");
- 
-  Serial.println("");
-  delay(500);
-}
-
 void set_display_data() {
   display.begin();
   display.fillScreen(BACKGROUND_COLOUR);
@@ -270,13 +232,114 @@ void set_display_data() {
   Serial.println("Done");
 }
 
-void get_gps_data() {
+void setup_sd_card(){
+    
+    if(!SD.begin()){
+        Serial.println("Card Mount Failed");
+        return;
+    }
+    uint8_t cardType = SD.cardType();
+
+    if(cardType == CARD_NONE){
+        Serial.println("No SD card attached");
+        return;
+    }
+
+    Serial.print("SD Card Type: ");
+    if(cardType == CARD_MMC){
+        Serial.println("MMC");
+    } else if(cardType == CARD_SD){
+        Serial.println("SDSC");
+    } else if(cardType == CARD_SDHC){
+        Serial.println("SDHC");
+    } else {
+        Serial.println("UNKNOWN");
+    }
+
+    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+    Serial.printf("SD Card Size: %lluMB\n", cardSize);
+    Serial.printf("SD Setup Complete!");
+
+    listDir(SD, "/", 0);
+
+    // GPS Data
+    if (!SD.exists("/gps-data/gps-data.txt")) {
+      Serial.println(F("Creating GPS File"));
+      createDir(SD, "/gps-data");    
+      writeFile(SD, "/gps-data/gps-data.txt", "Start of GPS Data\n");
+    } else {
+      Serial.println(F("GPS File Exists"));
+      appendFile(SD, "/gps-data/gps-data.txt", "Start of New GPS Data\n");
+    }
+
+    // MPU Data
+    if (!SD.exists("/mpu-data/mpu-data.txt")) {
+      Serial.println(F("Creating MPU File"));
+      createDir(SD, "/mpu-data");    
+      writeFile(SD, "/mpu-data/mpu-data.txt", "Start of MPU Data\n");
+    } else {
+      Serial.println(F("MPU File Exists"));
+      appendFile(SD, "/mpu-data/mpu-data.txt", "Start of New MPU Data\n");
+    }
+    
+    Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
+    Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+}
+
+
+
+//----------------
+// Sensor Related
+//----------------
+void get_three_axis_gyro_data() {
+ 
+  /* Get new sensor events with the readings */
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+ 
+  /* Print out the values */
+  Serial.print("Acceleration X: ");
+  Serial.print(a.acceleration.x);
+  Serial.print(", Y: ");
+  Serial.print(a.acceleration.y);
+  Serial.print(", Z: ");
+  Serial.print(a.acceleration.z);
+  Serial.println(" m/s^2");
+
+  outputString = "Acceleration X: " + String(a.acceleration.x) + ", Y: " + String(a.acceleration.y) + ", Z: " + String(a.acceleration.z) + " m/s^2" + "\n";
+ 
+  Serial.print("Rotation X: ");
+  Serial.print(g.gyro.x);
+  Serial.print(", Y: ");
+  Serial.print(g.gyro.y);
+  Serial.print(", Z: ");
+  Serial.print(g.gyro.z);
+  Serial.println(" rad/s");
+
+  outputString += "Rotation X: " + String(g.gyro.x) + ", Y: " + String(g.gyro.y) + ", Z: " + String(g.gyro.z) + " rad/s" + "\n";
+ 
+  Serial.print("Temperature: ");
+  Serial.print(temp.temperature);
+  Serial.println(" ˚C");
+
+  outputString += "Temperature: " + String(temp.temperature) + " ˚C" + "\n\n";
+ 
+  Serial.println("");
+  appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
+  outputString = "";
+}
+
+void get_gps_data(){
+  
   if (gps.location.isValid())
   {
     Serial.print(F("Lat: "));
     Serial.print(gps.location.lat(), 6);
     Serial.print(F(" Long: "));
     Serial.println(gps.location.lng(), 6);
+
+    outputString = "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
   }
   
   if (gps.date.isValid())
@@ -287,6 +350,9 @@ void get_gps_data() {
     Serial.print(gps.date.day());
     Serial.print(F("/"));
     Serial.println(gps.date.year());
+
+    outputString = "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
   }
   
   if (gps.time.isValid())
@@ -300,33 +366,46 @@ void get_gps_data() {
     Serial.print(F(":"));
     if (gps.time.second() < 10) Serial.print(F("0"));
     Serial.println(gps.time.second());
+
+    outputString = "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
   }
 
   if(gps.speed.isValid())
   {
     Serial.print(F("MPH: "));
     Serial.println(gps.speed.mph());
+
+    outputString += "MPH: " + String(gps.speed.mph()) + "\n";
   }
 
   if(gps.course.isValid())
   {
     Serial.print(F("Deg: "));
     Serial.println(gps.course.deg());
+
+    outputString += "Deg: " + String(gps.course.deg()) + "\n";
   }
 
   if(gps.altitude.isValid())
   {
     Serial.print(F("Miles: "));
     Serial.println(gps.altitude.miles());
+
+    outputString += "Miles: " + String(gps.altitude.miles()) + "\n";
   }
 
    if (gps.satellites.isValid())
   {
     Serial.print(F("Number of Satellite: "));
     Serial.println(gps.satellites.value());
+
+    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n" + "\n";
   }
 
-  Serial.println("\n");
+  Serial.println("");
+  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+  outputString = "";
+  
 }
 
 
@@ -436,6 +515,133 @@ const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
 
 
 
+//--------------------
+// Directory Functions
+//--------------------
+
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
+    Serial.printf("Listing directory: %s\n", dirname);
+
+    File root = fs.open(dirname);
+    if(!root){
+        Serial.println("Failed to open directory");
+        return;
+    }
+    if(!root.isDirectory()){
+        Serial.println("Not a directory");
+        return;
+    }
+
+    File file = root.openNextFile();
+    while(file){
+        if(file.isDirectory()){
+            Serial.print("  DIR : ");
+            Serial.println(file.name());
+            if(levels){
+                listDir(fs, file.path(), levels -1);
+            }
+        } else {
+            Serial.print("  FILE: ");
+            Serial.print(file.name());
+            Serial.print("  SIZE: ");
+            Serial.println(file.size());
+        }
+        file = root.openNextFile();
+    }
+}
+
+void createDir(fs::FS &fs, const char * path){
+    Serial.printf("Creating Dir: %s\n", path);
+    if(fs.mkdir(path)){
+        Serial.println("Dir created");
+    } else {
+        Serial.println("mkdir failed");
+    }
+}
+
+void removeDir(fs::FS &fs, const char * path){
+    Serial.printf("Removing Dir: %s\n", path);
+    if(fs.rmdir(path)){
+        Serial.println("Dir removed");
+    } else {
+        Serial.println("rmdir failed");
+    }
+}
+
+
+
+//---------------
+// File Functions
+//---------------
+
+void readFile(fs::FS &fs, const char * path){
+    Serial.printf("Reading file: %s\n", path);
+
+    File file = fs.open(path);
+    if(!file){
+        Serial.println("Failed to open file for reading");
+        return;
+    }
+
+    Serial.print("Read from file: ");
+    while(file.available()){
+        Serial.write(file.read());
+    }
+    file.close();
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message){
+    Serial.printf("Writing file: %s\n", path);
+
+    File file = fs.open(path, FILE_WRITE);
+    if(!file){
+        Serial.println("Failed to open file for writing");
+        return;
+    }
+    if(file.print(message)){
+        Serial.println("File written");
+    } else {
+        Serial.println("Write failed");
+    }
+    file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message){
+//    Serial.printf("Appending to file: %s\n", path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if(!file){
+        Serial.println("Failed to open file for appending");
+        return;
+    }
+    if(file.print(message)){
+//        Serial.println("Message appended");
+    } else {
+        Serial.println("Append failed");
+    }
+    file.close();
+}
+
+void renameFile(fs::FS &fs, const char * path1, const char * path2){
+    Serial.printf("Renaming file %s to %s\n", path1, path2);
+    if (fs.rename(path1, path2)) {
+        Serial.println("File renamed");
+    } else {
+        Serial.println("Rename failed");
+    }
+}
+
+void deleteFile(fs::FS &fs, const char * path){
+    Serial.printf("Deleting file: %s\n", path);
+    if(fs.remove(path)){
+        Serial.println("File deleted");
+    } else {
+        Serial.println("Delete failed");
+    }
+}
+
+
+
 //----------------
 // Setup
 //----------------
@@ -444,7 +650,7 @@ void setup() {
     Serial.begin(115200);
     
     Serial.println("Setting up Dashboard");
-    setup_display();
+    setup_sd_card();
     setup_three_axis_gyro();
     setup_gps();
     setup_leds();
@@ -460,8 +666,7 @@ void setup() {
 
 void loop() {
     get_gps_data();
-    delay(1000);
     get_three_axis_gyro_data();
-    delay(1000);
     set_leds();
+    delay(100); 
 }
