@@ -19,10 +19,13 @@
 #define START_COLUMN 20
 #define HORIZONTAL 3
 
+
+Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
+Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
+  
 void setup(void)
 {
-  Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
-  Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
+  Serial.begin(9600);
   
   display.begin();
   display.fillScreen(BACKGROUND_COLOUR);
@@ -41,10 +44,10 @@ void setup(void)
 
   display.setCursor(START_COLUMN, 140);
   display.print("Gear:  5");
-  
+
   display.setCursor(START_COLUMN, 180);
   display.print("Fuel:  1000");
-  Serial.begin(9600);
+  
   Serial.println("Done");
 }
  
