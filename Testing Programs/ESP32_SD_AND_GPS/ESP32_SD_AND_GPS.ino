@@ -14,7 +14,6 @@ const char *gpsStream =
 
 TinyGPSPlus gps;
 String outputString; 
-String dataString;
 
 // Directory Functions
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
