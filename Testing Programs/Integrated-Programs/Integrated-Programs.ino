@@ -49,6 +49,15 @@
 #define COLOR_ORDER GRB
 #define UPDATES_PER_SECOND 100
 
+// A sample NMEA stream.
+const char *gpsStream =
+  "$GPRMC,045103.000,A,3014.1984,N,09749.2872,W,0.67,161.46,030913,,,A*7C\r\n"
+  "$GPGGA,045104.000,3014.1985,N,09749.2873,W,1,09,1.2,211.6,M,-22.5,M,,0000*62\r\n"
+  "$GPRMC,045200.000,A,3014.3820,N,09748.9514,W,36.88,65.02,030913,,,A*77\r\n"
+  "$GPGGA,045201.000,3014.3864,N,09748.9411,W,1,10,1.2,200.8,M,-22.5,M,,0000*6C\r\n"
+  "$GPRMC,045251.000,A,3014.4275,N,09749.0626,W,0.51,217.94,030913,,,A*7D\r\n"
+  "$GPGGA,045252.000,3014.4273,N,09749.0628,W,1,09,1.3,206.9,M,-22.5,M,,0000*6F\r\n";
+
 
 
 //----------------
@@ -67,9 +76,9 @@
 #include <TinyGPS++.h>
 //#include <SoftwareSerial.h>
 
-const int TXPin = 35; //22; // T Green Wire
-const int RXPin = 34; //21; // R Red Wire
-const uint32_t GPSBaud = 9600; //Default baud of NEO-6M is 9600
+//const int TXPin = 35; //22; // T Green Wire
+//const int RXPin = 34; //21; // R Red Wire
+//const uint32_t GPSBaud = 9600; //Default baud of NEO-6M is 9600
 
 // LEDs
 #include <FastLED.h>
@@ -88,7 +97,7 @@ Adafruit_MPU6050 mpu;
 
 // GPS
 TinyGPSPlus gps; // the TinyGPS++ object
-SoftwareSerial gpsSerial(TXPin, RXPin); // the serial interface to the GPS device
+//SoftwareSerial gpsSerial(TXPin, RXPin); // the serial interface to the GPS device
 
 // LEDs
 CRGB leds[NUM_LEDS];
@@ -187,7 +196,9 @@ void setup_three_axis_gyro(void) {
 }
 
 void setup_gps(void) {
-    gpsSerial.begin(GPSBaud);
+  while (*gpsStream)
+    if (gps.encode(*gpsStream++))
+      get_gps_data();
 }
 
 void setup_leds() {
@@ -260,58 +271,69 @@ void set_display_data() {
 }
 
 void get_gps_data() {
-  if (gpsSerial.available() > 0) {
-    if (gps.encode(gpsSerial.read())) {
-      if (gps.location.isValid()) {
-        Serial.print(F("- latitude: "));
-        Serial.println(gps.location.lat());
-
-        Serial.print(F("- longitude: "));
-        Serial.println(gps.location.lng());
-
-        Serial.print(F("- altitude: "));
-        if (gps.altitude.isValid())
-          Serial.println(gps.altitude.meters());
-        else
-          Serial.println(F("INVALID"));
-      } else {
-        Serial.println(F("- location: INVALID"));
-      }
-
-      Serial.print(F("- speed: "));
-      if (gps.speed.isValid()) {
-        Serial.print(gps.speed.kmph());
-        Serial.println(F(" km/h"));
-      } else {
-        Serial.println(F("INVALID"));
-      }
-
-      Serial.print(F("- GPS date&time: "));
-      if (gps.date.isValid() && gps.time.isValid()) {
-        Serial.print(gps.date.year());
-        Serial.print(F("-"));
-        Serial.print(gps.date.month());
-        Serial.print(F("-"));
-        Serial.print(gps.date.day());
-        Serial.print(F(" "));
-        Serial.print(gps.time.hour());
-        Serial.print(F(":"));
-        Serial.print(gps.time.minute());
-        Serial.print(F(":"));
-        Serial.println(gps.time.second());
-      } else {
-        Serial.println(F("INVALID"));
-      }
-
-      Serial.println();
-    }
+  if (gps.location.isValid())
+  {
+    Serial.print(F("Lat: "));
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(" Long: "));
+    Serial.println(gps.location.lng(), 6);
+  }
+  
+  if (gps.date.isValid())
+  {
+    Serial.print(F("Date: "));
+    Serial.print(gps.date.month());
+    Serial.print(F("/"));
+    Serial.print(gps.date.day());
+    Serial.print(F("/"));
+    Serial.println(gps.date.year());
+  }
+  
+  if (gps.time.isValid())
+  {
+    Serial.print(F("Time: "));
+    if (gps.time.hour() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.hour());
+    Serial.print(F(":"));
+    if (gps.time.minute() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.minute());
+    Serial.print(F(":"));
+    if (gps.time.second() < 10) Serial.print(F("0"));
+    Serial.println(gps.time.second());
   }
 
-  if (millis() > 5000 && gps.charsProcessed() < 10) {
-    Serial.println(F("No GPS data received: check wiring"));
-  } else {
+  if(gps.speed.isValid())
+  {
+    Serial.print(F("MPH: "));
+    Serial.println(gps.speed.mph());
   }
+
+  if(gps.course.isValid())
+  {
+    Serial.print(F("Deg: "));
+    Serial.println(gps.course.deg());
+  }
+
+  if(gps.altitude.isValid())
+  {
+    Serial.print(F("Miles: "));
+    Serial.println(gps.altitude.miles());
+  }
+
+   if (gps.satellites.isValid())
+  {
+    Serial.print(F("Number of Satellite: "));
+    Serial.println(gps.satellites.value());
+  }
+
+  Serial.println("\n");
 }
+
+
+
+//----------------
+// LED Related
+//----------------
 
 void set_leds()
 {
@@ -325,12 +347,6 @@ void set_leds()
     FastLED.show();
     FastLED.delay(1000 / UPDATES_PER_SECOND);
 }
-
-
-
-//----------------
-// LED Related
-//----------------
 
 void FillLEDsFromPaletteColors( uint8_t colorIndex)
 {
@@ -425,21 +441,16 @@ const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM =
 //----------------
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
+    
     Serial.println("Setting up Dashboard");
     setup_display();
     setup_three_axis_gyro();
     setup_gps();
     setup_leds();
-    Serial.println("Dashboard Setup Complete");
-
-    Serial.println("Setting up Display");
-    set_display_data();
-    Serial.println("Display Setup Complete");
-    
-    Serial.println("Setting up LEDs");
     set_leds();
-    Serial.println("LEDs setup");
+    set_display_data();
+    Serial.println("Dashboard Setup Complete");
 }
 
 
@@ -450,6 +461,7 @@ void setup() {
 void loop() {
     get_gps_data();
     delay(1000);
-//    get_three_axis_gyro_data();
-//    delay(1000);
+    get_three_axis_gyro_data();
+    delay(1000);
+    set_leds();
 }

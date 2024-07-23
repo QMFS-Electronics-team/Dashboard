@@ -9,8 +9,10 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
-const int TXPin = 35; //22; //35;  // T Green Wire
-const int RXPin = 34; //21; //34;  // R Red Wire
+const int TXPin = 35; // T Green Wire
+const int RXPin = 34; // R Red Wire
+
+
 const uint32_t GPSBaud = 9600; //Default baud of NEO-6M is 9600
 
 TinyGPSPlus gps; // the TinyGPS++ object
@@ -73,8 +75,6 @@ void loop() {
 
   if (millis() > 5000 && gps.charsProcessed() < 10) {
     Serial.println(F("No GPS data received: check wiring"));
-    digitalWrite(12, HIGH);
   } else {
-    digitalWrite(12, LOW); 
   }
 }

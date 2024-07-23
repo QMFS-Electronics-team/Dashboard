@@ -1,7 +1,20 @@
+#include <TinyGPSPlus.h>
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
 
+// A sample NMEA stream.
+const char *gpsStream =
+  "$GPRMC,045103.000,A,3014.1984,N,09749.2872,W,0.67,161.46,030913,,,A*7C\r\n"
+  "$GPGGA,045104.000,3014.1985,N,09749.2873,W,1,09,1.2,211.6,M,-22.5,M,,0000*62\r\n"
+  "$GPRMC,045200.000,A,3014.3820,N,09748.9514,W,36.88,65.02,030913,,,A*77\r\n"
+  "$GPGGA,045201.000,3014.3864,N,09748.9411,W,1,10,1.2,200.8,M,-22.5,M,,0000*6C\r\n"
+  "$GPRMC,045251.000,A,3014.4275,N,09749.0626,W,0.51,217.94,030913,,,A*7D\r\n"
+  "$GPGGA,045252.000,3014.4273,N,09749.0628,W,1,09,1.3,206.9,M,-22.5,M,,0000*6F\r\n";
+
+TinyGPSPlus gps;
+String outputString; 
+String dataString;
 
 // Directory Functions
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
@@ -88,7 +101,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message){
-    Serial.printf("Appending to file: %s\n", path);
+//    Serial.printf("Appending to file: %s\n", path);
 
     File file = fs.open(path, FILE_APPEND);
     if(!file){
@@ -96,7 +109,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message){
         return;
     }
     if(file.print(message)){
-        Serial.println("Message appended");
+//        Serial.println("Message appended");
     } else {
         Serial.println("Append failed");
     }
@@ -122,53 +135,9 @@ void deleteFile(fs::FS &fs, const char * path){
 }
 
 
-// Test Functions
-void testFileIO(fs::FS &fs, const char * path){
-    File file = fs.open(path);
-    static uint8_t buf[512];
-    size_t len = 0;
-    uint32_t start = millis();
-    uint32_t end = start;
-    if(file){
-        len = file.size();
-        size_t flen = len;
-        start = millis();
-        while(len){
-            size_t toRead = len;
-            if(toRead > 512){
-                toRead = 512;
-            }
-            file.read(buf, toRead);
-            len -= toRead;
-        }
-        end = millis() - start;
-        Serial.printf("%u bytes read for %u ms\n", flen, end);
-        file.close();
-    } else {
-        Serial.println("Failed to open file for reading");
-    }
-
-
-    file = fs.open(path, FILE_WRITE);
-    if(!file){
-        Serial.println("Failed to open file for writing");
-        return;
-    }
-
-    size_t i;
-    start = millis();
-    for(i=0; i<2048; i++){
-        file.write(buf, 512);
-    }
-    end = millis() - start;
-    Serial.printf("%u bytes written for %u ms\n", 2048 * 512, end);
-    file.close();
-}
-
-
-
-void setup(){
-    Serial.begin(115200);
+// Setup Functions
+void setup_sd_card(){
+    
     if(!SD.begin()){
         Serial.println("Card Mount Failed");
         return;
@@ -196,18 +165,113 @@ void setup(){
     Serial.printf("SD Setup Complete!");
 
     listDir(SD, "/", 0);
-    createDir(SD, "/gps-data");
+
+    if (!SD.exists("/gps-data/gps-data.txt")) {
+      Serial.println(F("Creating GPS File"));
+      createDir(SD, "/gps-data");    
+      writeFile(SD, "/gps-data/gps-data.txt", "Start of GPS Data\n");
+    } else {
+      Serial.println(F("GPS File Exists"));
+      appendFile(SD, "/gps-data/gps-data.txt", "Start of New GPS Data\n");
+    }
     
-    writeFile(SD, "/gps-data/gps-data.txt", "Start of GPS Data\n");
-    appendFile(SD, "/gps-data/gps-data.txt", "12345\n");
-    readFile(SD, "/gps-data/gps-data.txt");
-    
-    testFileIO(SD, "/gps-data/gps-data.txt");
     Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
     Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
-    
 }
 
-void loop(){
 
+void displayInfo()
+{
+  
+  if (gps.location.isValid())
+  {
+    Serial.print(F("Lat: "));
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(" Long: "));
+    Serial.println(gps.location.lng(), 6);
+
+    outputString = "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+  }
+  
+  if (gps.date.isValid())
+  {
+    Serial.print(F("Date: "));
+    Serial.print(gps.date.month());
+    Serial.print(F("/"));
+    Serial.print(gps.date.day());
+    Serial.print(F("/"));
+    Serial.println(gps.date.year());
+
+    outputString = "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+  }
+  
+  if (gps.time.isValid())
+  {
+    Serial.print(F("Time: "));
+    if (gps.time.hour() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.hour());
+    Serial.print(F(":"));
+    if (gps.time.minute() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.minute());
+    Serial.print(F(":"));
+    if (gps.time.second() < 10) Serial.print(F("0"));
+    Serial.println(gps.time.second());
+
+    outputString = "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+  }
+
+  if(gps.speed.isValid())
+  {
+    Serial.print(F("MPH: "));
+    Serial.println(gps.speed.mph());
+
+    outputString += "MPH: " + String(gps.speed.mph()) + "\n";
+  }
+
+  if(gps.course.isValid())
+  {
+    Serial.print(F("Deg: "));
+    Serial.println(gps.course.deg());
+
+    outputString += "Deg: " + String(gps.course.deg()) + "\n";
+  }
+
+  if(gps.altitude.isValid())
+  {
+    Serial.print(F("Miles: "));
+    Serial.println(gps.altitude.miles());
+
+    outputString += "Miles: " + String(gps.altitude.miles()) + "\n";
+  }
+
+   if (gps.satellites.isValid())
+  {
+    Serial.print(F("Number of Satellite: "));
+    Serial.println(gps.satellites.value());
+
+    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n" + "\n";
+  }
+
+  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+
+  Serial.println("");
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  
+  while (*gpsStream)
+    if (gps.encode(*gpsStream++))
+      displayInfo();
+
+  setup_sd_card();
+}
+
+void loop()
+{
+  displayInfo(); 
+  delay(5000);
 }
