@@ -81,10 +81,10 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 
 | **Device Pin** | **ESP32 Pin** | **Colour** |
 |----------------|---------------|------------|
-|     5V         |     5V        |            |
-|     GND        |     GND       |            |
-|     CS         |     D10       |            |
-|     SO         |     D12       |            |
-|     SI         |     D11       |            |
-|     SCK        |     D13       |            |
-|     INT        |     D2        |            |
+|     5V         |     5V        |   RED      |
+|     GND        |     GND       |   BLACK    |
+|     CS         |     G22       |   WHITE    |
+|     MISO       |     G19       |   BLUE     |
+|     MOSI       |     G23       |   BLUE     |
+|     SCK        |     G18       |   WHITE    |
+|     INT        |     GX        |            |
