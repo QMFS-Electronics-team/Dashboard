@@ -1,20 +1,20 @@
 // Reference: https://how2electronics.com/interfacing-mcp2515-can-bus-module-with-arduino/
-#include <SPI.h>              //Library for using SPI Communication 
-#include <mcp2515.h>          //Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
+#include <SPI.h>              // Library for using SPI Communication 
+#include <mcp2515.h>          // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
  
 struct can_frame canMsg;
  
-MCP2515 mcp2515(22);                 // SPI CS Pin 10
+MCP2515 mcp2515(22);                 // SPI CS Pin 22
  
  
 void setup()
 {
-  Serial.begin(9600);                //Begins Serial Communication at 9600 baudrate
-  SPI.begin();                       //Begins SPI communication
+  Serial.begin(9600);                // Begins Serial Communication at 9600 baudrate
+  SPI.begin();                       // Begins SPI communication
    
   mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); //Sets CAN at speed 500KBPS and Clock 8MHz
-  mcp2515.setNormalMode();                  //Sets CAN at normal mode
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                   // Set CAN at normal mode
 }
  
  
