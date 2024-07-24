@@ -13,6 +13,8 @@
 // https://raw.githubusercontent.com/RuiSantosdotme/Random-Nerd-Tutorials/master/Projects/Arduino_WS2812B_Color_Palette.ino
 
 
+// CAN BUS
+// https://copperhilltech.com/blog/esp32-triple-can-bus-application-through-adding-two-mcp2515-ports/
 
 //----------------
 // Pin definitions
@@ -81,6 +83,10 @@ const char *gpsStream =
 // SD
 #include "FS.h"
 #include "SD.h"
+
+// CAN BUS
+#include <mcp2515.h>
+
 #include "SPI.h"
 
 
@@ -107,7 +113,13 @@ TBlendType    currentBlending;
 extern CRGBPalette16 myRedWhiteBluePalette;
 extern const TProgmemPalette16 myRedWhiteBluePalette_p PROGMEM;
 
+// SD Card (Write)
 String outputString;
+
+// CAN BUS
+struct can_frame canMsg;
+MCP2515 mcp2515(2);
+
 
 
 
@@ -287,6 +299,14 @@ void setup_sd_card(){
 }
 
 
+void setup_can_bus() {
+    SPI.begin();
+    mcp2515.reset();
+    mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+    mcp2515.setNormalMode();                   // Set CAN at normal mode
+}
+
+
 
 //----------------
 // Sensor Related
@@ -408,6 +428,16 @@ void get_gps_data(){
   
 }
 
+void get_can_bus_data() {
+  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+    int x = canMsg.data[0];
+    int y = canMsg.data[1];
+    Serial.println("Receiving CAN BUS data: ");
+    Serial.println(x);
+    Serial.println(y);
+    Serial.println("");
+  } 
+}
 
 
 //----------------
@@ -650,6 +680,7 @@ void setup() {
     Serial.begin(115200);
     
     Serial.println("Setting up Dashboard");
+    setup_can_bus();
     setup_sd_card();
     setup_three_axis_gyro();
     setup_gps();
@@ -668,5 +699,6 @@ void loop() {
     get_gps_data();
     get_three_axis_gyro_data();
     set_leds();
-    delay(100); 
+    get_can_bus_data();
+    delay(500);
 }
