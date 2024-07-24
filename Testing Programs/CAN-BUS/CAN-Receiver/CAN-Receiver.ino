@@ -4,7 +4,7 @@
  
 struct can_frame canMsg;
  
-MCP2515 mcp2515(22);                 // SPI CS Pin 22
+MCP2515 mcp2515(2);                 // SPI CS Pin 2
  
  
 void setup()
