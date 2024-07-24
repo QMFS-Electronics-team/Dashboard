@@ -293,6 +293,16 @@ void setup_sd_card(){
       Serial.println(F("MPU File Exists"));
       appendFile(SD, "/mpu-data/mpu-data.txt", "Start of New MPU Data\n");
     }
+
+    // CAN Data
+    if (!SD.exists("/can-bus-data/can-bus-data.txt")) {
+      Serial.println(F("Creating CAN-BUS File"));
+      createDir(SD, "/can-bus-data");    
+      writeFile(SD, "/can-bus-data/can-bus-data.txt", "Start of CAN-BUS Data\n");
+    } else {
+      Serial.println(F("CAN-BUS File Exists"));
+      appendFile(SD, "/can-bus-data/can-bus-data.txt", "Start of New CAN-BUS Data\n");
+    }
     
     Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
     Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
@@ -419,7 +429,7 @@ void get_gps_data(){
     Serial.print(F("Number of Satellite: "));
     Serial.println(gps.satellites.value());
 
-    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n" + "\n";
+    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n\n";
   }
 
   Serial.println("");
@@ -436,6 +446,9 @@ void get_can_bus_data() {
     Serial.println(x);
     Serial.println(y);
     Serial.println("");
+
+    outputString = "X Value: " + String(x)  + " Y Value: " + String(y) + "\n\n";
+    appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
   } 
 }
 
