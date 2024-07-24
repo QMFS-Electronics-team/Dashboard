@@ -25,16 +25,16 @@ int t = 200;
 void loop()
 {
   
-//  h += 1;
-//  t += 1; 
-//
-//  if (h > 200) {
-//    h = 100;
-//  }
-//
-//  if (t > 300) {
-//    t = 200;
-//  }
+  h += 1;
+  t += 1; 
+
+  if (h > 200) {
+    h = 100;
+  }
+
+  if (t > 300) {
+    t = 200;
+  }
  
   canMsg.can_id  = 0x036;           // CAN id as 0x036
   canMsg.can_dlc = 8;               // CAN data length as 8
