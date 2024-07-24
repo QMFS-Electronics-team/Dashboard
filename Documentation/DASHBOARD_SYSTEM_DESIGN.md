@@ -87,4 +87,4 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |     MISO       |     G19       |   BLUE     |
 |     MOSI       |     G23       |   BLUE     |
 |     SCK        |     G18       |   WHITE    |
-|     INT        |     GX        |            |
+|     INT        |     GX        |   N/A      |
