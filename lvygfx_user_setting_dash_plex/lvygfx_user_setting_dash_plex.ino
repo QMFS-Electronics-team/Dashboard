@@ -316,7 +316,7 @@ void setup(void)
   
   Serial.println( LVGL_Arduino );
   
-  FastLED.addLeds<NEOPIXEL, 25>(leds, NUM_LEDS); 
+  FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
   FastLED.setBrightness(50);
   //reset 
   leds[0] = CRGB::Black;
@@ -525,8 +525,67 @@ void simulation_task(void *pvParameters) {
   }
 }
 
+
+int rpm = 0;
+int speed_value = 0;
+int gear = 1;
+int tps = 0; 
+int bps = 0;
+int g_force = 0;
+
 void loop(void)
 {
   lv_timer_handler(); /* let the GUI do its work */
-  delay( 1 );
+  delay(1);
+  
+  // Elements on Display 
+  
+  // RPM
+  rpm += 100; 
+  if (rpm > 3000) {
+    // Increase Gear
+    rpm = 1500;
+
+    // Gear
+    gear += 1;
+    if (gear > 5){
+      gear = 1;
+    }
+  }
+
+  
+  // Speed 
+  speed_value += 5;
+  if(speed_value > 30) {
+    speed_value = 0;
+  }
+  
+
+  // TODO: Add these later
+  // TPS
+  // BPS
+  
+  // G-Force 
+  g_force += 1;
+  if (g_force > 5) {
+    g_force = 0;
+  }
+
+
+  // Set Labels 
+  // RPM
+  lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
+  
+  // Gear
+  lv_label_set_text(ui_LabelGear, String(gear).c_str());
+  
+  // Speed
+  lv_label_set_text(ui_LabelSpeed, String(speed_value).c_str());
+  
+  // G-Force
+  lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+
+  delay(500);
+  
+  
 }
