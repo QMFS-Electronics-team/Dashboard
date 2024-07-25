@@ -440,16 +440,30 @@ void get_gps_data(){
 
 void get_can_bus_data() {
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-    int x = canMsg.data[0];
-    int y = canMsg.data[1];
-    Serial.println("Receiving CAN BUS data: ");
-    Serial.println(x);
-    Serial.println(y);
-    Serial.println("");
 
-    outputString = "X Value: " + String(x)  + " Y Value: " + String(y) + "\n\n";
+    Serial.print("CAN Message ID: ");
+    Serial.print(canMsg.can_id, HEX); // print ID
+    Serial.print(" ");
+    Serial.print("Message Length: ");
+    Serial.print(canMsg.can_dlc, HEX); // print DLC
+    Serial.print(" ");
+    Serial.print("Data: ");
+    for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+      Serial.print(canMsg.data[i],HEX);
+      Serial.print(" ");
+    }
+
+    outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length:  " + String(canMsg.can_dlc, HEX) + "Data: ";
+    for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+      outputString += (canMsg.data[i], HEX);
+      outputString += " ";
+    }
+    outputString += "\n";
+    
     appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
-  } 
+    
+    Serial.println();      
+  }
 }
 
 
