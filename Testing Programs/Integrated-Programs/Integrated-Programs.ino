@@ -462,7 +462,7 @@ void get_can_bus_data() {
     
     appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
     
-    Serial.println();      
+    Serial.println("");      
   }
 }
 
