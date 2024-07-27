@@ -358,119 +358,57 @@ void setup_can_bus() {
 //----------------
 void get_three_axis_gyro_data() {
 
-  /* Get new sensor events with the readings */
+  // Get new sensor events with the readings
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  /* Print out the values */
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
-  Serial.print(", Y: ");
-  Serial.print(a.acceleration.y);
-  Serial.print(", Z: ");
-  Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
-
   outputString = "Acceleration X: " + String(a.acceleration.x) + ", Y: " + String(a.acceleration.y) + ", Z: " + String(a.acceleration.z) + " m/s^2" + "\n";
-
-  Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
-  Serial.print(", Y: ");
-  Serial.print(g.gyro.y);
-  Serial.print(", Z: ");
-  Serial.print(g.gyro.z);
-  Serial.println(" rad/s");
-
   outputString += "Rotation X: " + String(g.gyro.x) + ", Y: " + String(g.gyro.y) + ", Z: " + String(g.gyro.z) + " rad/s" + "\n";
+  outputString += "Temperature: " + String(temp.temperature) + " C" + "\n";
 
-  Serial.print("Temperature: ");
-  Serial.print(temp.temperature);
-  Serial.println(" ˚C");
-
-  outputString += "Temperature: " + String(temp.temperature) + " ˚C" + "\n\n";
-
-  Serial.println("");
   appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
-  outputString = "";
+  Serial.println(outputString);
 }
 
 void get_gps_data() {
 
   if (gps.location.isValid())
   {
-    Serial.print(F("Lat: "));
-    Serial.print(gps.location.lat(), 6);
-    Serial.print(F(" Long: "));
-    Serial.println(gps.location.lng(), 6);
-
-    outputString = "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
-    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+    outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
   }
 
   if (gps.date.isValid())
   {
-    Serial.print(F("Date: "));
-    Serial.print(gps.date.month());
-    Serial.print(F("/"));
-    Serial.print(gps.date.day());
-    Serial.print(F("/"));
-    Serial.println(gps.date.year());
-
-    outputString = "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
-    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+    outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
   }
 
   if (gps.time.isValid())
   {
-    Serial.print(F("Time: "));
-    if (gps.time.hour() < 10) Serial.print(F("0"));
-    Serial.print(gps.time.hour());
-    Serial.print(F(":"));
-    if (gps.time.minute() < 10) Serial.print(F("0"));
-    Serial.print(gps.time.minute());
-    Serial.print(F(":"));
-    if (gps.time.second() < 10) Serial.print(F("0"));
-    Serial.println(gps.time.second());
-
-    outputString = "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+    outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
   }
 
   if (gps.speed.isValid())
   {
-    Serial.print(F("Speed (Mph): "));
-    Serial.println(gps.speed.mph());
-
     outputString += "Speed (Mph): " + String(gps.speed.mph()) + "\n";
   }
 
   if (gps.course.isValid())
   {
-    Serial.print(F("Deg: "));
-    Serial.println(gps.course.deg());
-
     outputString += "Deg: " + String(gps.course.deg()) + "\n";
   }
 
   if (gps.altitude.isValid())
   {
-    Serial.print(F("Altitude (Miles): "));
-    Serial.println(gps.altitude.miles());
-
     outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
   }
 
   if (gps.satellites.isValid())
   {
-    Serial.print(F("Number of Satellite: "));
-    Serial.println(gps.satellites.value());
-
-    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n\n";
+    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
   }
 
-  Serial.println("");
   appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-  outputString = "";
-
+  Serial.println(outputString);
 }
 
 void get_compass_details(void) {
@@ -494,14 +432,7 @@ void get_compass_data(void) {
   mag.getEvent(&event);
  
   // Display the results (magnetic vector values are in micro-Tesla (uT))
-  Serial.print("Compass - ")
-  Serial.print("X: "); Serial.print(event.magnetic.x); Serial.print("  ");
-  Serial.print("Y: "); Serial.print(event.magnetic.y); Serial.print("  ");
-  Serial.print("Z: "); Serial.print(event.magnetic.z); Serial.print("  ");
-  Serial.println("uT\n");
-
   outputString = "Compass - X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
-  appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
 
   // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
@@ -523,36 +454,23 @@ void get_compass_data(void) {
   // Convert radians to degrees for readability.
   float headingDegrees = heading * 180/M_PI; 
   
-  Serial.print("Heading (degrees): "); Serial.println(headingDegrees);
-  
-  delay(500);
+  outputString += "Heading (degrees): " + String(headingDegrees) + "\n";
+  appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
+  Serial.println(outputString);
 }
 
 void get_can_bus_data() {
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
-    Serial.print("CAN Message ID: ");
-    Serial.print(canMsg.can_id, HEX); // print ID
-    Serial.print(" ");
-    Serial.print("Message Length: ");
-    Serial.print(canMsg.can_dlc, HEX); // print DLC
-    Serial.print(" ");
-    Serial.print("Data: ");
-    for (int i = 0; i < canMsg.can_dlc; i++)  { // print the data
-      Serial.print(canMsg.data[i], HEX);
-      Serial.print(" ");
-    }
-
-    outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length:  " + String(canMsg.can_dlc, HEX) + "Data: ";
-    for (int i = 0; i < canMsg.can_dlc; i++)  { // print the data
-      outputString += (canMsg.data[i], HEX);
+    outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+    for (int i = 0; i < canMsg.can_dlc; i++)  {
+      outputString += String(canMsg.data[i], HEX);
       outputString += " ";
     }
     outputString += "\n";
 
     appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
-
-    Serial.println("");
+    Serial.println(outputString);
   }
 }
 
@@ -830,7 +748,6 @@ void setup() {
   Serial.begin(115200);
   // Serial2.begin(9600, SERIAL_8N1, RXPin, TXPin);
   
-
   Serial.println("Setting up Dashboard");
   setup_can_bus();
   setup_sd_card();
