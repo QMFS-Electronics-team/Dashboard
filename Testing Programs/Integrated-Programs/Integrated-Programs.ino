@@ -494,12 +494,13 @@ void get_compass_data(void) {
   mag.getEvent(&event);
  
   // Display the results (magnetic vector values are in micro-Tesla (uT))
+  Serial.print("Compass - ")
   Serial.print("X: "); Serial.print(event.magnetic.x); Serial.print("  ");
   Serial.print("Y: "); Serial.print(event.magnetic.y); Serial.print("  ");
   Serial.print("Z: "); Serial.print(event.magnetic.z); Serial.print("  ");
   Serial.println("uT\n");
 
-  outputString = "X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
+  outputString = "Compass - X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
   appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
 
   // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
