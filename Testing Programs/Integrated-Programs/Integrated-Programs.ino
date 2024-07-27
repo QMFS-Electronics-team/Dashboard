@@ -437,10 +437,10 @@ void get_gps_data() {
 
   if (gps.speed.isValid())
   {
-    Serial.print(F("MPH: "));
+    Serial.print(F("Speed (Mph): "));
     Serial.println(gps.speed.mph());
 
-    outputString += "MPH: " + String(gps.speed.mph()) + "\n";
+    outputString += "Speed (Mph): " + String(gps.speed.mph()) + "\n";
   }
 
   if (gps.course.isValid())
@@ -453,10 +453,10 @@ void get_gps_data() {
 
   if (gps.altitude.isValid())
   {
-    Serial.print(F("Miles: "));
+    Serial.print(F("Altitude (Miles): "));
     Serial.println(gps.altitude.miles());
 
-    outputString += "Miles: " + String(gps.altitude.miles()) + "\n";
+    outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
   }
 
   if (gps.satellites.isValid())
