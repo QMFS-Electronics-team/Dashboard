@@ -98,16 +98,16 @@ void sendPacket2005() {
 
 void loop() {
   sendPacket2000();
-  delay(100);
+  delay(1000);
   sendPacket2001();
-  delay(100);
+  delay(1000);
   sendPacket2002();
-  delay(100);
+  delay(1000);
   sendPacket2003();
-  delay(100);
+  delay(1000);
   sendPacket2004();
-  delay(100);
+  delay(1000);
   sendPacket2005();
-  delay(100);
+  delay(1000);
   
 }
