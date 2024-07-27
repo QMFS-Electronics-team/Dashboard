@@ -109,8 +109,12 @@ TinyGPSPlus gps; // the TinyGPS++ object
 const int TXPin = 35;
 const int RXPin = 34;
 
+
 // TODO consider changing this to hardware serial?
 //SoftwareSerial gpsSerial(TXPin, RXPin); // the serial interface to the GPS device
+
+// Compass
+Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
 
 // LEDs
 CRGB leds[NUM_LEDS];
@@ -230,7 +234,7 @@ void setup_compass(void) {
   }
   
   /* Display some basic information on this sensor */
-  displaySensorDetails();
+  get_compass_details();
 }
 
 void setup_leds() {
@@ -304,6 +308,16 @@ void setup_sd_card() {
   } else {
     Serial.println(F("GPS File Exists"));
     appendFile(SD, "/gps-data/gps-data.txt", "Start of New GPS Data\n");
+  }
+
+  // Compass Data
+  if (!SD.exists("/compass-data/compass-data.txt")) {
+    Serial.println(F("Creating Compass File"));
+    createDir(SD, "/compass-data");
+    writeFile(SD, "/compass-data/compass-data.txt", "Start of Compass Data\n");
+  } else {
+    Serial.println(F("Compass File Exists"));
+    appendFile(SD, "/compass-data/compass-data.txt", "Start of New Compass Data\n");
   }
 
   // MPU Data
@@ -482,7 +496,11 @@ void get_compass_data(void) {
   // Display the results (magnetic vector values are in micro-Tesla (uT))
   Serial.print("X: "); Serial.print(event.magnetic.x); Serial.print("  ");
   Serial.print("Y: "); Serial.print(event.magnetic.y); Serial.print("  ");
-  Serial.print("Z: "); Serial.print(event.magnetic.z); Serial.print("  ");Serial.println("uT");
+  Serial.print("Z: "); Serial.print(event.magnetic.z); Serial.print("  ");
+  Serial.println("uT\n");
+
+  outputString = "X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
+  appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
 
   // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
@@ -809,13 +827,14 @@ void deleteFile(fs::FS &fs, const char * path) {
 
 void setup() {
   Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, RXPin, TXPin);
+  // Serial2.begin(9600, SERIAL_8N1, RXPin, TXPin);
   
 
   Serial.println("Setting up Dashboard");
   setup_can_bus();
   setup_sd_card();
   setup_three_axis_gyro();
+  setup_compass();
   setup_gps();
   setup_leds();
   set_leds();
@@ -830,12 +849,13 @@ void setup() {
 
 void loop() {
 
-  if (Serial2.available() > 0) {
-    get_gps_data();
-  } else {
-    Serial.println("GPS Serial Not Available");
-  }
+  // if (Serial2.available() > 0) {
+  //   get_gps_data();
+  // } else {
+  //   Serial.println("GPS Serial Not Available");
+  // }
 
+  get_compass_data();
   get_three_axis_gyro_data();
   set_leds();
   get_can_bus_data();
