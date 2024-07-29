@@ -37,17 +37,17 @@ void setup() {
   file.close();
 }
 
-void loop() {
+void get_gps_data() {
   if (gpsSerial.available() > 0) {
     if (gps.encode(gpsSerial.read())) {
       if (gps.location.isValid()) {
-        Serial.print(F("- latitude: "));
+        Serial.print(F("- Latitude: "));
         Serial.println(gps.location.lat());
 
-        Serial.print(F("- longitude: "));
+        Serial.print(F("- Longitude: "));
         Serial.println(gps.location.lng());
 
-        Serial.print(F("- altitude: "));
+        Serial.print(F("- Altitude: "));
         if (gps.altitude.isValid())
           Serial.println(gps.altitude.meters());
         else
@@ -56,7 +56,7 @@ void loop() {
         Serial.println(F("- location: INVALID"));
       }
 
-      Serial.print(F("- speed: "));
+      Serial.print(F("- Speed: "));
       if (gps.speed.isValid()) {
         Serial.print(gps.speed.kmph());
         Serial.println(F(" km/h"));
@@ -64,7 +64,7 @@ void loop() {
         Serial.println(F("INVALID"));
       }
 
-      Serial.print(F("- GPS date&time: "));
+      Serial.print(F("- GPS Date and Time: "));
       if (gps.date.isValid() && gps.time.isValid()) {
         Serial.print(gps.date.year());
         Serial.print(F("-"));
@@ -92,24 +92,27 @@ void loop() {
         file.print(", Longitude: ");
         file.println(gps.location.lng(), 6);
         
-        file.print("Altitude: ");
+        file.print("Altitude:  ");
         file.println(gps.altitude.meters());
 
-        file.print("Speed: ");
+        file.print("Speed:     ");
         file.print(gps.speed.kmph());
         file.println(" km/h");
 
-        file.print(gps.date.year());
+        file.print("Date:      ");
+        file.print(gps.date.day());
         file.print(F("-"));
         file.print(gps.date.month());
         file.print(F("-"));
-        file.print(gps.date.day());
-        file.print(F(" "));
-        file.print(gps.time.hour());
+        file.println(gps.date.year());
+
+        file.print("Time:      ");
+        file.print(gps.time.hour());        
         file.print(F(":"));
         file.print(gps.time.minute());
         file.print(F(":"));
         file.println(gps.time.second());
+        file.println("");
         
         file.close();
         Serial.println("Data Appended to File");
@@ -124,4 +127,9 @@ void loop() {
     Serial.println(F("No GPS data received: check wiring"));
   } else {
   }
+}
+
+
+void loop() {
+  get_gps_data();
 }
