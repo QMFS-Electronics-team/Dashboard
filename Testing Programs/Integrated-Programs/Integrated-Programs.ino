@@ -1,18 +1,13 @@
 //----------------
 // References
 //----------------
-
 // Display
 // https://techtutorialsx.com/2021/01/31/esp32-ili9341-display-hello-world/#Testing_the_code
 // https://arduino.stackexchange.com/questions/50576/elegant-solution-for-refreshing-tft-display-content
-
 // GPS
 // https://arduinogetstarted.com/tutorials/arduino-gps
-
 // LEDs
 // https://raw.githubusercontent.com/RuiSantosdotme/Random-Nerd-Tutorials/master/Projects/Arduino_WS2812B_Color_Palette.ino
-
-
 // CAN BUS
 // https://copperhilltech.com/blog/esp32-triple-can-bus-application-through-adding-two-mcp2515-ports/
 
@@ -30,8 +25,6 @@
 
 // LEDs
 #define LED_PIN     4
-
-
 
 //----------------
 // Default Values
@@ -53,8 +46,6 @@
 #define COLOR_ORDER   GRB
 #define LED_TYPE      WS2811
 
-
-
 // A sample NMEA stream.
 const char *gpsStream =
   "$GPRMC,045103.000,A,3014.1984,N,09749.2872,W,0.67,161.46,030913,,,A*7C\r\n"
@@ -64,37 +55,22 @@ const char *gpsStream =
   "$GPRMC,045251.000,A,3014.4275,N,09749.0626,W,0.51,217.94,030913,,,A*7D\r\n"
   "$GPGGA,045252.000,3014.4273,N,09749.0628,W,1,09,1.3,206.9,M,-22.5,M,,0000*6F\r\n";
 
-
-
 //----------------
 // Libraries
 //----------------
 
-// Display
-#include <Arduino_GFX_Library.h>
-
-// 3 Axis Gyro
+#include <Adafruit_HMC5883_U.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
-#include <Wire.h>
-
-// GPS
-#include <TinyGPSPlus.h>
-
-// Compass
-#include <Adafruit_HMC5883_U.h>
-
-// LEDs
+#include <Arduino_GFX_Library.h>
+#include <FS.h>
 #include <FastLED.h>
-
-// SD
-#include "FS.h"
-#include "SD.h"
-
-// CAN BUS
+#include <SD.h>
+#include <SPI.h>
+#include <TinyGPS++.h>
+#include <Wire.h>
 #include <mcp2515.h>
-
-#include "SPI.h"
+#include <SoftwareSerial.h>
 
 
 //----------------
@@ -109,13 +85,11 @@ Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
 Adafruit_MPU6050 mpu;
 
 // GPS
-TinyGPSPlus gps; // the TinyGPS++ object
-const int TXPin = 35;
-const int RXPin = 34;
-
-
-// TODO consider changing this to hardware serial?
-//SoftwareSerial gpsSerial(TXPin, RXPin); // the serial interface to the GPS device
+TinyGPSPlus gps;                        // The TinyGPS++ object
+const int TXPin = 35;                   // TX Green Wire
+const int RXPin = 34;                   // RX Red Wirte
+const uint32_t GPSBaud = 9600;            // Default GPS baud rate
+SoftwareSerial gpsSerial(TXPin, RXPin); // The serial interface to the GPS device
 
 // Compass
 Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
@@ -128,6 +102,7 @@ CRGB leds[NUM_LEDS];
 boolean rpmState = true;
 
 // SD Card (Write)
+const int sd_cs = 5; 
 String outputString;
 
 // CAN BUS
@@ -219,10 +194,8 @@ void setup_three_axis_gyro(void) {
 }
 
 void setup_gps(void) {
-//  gpsSerial.begin(9600);
-  while (*gpsStream)
-    if (gps.encode(*gpsStream++))
-      get_gps_data();
+  gpsSerial.begin(GPSBaud);
+  Serial.println(F("Arduino - GPS module"));
 }
 
 void setup_compass(void) {
@@ -234,8 +207,7 @@ void setup_compass(void) {
     Serial.println("No HMC5883 detected ... Check your wiring!");
     while(1);
   }
-  
-  /* Display some basic information on this sensor */
+
   get_compass_details();
 }
 
@@ -270,7 +242,7 @@ void set_display_data() {
 
 void setup_sd_card() {
 
-  if (!SD.begin()) {
+  if (!SD.begin(sd_cs)) {
     Serial.println("Card Mount Failed");
     return;
   }
@@ -369,44 +341,42 @@ void get_three_axis_gyro_data() {
 }
 
 void get_gps_data() {
-
-  if (gps.location.isValid())
-  {
-    outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+  if (gpsSerial.available() > 0) {
+    if (gps.encode(gpsSerial.read())) {
+      Serial.println("Reading GPS Data");
+      if (gps.location.isValid()) {
+        outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+      }
+      if (gps.date.isValid()) {
+        outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+      }
+      if (gps.time.isValid()) {
+        outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+      }
+      if (gps.speed.isValid()) {
+        outputString += "Speed (Mph): " + String(gps.speed.mph()) + "\n";
+      }
+      if (gps.course.isValid()) {
+        outputString += "Deg: " + String(gps.course.deg()) + "\n";
+      }
+      if (gps.altitude.isValid()) {
+        outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
+      }
+      if (gps.satellites.isValid()) {
+        outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
+      }
+      appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+      Serial.println(outputString);
+    }
+  } else {
+    Serial.println("GPS Serial Not Available");
   }
 
-  if (gps.date.isValid())
-  {
-    outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+  if(millis() > 5000 && gps.charsProcessed() < 10) {
+    Serial.println(F("No GPS data received: check wiring"));
   }
 
-  if (gps.time.isValid())
-  {
-    outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
-  }
-
-  if (gps.speed.isValid())
-  {
-    outputString += "Speed (Mph): " + String(gps.speed.mph()) + "\n";
-  }
-
-  if (gps.course.isValid())
-  {
-    outputString += "Deg: " + String(gps.course.deg()) + "\n";
-  }
-
-  if (gps.altitude.isValid())
-  {
-    outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
-  }
-
-  if (gps.satellites.isValid())
-  {
-    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
-  }
-
-  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-  Serial.println(outputString);
+  Serial.println("");
 }
 
 void get_compass_details(void) {
@@ -604,15 +574,13 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message) {
-  //    Serial.printf("Appending to file: %s\n", path);
-
+  
   File file = fs.open(path, FILE_APPEND);
   if (!file) {
     Serial.println("Failed to open file for appending");
     return;
   }
   if (file.print(message)) {
-    //        Serial.println("Message appended");
   } else {
     Serial.println("Append failed");
   }
@@ -645,8 +613,7 @@ void deleteFile(fs::FS &fs, const char * path) {
 
 void setup() {
   Serial.begin(115200);
-  // Serial2.begin(9600, SERIAL_8N1, RXPin, TXPin);
-  
+    
   Serial.println("Setting up Dashboard");
   setup_can_bus();
   setup_sd_card();
@@ -665,27 +632,16 @@ void setup() {
 //----------------
 
 void loop() {
+  get_gps_data();
+//  delay(20);
+//  get_compass_data();
+//  get_three_axis_gyro_data();
+//  get_can_bus_data();
 
-  // if (Serial2.available() > 0) {
-  //   get_gps_data();
-  // } else {
-  //   Serial.println("GPS Serial Not Available");
-  // }
-
-  get_compass_data();
-  get_three_axis_gyro_data();
-
-
-  if(rpmState) {
-    simulateRPMIncrease();
-    delay(200);
-    rpmState = !rpmState;
-  } else {
-    simulateRPMDecrease();
-    delay(200);
-    rpmState = !rpmState;
-  }
-  
-  get_can_bus_data();
-  delay(500);
+//  if(rpmState) {
+//    simulateRPMIncrease();
+//  } else {
+//    simulateRPMDecrease();
+//  }
+//  rpmState = !rpmState;
 }
