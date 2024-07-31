@@ -109,8 +109,6 @@ String outputString;
 struct can_frame canMsg;
 MCP2515 mcp2515(2);
 
-
-
 //----------------
 // Setup Functions
 //----------------
@@ -321,8 +319,6 @@ void setup_can_bus() {
   mcp2515.setNormalMode();                   // Set CAN at normal mode
 }
 
-
-
 //----------------
 // Sensor Related
 //----------------
@@ -443,7 +439,6 @@ void get_can_bus_data() {
   }
 }
 
-
 //----------------
 // LED Related
 //----------------
@@ -481,11 +476,20 @@ void simulateRPMDecrease() {
   }
 }
 
+void simulateRPMLights() {
+    if(rpmState) {
+    simulateRPMIncrease();
+    delay(200);
+  } else {
+    simulateRPMDecrease();
+    delay(200);
+  }
+  rpmState = !rpmState;
+}
 
-
-//--------------------
-// Directory Functions
-//--------------------
+//-----------------------------
+// Directory and File Functions
+//-----------------------------
 
 void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
   Serial.printf("Listing directory: %s\n", dirname);
@@ -526,12 +530,6 @@ void createDir(fs::FS &fs, const char * path) {
     Serial.println("mkdir failed");
   }
 }
-
-
-
-//---------------
-// File Functions
-//---------------
 
 void readFile(fs::FS &fs, const char * path) {
   Serial.printf("Reading file: %s\n", path);
@@ -599,24 +597,14 @@ void setup() {
   Serial.println("Dashboard Setup Complete");
 }
 
-
 //----------------
 // Main Loop
 //----------------
 
 void loop() {
   get_gps_data();
-  delay(20);
   get_compass_data();
   get_three_axis_gyro_data();
   get_can_bus_data();
-
-  if(rpmState) {
-    simulateRPMIncrease();
-    delay(200);
-  } else {
-    simulateRPMDecrease();
-    delay(200);
-  }
-  rpmState = !rpmState;
+  simulateRPMLights();
 }
