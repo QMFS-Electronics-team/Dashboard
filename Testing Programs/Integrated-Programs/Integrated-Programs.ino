@@ -62,10 +62,10 @@
 #include <FastLED.h>
 #include <SD.h>
 #include <SPI.h>
+#include <SoftwareSerial.h>
 #include <TinyGPS++.h>
 #include <Wire.h>
 #include <mcp2515.h>
-#include <SoftwareSerial.h>
 
 //----------------
 // Objects
