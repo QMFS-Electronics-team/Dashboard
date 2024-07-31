@@ -328,7 +328,7 @@ void read_gps_data() {
   
     if (gps.location.isValid()) {
       outputString = "Speed (Mph): " + String(gps.speed.mph()) + "\n";
-      outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+      outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
       outputString += "Deg: " + String(gps.course.deg()) + "\n";
       outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
       outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
