@@ -261,7 +261,7 @@ void read_gps_data() {
       outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
     }
     if (gps.date.isValid()) {
-      outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+      outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
       outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
     }
     
