@@ -12,7 +12,7 @@
 // https://copperhilltech.com/blog/esp32-triple-can-bus-application-through-adding-two-mcp2515-ports/
 
 //----------------
-// Pin definitions
+// Definitions
 //----------------
 
 // Display
@@ -23,19 +23,12 @@
 #define TFT_DC     3
 #define TFT_RESET  15
 
-// LEDs
-#define LED_PIN     4
-
-//----------------
-// Default Values
-//----------------
-
-// Display Default values
-#define TEXT_SIZE 4
+// GUI Default Values
+#define TEXT_SIZE         4
 #define BACKGROUND_COLOUR BLACK
-#define FONT_COLOUR ORANGE
-#define START_COLUMN 20
-#define HORIZONTAL 3
+#define FONT_COLOUR       ORANGE
+#define START_COLUMN      20
+#define HORIZONTAL        3
 
 // LEDs
 #define LED_PIN       4
@@ -45,6 +38,17 @@
 #define MAX_SHIFT_RPM 3000
 #define COLOR_ORDER   GRB
 #define LED_TYPE      WS2811
+
+// GPS
+#define TXPIN   35
+#define RXPIN   34
+#define GPSBAUD 9600
+
+// SD Card 
+#define SDCS 5
+
+// CAN BUS
+#define MCPCS 2
 
 //----------------
 // Libraries
@@ -63,7 +67,6 @@
 #include <mcp2515.h>
 #include <SoftwareSerial.h>
 
-
 //----------------
 // Objects
 //----------------
@@ -75,14 +78,9 @@ Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
 // 3 Axis Gyro
 Adafruit_MPU6050 mpu;
 
-// GPS
+// GPS and Compass
 TinyGPSPlus gps;                        // The TinyGPS++ object
-const int TXPin = 35;                   // TX Green Wire
-const int RXPin = 34;                   // RX Red Wirte
-const uint32_t GPSBaud = 9600;            // Default GPS baud rate
-SoftwareSerial gpsSerial(TXPin, RXPin); // The serial interface to the GPS device
-
-// Compass
+SoftwareSerial gpsSerial(TXPIN, RXPIN); // The serial interface to the GPS device
 Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
 
 // LEDs
@@ -93,12 +91,11 @@ CRGB leds[NUM_LEDS];
 boolean rpmState = true;
 
 // SD Card (Write)
-const int sd_cs = 5; 
 String outputString;
 
 // CAN BUS
 struct can_frame canMsg;
-MCP2515 mcp2515(2);
+MCP2515 mcp2515(MCPCS);
 
 //----------------
 // Setup Functions
@@ -183,7 +180,7 @@ void setup_three_axis_gyro(void) {
 }
 
 void setup_gps(void) {
-  gpsSerial.begin(GPSBaud);
+  gpsSerial.begin(GPSBAUD);
   Serial.println(F("Arduino - GPS module"));
 }
 
@@ -231,7 +228,7 @@ void set_display_data() {
 
 void setup_sd_card() {
 
-  if (!SD.begin(sd_cs)) {
+  if (!SD.begin(SDCS)) {
     Serial.println("Card Mount Failed");
     return;
   }
@@ -468,7 +465,7 @@ void simulateRPMDecrease() {
 }
 
 void simulateRPMLights() {
-    if(rpmState) {
+  if(rpmState) {
     simulateRPMIncrease();
   } else {
     simulateRPMDecrease();
@@ -566,7 +563,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   }
   file.close();
 }
-
 
 //----------------
 // Setup
