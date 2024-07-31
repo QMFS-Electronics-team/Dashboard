@@ -340,43 +340,44 @@ void get_three_axis_gyro_data() {
   Serial.println(outputString);
 }
 
-void get_gps_data() {
-  if (gpsSerial.available() > 0) {
-    if (gps.encode(gpsSerial.read())) {
-      Serial.println("Reading GPS Data");
-      if (gps.location.isValid()) {
-        outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
-      }
-      if (gps.date.isValid()) {
-        outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
-      }
-      if (gps.time.isValid()) {
-        outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
-      }
-      if (gps.speed.isValid()) {
-        outputString += "Speed (Mph): " + String(gps.speed.mph()) + "\n";
-      }
-      if (gps.course.isValid()) {
-        outputString += "Deg: " + String(gps.course.deg()) + "\n";
-      }
-      if (gps.altitude.isValid()) {
-        outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
-      }
-      if (gps.satellites.isValid()) {
-        outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
-      }
-      appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-      Serial.println(outputString);
+void read_gps_data() {
+  
+    if (gps.location.isValid()) {
+      outputString = "Speed (Mph): " + String(gps.speed.mph()) + "\n";
+      outputString += "Lat: " + String(gps.location.lat(), 6)  + " Long: " + String(gps.location.lng(), 6) + "\n";
+      outputString += "Deg: " + String(gps.course.deg()) + "\n";
+      outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
+      outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
     }
-  } else {
-    Serial.println("GPS Serial Not Available");
+    if (gps.satellites.isValid()) {
+      outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
+    }
+    if (gps.date.isValid()) {
+      outputString += "Date: " + String(gps.date.month()) + "/" + String(gps.date.day()) + "/" + String(gps.date.year()) + "\n";
+      outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+    }
+    
+    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+    Serial.println(outputString);
+}
+
+void get_gps_data() {
+  boolean newData = false;
+  
+  for(int start = millis(); millis() - start < 1000; ) {
+    while (gpsSerial.available()) {
+      if (gps.encode(gpsSerial.read())) {
+        newData = true; 
+        break;
+      }
+    }
   }
 
-  if(millis() > 5000 && gps.charsProcessed() < 10) {
-    Serial.println(F("No GPS data received: check wiring"));
+  if(newData) {
+    newData = false; 
+    read_gps_data();
   }
 
-  Serial.println("");
 }
 
 void get_compass_details(void) {
@@ -633,15 +634,17 @@ void setup() {
 
 void loop() {
   get_gps_data();
-//  delay(20);
-//  get_compass_data();
-//  get_three_axis_gyro_data();
-//  get_can_bus_data();
+  delay(20);
+  get_compass_data();
+  get_three_axis_gyro_data();
+  get_can_bus_data();
 
-//  if(rpmState) {
-//    simulateRPMIncrease();
-//  } else {
-//    simulateRPMDecrease();
-//  }
-//  rpmState = !rpmState;
+  if(rpmState) {
+    simulateRPMIncrease();
+    delay(200);
+  } else {
+    simulateRPMDecrease();
+    delay(200);
+  }
+  rpmState = !rpmState;
 }
