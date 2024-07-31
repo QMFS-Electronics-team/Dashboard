@@ -105,77 +105,77 @@ void setup_three_axis_gyro(void) {
   while (!Serial)
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
 
-  Serial.println("Adafruit MPU6050 test!");
+  Serial.println(F("Adafruit MPU6050 test!"));
 
   // Try to initialize!
   if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
+    Serial.println(F("Failed to find MPU6050 chip"));
     while (1) {
       delay(10);
     }
   }
-  Serial.println("MPU6050 Found!");
+  Serial.println(F("MPU6050 Found!"));
 
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  Serial.print("Accelerometer range set to: ");
+  Serial.print(F("Accelerometer range set to: "));
   switch (mpu.getAccelerometerRange()) {
     case MPU6050_RANGE_2_G:
-      Serial.println("+-2G");
+      Serial.println(F("+-2G"));
       break;
     case MPU6050_RANGE_4_G:
-      Serial.println("+-4G");
+      Serial.println(F("+-4G"));
       break;
     case MPU6050_RANGE_8_G:
-      Serial.println("+-8G");
+      Serial.println(F("+-8G"));
       break;
     case MPU6050_RANGE_16_G:
-      Serial.println("+-16G");
+      Serial.println(F("+-16G"));
       break;
   }
   mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
-  Serial.print("Gyro range set to: ");
+  Serial.print(F("Gyro range set to: "));
   switch (mpu.getGyroRange()) {
     case MPU6050_RANGE_250_DEG:
-      Serial.println("+- 250 deg/s");
+      Serial.println(F("+- 250 deg/s"));
       break;
     case MPU6050_RANGE_500_DEG:
-      Serial.println("+- 500 deg/s");
+      Serial.println(F("+- 500 deg/s"));
       break;
     case MPU6050_RANGE_1000_DEG:
-      Serial.println("+- 1000 deg/s");
+      Serial.println(F("+- 1000 deg/s"));
       break;
     case MPU6050_RANGE_2000_DEG:
-      Serial.println("+- 2000 deg/s");
+      Serial.println(F("+- 2000 deg/s"));
       break;
   }
 
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  Serial.print("Filter bandwidth set to: ");
+  Serial.print(F("Filter bandwidth set to: "));
   switch (mpu.getFilterBandwidth()) {
     case MPU6050_BAND_260_HZ:
-      Serial.println("260 Hz");
+      Serial.println(F("260 Hz"));
       break;
     case MPU6050_BAND_184_HZ:
-      Serial.println("184 Hz");
+      Serial.println(F("184 Hz"));
       break;
     case MPU6050_BAND_94_HZ:
-      Serial.println("94 Hz");
+      Serial.println(F("94 Hz"));
       break;
     case MPU6050_BAND_44_HZ:
-      Serial.println("44 Hz");
+      Serial.println(F("44 Hz"));
       break;
     case MPU6050_BAND_21_HZ:
-      Serial.println("21 Hz");
+      Serial.println(F("21 Hz"));
       break;
     case MPU6050_BAND_10_HZ:
-      Serial.println("10 Hz");
+      Serial.println(F("10 Hz"));
       break;
     case MPU6050_BAND_5_HZ:
-      Serial.println("5 Hz");
+      Serial.println(F("5 Hz"));
       break;
   }
 
-  Serial.println("");
+  Serial.println(F(""));
   delay(100);
 }
 
@@ -185,12 +185,12 @@ void setup_gps(void) {
 }
 
 void setup_compass(void) {
-  Serial.println("Settingup HMC5883");
-  Serial.println("");
+  Serial.println(F("Settingup HMC5883"));
+  Serial.println(F(""));
   
   // Initialise the sensor
   if(!mag.begin()) {
-    Serial.println("No HMC5883 detected ... Check your wiring!");
+    Serial.println(F("No HMC5883 detected ... Check your wiring!"));
     while(1);
   }
 
@@ -210,49 +210,49 @@ void set_display_data() {
   display.setTextColor(FONT_COLOUR);
 
   display.setCursor(START_COLUMN, 20);
-  display.print("FS Dashboard");
+  display.print(F("FS Dashboard"));
 
   display.setCursor(START_COLUMN, 60);
-  display.print("RPM:   1200");
+  display.print(F("RPM:   1200"));
 
   display.setCursor(START_COLUMN, 100);
-  display.print("MPH:   30");
+  display.print(F("MPH:   30"));
 
   display.setCursor(START_COLUMN, 140);
-  display.print("Gear:  5");
+  display.print(F("Gear:  5"));
 
   display.setCursor(START_COLUMN, 180);
-  display.print("Fuel:  1000");
-  Serial.println("Done");
+  display.print(F("Fuel:  1000"));
+  Serial.println(F("Done"));
 }
 
 void setup_sd_card() {
 
   if (!SD.begin(SDCS)) {
-    Serial.println("Card Mount Failed");
+    Serial.println(F("Card Mount Failed"));
     return;
   }
   uint8_t cardType = SD.cardType();
 
   if (cardType == CARD_NONE) {
-    Serial.println("No SD card attached");
+    Serial.println(F("No SD card attached"));
     return;
   }
 
-  Serial.print("SD Card Type: ");
+  Serial.print(F("SD Card Type: "));
   if (cardType == CARD_MMC) {
-    Serial.println("MMC");
+    Serial.println(F("MMC"));
   } else if (cardType == CARD_SD) {
-    Serial.println("SDSC");
+    Serial.println(F("SDSC"));
   } else if (cardType == CARD_SDHC) {
-    Serial.println("SDHC");
+    Serial.println(F("SDHC"));
   } else {
-    Serial.println("UNKNOWN");
+    Serial.println(F("UNKNOWN"));
   }
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-  Serial.printf("SD Setup Complete!");
+  Serial.print(F("SD Setup Complete!"));
 
   listDir(SD, "/", 0);
 
@@ -367,15 +367,15 @@ void get_gps_data() {
 void get_compass_details(void) {
   sensor_t sensor;
   mag.getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" uT");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" uT");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" uT");  
-  Serial.println("------------------------------------");
-  Serial.println("");
+  Serial.println(F("------------------------------------"));
+  Serial.print(F("Sensor:       ")); Serial.println(sensor.name);
+  Serial.print(F("Driver Ver:   ")); Serial.println(sensor.version);
+  Serial.print(F("Unique ID:    ")); Serial.println(sensor.sensor_id);
+  Serial.print(F("Max Value:    ")); Serial.print(sensor.max_value); Serial.println(F(" uT"));
+  Serial.print(F("Min Value:    ")); Serial.print(sensor.min_value); Serial.println(F(" uT"));
+  Serial.print(F("Resolution:   ")); Serial.print(sensor.resolution); Serial.println(F(" uT"));  
+  Serial.println(F("------------------------------------"));
+  Serial.println(F(""));
   delay(500);
 }
 
@@ -483,26 +483,26 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 
   File root = fs.open(dirname);
   if (!root) {
-    Serial.println("Failed to open directory");
+    Serial.println(F("Failed to open directory"));
     return;
   }
   if (!root.isDirectory()) {
-    Serial.println("Not a directory");
+    Serial.println(F("Not a directory"));
     return;
   }
 
   File file = root.openNextFile();
   while (file) {
     if (file.isDirectory()) {
-      Serial.print("  DIR : ");
+      Serial.print(F("  DIR : "));
       Serial.println(file.name());
       if (levels) {
         listDir(fs, file.path(), levels - 1);
       }
     } else {
-      Serial.print("  FILE: ");
+      Serial.print(F("  FILE: "));
       Serial.print(file.name());
-      Serial.print("  SIZE: ");
+      Serial.print(F("  SIZE: "));
       Serial.println(file.size());
     }
     file = root.openNextFile();
@@ -512,9 +512,9 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
 void createDir(fs::FS &fs, const char * path) {
   Serial.printf("Creating Dir: %s\n", path);
   if (fs.mkdir(path)) {
-    Serial.println("Dir created");
+    Serial.println(F("Dir created"));
   } else {
-    Serial.println("mkdir failed");
+    Serial.println(F("mkdir failed"));
   }
 }
 
@@ -523,11 +523,11 @@ void readFile(fs::FS &fs, const char * path) {
 
   File file = fs.open(path);
   if (!file) {
-    Serial.println("Failed to open file for reading");
+    Serial.println(F("Failed to open file for reading"));
     return;
   }
 
-  Serial.print("Read from file: ");
+  Serial.print(F("Read from file: "));
   while (file.available()) {
     Serial.write(file.read());
   }
@@ -539,13 +539,13 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 
   File file = fs.open(path, FILE_WRITE);
   if (!file) {
-    Serial.println("Failed to open file for writing");
+    Serial.println(F("Failed to open file for writing"));
     return;
   }
   if (file.print(message)) {
-    Serial.println("File written");
+    Serial.println(F("File written"));
   } else {
-    Serial.println("Write failed");
+    Serial.println(F("Write failed"));
   }
   file.close();
 }
@@ -554,12 +554,12 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   
   File file = fs.open(path, FILE_APPEND);
   if (!file) {
-    Serial.println("Failed to open file for appending");
+    Serial.println(F("Failed to open file for appending"));
     return;
   }
   if (file.print(message)) {
   } else {
-    Serial.println("Append failed");
+    Serial.println(F("Append failed"));
   }
   file.close();
 }
@@ -571,7 +571,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 void setup() {
   Serial.begin(115200);
     
-  Serial.println("Setting up Dashboard");
+  Serial.println(F("Setting up Dashboard"));
   setup_can_bus();
   setup_sd_card();
   setup_three_axis_gyro();
@@ -580,7 +580,7 @@ void setup() {
   setup_leds();
   setRPMLights(0);
   set_display_data();
-  Serial.println("Dashboard Setup Complete");
+  Serial.println(F("Dashboard Setup Complete"));
 }
 
 //----------------
