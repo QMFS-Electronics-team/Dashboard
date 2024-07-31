@@ -527,15 +527,6 @@ void createDir(fs::FS &fs, const char * path) {
   }
 }
 
-void removeDir(fs::FS &fs, const char * path) {
-  Serial.printf("Removing Dir: %s\n", path);
-  if (fs.rmdir(path)) {
-    Serial.println("Dir removed");
-  } else {
-    Serial.println("rmdir failed");
-  }
-}
-
 
 
 //---------------
@@ -587,25 +578,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   }
   file.close();
 }
-
-void renameFile(fs::FS &fs, const char * path1, const char * path2) {
-  Serial.printf("Renaming file %s to %s\n", path1, path2);
-  if (fs.rename(path1, path2)) {
-    Serial.println("File renamed");
-  } else {
-    Serial.println("Rename failed");
-  }
-}
-
-void deleteFile(fs::FS &fs, const char * path) {
-  Serial.printf("Deleting file: %s\n", path);
-  if (fs.remove(path)) {
-    Serial.println("File deleted");
-  } else {
-    Serial.println("Delete failed");
-  }
-}
-
 
 
 //----------------
