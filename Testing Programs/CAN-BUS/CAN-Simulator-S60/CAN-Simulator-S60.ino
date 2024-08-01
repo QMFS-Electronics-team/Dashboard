@@ -1,7 +1,10 @@
 // Reference: https://how2electronics.com/interfacing-mcp2515-can-bus-module-with-arduino/
 #include <SPI.h>          // Library for using SPI Communication 
 #include <mcp2515.h>      // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
- 
+#define PACKETDELAY 100
+
+int sensorValue = 0;      // For potentiometer
+
 struct can_frame canMsg2000;
 struct can_frame canMsg2001;
 struct can_frame canMsg2002;
@@ -23,15 +26,15 @@ void setup() {
   Serial.println("CAN-Simulator-S60");
 }
 
-void sendPacket2000() {
+void sendPacket2000(int rpm) {
   canMsg2000.can_id  = 0x2000;
   canMsg2000.can_dlc = 4;               
-  canMsg2000.data[0] = 0x25;   // RPM         
+  canMsg2000.data[0] = rpm;    // RPM         
   canMsg2000.data[1] = 0x50;   // TPS %         
   canMsg2000.data[2] = 0x30;   // Water Temp C   
   canMsg2000.data[3] = 0x20;   // Air Temp C
 
-  Serial.println("Sending Packet 2000");
+//  Serial.println("Sending Packet 2000");
   mcp2515.sendMessage(&canMsg2000);
 }
 
@@ -93,21 +96,28 @@ void sendPacket2005() {
 
   Serial.println("Sending Packet 2005");
   mcp2515.sendMessage(&canMsg2005);
-  
+}
+
+int get_rpm() {
+  sensorValue = analogRead(A2);
+  int rpm = map(sensorValue, 0, 1023, 5, 30);
+  delay(10);
+
+
+  return rpm;
 }
 
 void loop() {
-  sendPacket2000();
-  delay(1000);
+  sendPacket2000(get_rpm());
+  delay(PACKETDELAY);
   sendPacket2001();
-  delay(1000);
+  delay(PACKETDELAY);
   sendPacket2002();
-  delay(1000);
+  delay(PACKETDELAY);
   sendPacket2003();
-  delay(1000);
+  delay(PACKETDELAY);
   sendPacket2004();
-  delay(1000);
+  delay(PACKETDELAY);
   sendPacket2005();
-  delay(1000);
-  
+  delay(PACKETDELAY); 
 }
