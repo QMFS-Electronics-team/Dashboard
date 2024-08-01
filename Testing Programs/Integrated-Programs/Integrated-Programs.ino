@@ -40,15 +40,17 @@
 #define LED_TYPE      WS2811
 
 // GPS
-#define TXPIN   35
-#define RXPIN   34
-#define GPSBAUD 9600
+#define TXPIN       35
+#define RXPIN       34
+#define GPSBAUD     9600
+#define GPSCPUTIME  20
 
 // SD Card
 #define SDCS 5
 
 // CAN BUS
-#define MCPCS 2
+#define MCPCS         2
+#define CANBUSCPUTIME 20
 
 //----------------
 // Libraries
@@ -273,7 +275,7 @@ void read_gps_data() {
 void get_gps_data() {
   boolean newData = false;
 
-  for (int start = millis(); millis() - start < 1000; ) {
+  for (int start = millis(); millis() - start < GPSCPUTIME; ) {
     while (gpsSerial.available()) {
       if (gps.encode(gpsSerial.read())) {
         newData = true;
@@ -324,25 +326,27 @@ void get_compass_data(void) {
 
 int get_can_bus_data() {
   int rpm = -1;
-  while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-
-    outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
-
-    if (canMsg.can_id == 0) {
-      rpm = canMsg.data[0];
-      rpm = rpm * 100;
+  for (int start = millis(); millis() - start < CANBUSCPUTIME; ) {
+    while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+  
+      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+  
+      if (canMsg.can_id == 0) {
+        rpm = canMsg.data[0];
+        rpm = rpm * 100;
+      }
+  
+      for (int i = 0; i < canMsg.can_dlc; i++)  {
+        outputString += String(canMsg.data[i], HEX);
+        outputString += " ";
+      }
+      outputString += "\n";
+  
+      appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
+      Serial.print(outputString);
     }
-
-    for (int i = 0; i < canMsg.can_dlc; i++)  {
-      outputString += String(canMsg.data[i], HEX);
-      outputString += " ";
-    }
-    outputString += "\n";
-
-    appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
-    Serial.println(outputString);
   }
-
+  Serial.println(F(""));
   return rpm;
 }
 
@@ -490,6 +494,7 @@ void setup() {
 //----------------
 
 void loop() {
+  long start = micros();
   get_gps_data();
   get_compass_data();
   get_three_axis_gyro_data();
@@ -499,4 +504,8 @@ void loop() {
     rpm = 0;
   }
   //  simulateRPMLights();
+  
+  long duration = micros() - start;
+  Serial.print("Loop cycle time: ");
+  Serial.println(duration);
 }
