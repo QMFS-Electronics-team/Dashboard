@@ -44,7 +44,7 @@
 #define RXPIN   34
 #define GPSBAUD 9600
 
-// SD Card 
+// SD Card
 #define SDCS 5
 
 // CAN BUS
@@ -127,11 +127,11 @@ void setup_gps(void) {
 
 void setup_compass(void) {
   Serial.println(F("Setting up HMC5883"));
- 
+
   // Initialise the sensor
-  if(!mag.begin()) {
+  if (!mag.begin()) {
     Serial.println(F("No HMC5883 detected"));
-    while(1);
+    while (1);
   }
 }
 
@@ -249,40 +249,40 @@ void get_three_axis_gyro_data() {
 }
 
 void read_gps_data() {
-  
-    if (gps.location.isValid()) {
-      outputString = "Speed (Mph): " + String(gps.speed.mph()) + "\n";
-      outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
-      outputString += "Deg: " + String(gps.course.deg()) + "\n";
-      outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
-      outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
-    }
-    if (gps.satellites.isValid()) {
-      outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
-    }
-    if (gps.date.isValid()) {
-      outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
-      outputString += "Time: " + String(gps.time.hour()) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
-    }
-    
-    appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-    Serial.println(outputString);
+
+  if (gps.location.isValid()) {
+    outputString = "Speed (Mph): " + String(gps.speed.mph()) + "\n";
+    outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
+    outputString += "Deg: " + String(gps.course.deg()) + "\n";
+    outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
+    outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
+  }
+  if (gps.satellites.isValid()) {
+    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
+  }
+  if (gps.date.isValid()) {
+    outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
+    outputString += "Time: " + String(gps.time.hour() + 1) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+  }
+
+  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+  Serial.println(outputString);
 }
 
 void get_gps_data() {
   boolean newData = false;
-  
-  for(int start = millis(); millis() - start < 1000; ) {
+
+  for (int start = millis(); millis() - start < 1000; ) {
     while (gpsSerial.available()) {
       if (gps.encode(gpsSerial.read())) {
-        newData = true; 
+        newData = true;
         break;
       }
     }
   }
 
-  if(newData) {
-    newData = false; 
+  if (newData) {
+    newData = false;
     read_gps_data();
   }
 
@@ -290,41 +290,49 @@ void get_gps_data() {
 
 void get_compass_data(void) {
   // Get a new sensor event
-  sensors_event_t event; 
+  sensors_event_t event;
   mag.getEvent(&event);
- 
+
   // Display the results (magnetic vector values are in micro-Tesla (uT))
   outputString = "Compass - X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
 
   // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
   // Calculate heading when the magnetometer is level, then correct for signs of axis.
   float heading = atan2(event.magnetic.y, event.magnetic.x);
-  
+
   // Once you have your heading, you must then add your 'Declination Angle'- the 'Error' of the magnetic field in your location.
   // Find yours here: http://www.magnetic-declination.com/
   float declinationAngle = 1.13;
   heading += declinationAngle;
-  
+
   // Correct for when signs are reversed.
-  if(heading < 0)
-    heading += 2*PI;
-    
+  if (heading < 0)
+    heading += 2 * PI;
+
   // Check for wrap due to addition of declination.
-  if(heading > 2*PI)
-    heading -= 2*PI;
-   
+  if (heading > 2 * PI)
+    heading -= 2 * PI;
+
   // Convert radians to degrees for readability.
-  float headingDegrees = heading * 180/M_PI; 
-  
+  float headingDegrees = heading * 180 / M_PI;
+
   outputString += "Heading (degrees): " + String(headingDegrees) + "\n";
   appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
   Serial.println(outputString);
 }
 
-void get_can_bus_data() {
-  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+int get_can_bus_data() {
+  int rpm = -1;
+  Serial.println("Getting CAN DATA");
+  while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
     outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+
+    if (canMsg.can_id == 0) {
+      rpm = canMsg.data[0];
+      rpm = rpm * 100;
+    }
+
     for (int i = 0; i < canMsg.can_dlc; i++)  {
       outputString += String(canMsg.data[i], HEX);
       outputString += " ";
@@ -334,6 +342,8 @@ void get_can_bus_data() {
     appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
     Serial.println(outputString);
   }
+
+  return rpm;
 }
 
 //----------------
@@ -374,7 +384,7 @@ void simulateRPMDecrease() {
 }
 
 void simulateRPMLights() {
-  if(rpmState) {
+  if (rpmState) {
     simulateRPMIncrease();
   } else {
     simulateRPMDecrease();
@@ -444,7 +454,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message) {
-  
+
   File file = fs.open(path, FILE_APPEND);
   if (!file) {
     Serial.println(F("Failed to open file for appending"));
@@ -463,7 +473,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 
 void setup() {
   Serial.begin(115200);
-    
   Serial.println(F("\nSetting up Dashboard"));
   setup_can_bus();
   setup_sd_card();
@@ -480,10 +489,15 @@ void setup() {
 // Main Loop
 //----------------
 
+int rpm = 0;
 void loop() {
   get_gps_data();
   get_compass_data();
   get_three_axis_gyro_data();
-  get_can_bus_data();
-  simulateRPMLights();
+  rpm = get_can_bus_data();
+  if (rpm > 0) {
+    setRPMLights(rpm);
+    rpm = 0;
+  }
+  //  simulateRPMLights();
 }
