@@ -87,8 +87,9 @@ Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
 int rpmLightInterval = MAX_SHIFT_RPM / NUM_LEDS;
 CRGB leds[NUM_LEDS];
 
-// RPM Lights simulation
-boolean rpmState = true;
+// RPM Lights
+boolean rpmState = true; // Simulation
+int rpm = 0;             // For CAN BUS read
 
 // SD Card (Write)
 String outputString;
@@ -323,7 +324,6 @@ void get_compass_data(void) {
 
 int get_can_bus_data() {
   int rpm = -1;
-  Serial.println("Getting CAN DATA");
   while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
     outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
@@ -489,7 +489,6 @@ void setup() {
 // Main Loop
 //----------------
 
-int rpm = 0;
 void loop() {
   get_gps_data();
   get_compass_data();
