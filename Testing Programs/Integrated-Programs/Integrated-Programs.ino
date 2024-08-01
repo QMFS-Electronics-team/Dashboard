@@ -507,5 +507,6 @@ void loop() {
   
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
-  Serial.println(duration);
+  Serial.print(duration/1000.0);
+  Serial.println(" ms\n");
 }
