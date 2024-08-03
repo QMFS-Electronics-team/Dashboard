@@ -521,16 +521,17 @@ void loop() {
   get_compass_data();        
   get_three_axis_gyro_data();
   rpm = get_can_bus_data();
-  if (rpm > 0) {
+
+  // Set RPM Light and RPM value on GUI
+  if(rpm != rpm_old_value && rpm > 0) {
+    set_rpm_label(rpm_old_value, true); // Clear the old value
+    set_rpm_label(rpm, false); // Set the new value
     setRPMLights(rpm);
-    if(rpm != rpm_old_value) {
-      set_rpm_label(rpm_old_value, true); // Clear the old value
-      set_rpm_label(rpm, false); // Set the new value
-    }
     rpm_old_value = rpm;
   }
+    
   //  simulateRPMLights();
-  
+    
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
   Serial.print(duration/1000.0);
