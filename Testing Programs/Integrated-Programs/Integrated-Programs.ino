@@ -29,6 +29,7 @@
 #define FONT_COLOUR       ORANGE
 #define START_COLUMN      20
 #define HORIZONTAL        3
+#define COLUMN_OFFSET    180
 
 // LEDs
 #define LED_PIN       4
@@ -76,6 +77,7 @@
 // Display
 Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
+int rpm_old_value = 0;   // For updating display
 
 // 3 Axis Gyro
 Adafruit_MPU6050 mpu;
@@ -152,19 +154,19 @@ void set_display_data() {
   display.setTextColor(FONT_COLOUR);
 
   display.setCursor(START_COLUMN, 20);
-  display.print(F("FS Dashboard"));
+  display.print("FS Dashboard");
 
   display.setCursor(START_COLUMN, 60);
-  display.print(F("RPM:   1200"));
+  display.print("RPM:");
 
   display.setCursor(START_COLUMN, 100);
-  display.print(F("MPH:   30"));
+  display.print("MPH:");
 
   display.setCursor(START_COLUMN, 140);
-  display.print(F("Gear:  5"));
+  display.print("Gear:");
 
   display.setCursor(START_COLUMN, 180);
-  display.print(F("Fuel:  1000"));
+  display.print("Fuel:");
 }
 
 void setup_sd_card() {
@@ -395,6 +397,26 @@ void simulateRPMLights() {
   }
   delay(200);
   rpmState = !rpmState;
+}
+
+//-----------------------------
+// Display Functions
+//-----------------------------
+
+void set_rpm_label(int rpm_value, bool clear_text) {
+  Serial.println("Setting rpm label");
+  String text = String(rpm_value);
+  if (clear_text) {
+    Serial.println("Clearning rpm label");
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 60);
+    display.print(text);
+  } else {
+    Serial.println("Setting new rpm label value");
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 60);
+    display.print(text);
+  }
 }
 
 //-----------------------------
