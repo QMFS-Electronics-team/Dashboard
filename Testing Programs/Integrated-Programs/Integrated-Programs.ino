@@ -19,7 +19,7 @@
 #define TFT_SCK    18
 #define TFT_MOSI   23
 #define TFT_MISO   19
-#define TFT_CS     22
+#define TFT_CS     0
 #define TFT_DC     3
 #define TFT_RESET  15
 
@@ -517,13 +517,17 @@ void setup() {
 
 void loop() {
   long start = micros();
-  get_gps_data();
-  get_compass_data();
+  get_gps_data();            
+  get_compass_data();        
   get_three_axis_gyro_data();
   rpm = get_can_bus_data();
   if (rpm > 0) {
     setRPMLights(rpm);
-    rpm = 0;
+    if(rpm != rpm_old_value) {
+      set_rpm_label(rpm_old_value, true); // Clear the old value
+      set_rpm_label(rpm, false); // Set the new value
+    }
+    rpm_old_value = rpm;
   }
   //  simulateRPMLights();
   
