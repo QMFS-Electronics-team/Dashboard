@@ -29,7 +29,7 @@
 #define FONT_COLOUR       ORANGE
 #define START_COLUMN      20
 #define HORIZONTAL        3
-#define COLUMN_OFFSET    180
+#define COLUMN_OFFSET     180
 
 // LEDs
 #define LED_PIN       4
