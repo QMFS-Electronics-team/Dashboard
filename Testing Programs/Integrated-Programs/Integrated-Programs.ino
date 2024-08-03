@@ -77,7 +77,16 @@
 // Display
 Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
-int rpm_old_value = 0;   // For updating display
+
+// For updating display data
+int rpm_old_value = 0;
+int tps_old_value = 0;
+int water_temp_old_value = 0;
+int kph_old_value = 0;
+int mph_old_value = 0;
+int oil_temp_old_value = 0;
+int battery_voltage_old_value = 0;
+int num_satellites_old_value = 0;
 
 // 3 Axis Gyro
 Adafruit_MPU6050 mpu;
@@ -93,7 +102,6 @@ CRGB leds[NUM_LEDS];
 
 // RPM Lights
 boolean rpmState = true; // Simulation
-int rpm = 0;             // For CAN BUS read
 
 // SD Card (Write)
 String outputString;
@@ -101,6 +109,27 @@ String outputString;
 // CAN BUS
 struct can_frame canMsg;
 MCP2515 mcp2515(MCPCS);
+
+// CAN BUS Data to present on display
+
+// Packet 2000
+int rpm = 0;             // [0] RPM
+int tps = 0;             // [1] Throttle Position Sensor
+int water_temp = 0;      // [2] Water Temperature
+
+// Packet 2001
+int kph = 0;             // [2] Speed reported by ECU
+
+// Packet 2002
+int oil_temp = 0;        // [1] Oil Temperature
+int battery_voltage = 0; // [2] Battery Voltage
+
+// Other data for display
+
+// int bps = 0;             // Brake Position Sensor - Not currently implemented
+// int gforce = 0;          // GForce                - Not currently implemented
+int num_satellites = 0;  // Number of Satellites - Done!
+int mph = 0;             // Miles per hour - Done !
 
 //----------------
 // Setup Functions
@@ -256,14 +285,16 @@ void get_three_axis_gyro_data() {
 void read_gps_data() {
 
   if (gps.location.isValid()) {
-    outputString = "Speed (Mph): " + String(gps.speed.mph()) + "\n";
+    mph = gps.speed.mph();
+    outputString = "Speed (Mph): " + String(mph) + "\n";
     outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
     outputString += "Deg: " + String(gps.course.deg()) + "\n";
     outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
     outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
   }
   if (gps.satellites.isValid()) {
-    outputString += "Number of Satellite: " + String(gps.satellites.value()) + "\n";
+    num_satellites = gps.satellites.value();
+    outputString += "Number of Satellite: " + String(num_satellites) + "\n";
   }
   if (gps.date.isValid()) {
     outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
@@ -330,20 +361,30 @@ int get_can_bus_data() {
   int rpm = -1;
   for (int start = millis(); millis() - start < CANBUSCPUTIME; ) {
     while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-  
+
       outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
-  
+
       if (canMsg.can_id == 0) {
-        rpm = canMsg.data[0];
-        rpm = rpm * 100;
+        rpm = canMsg.data[0] * 100;
+        tps = canMsg.data[1];
+        water_temp = canMsg.data[2];
       }
-  
+
+      if (canMsg.can_id == 1) {
+        kph = canMsg.data[2];
+      }
+
+      if (canMsg.can_id == 2) {
+        oil_temp = canMsg.data[1];
+        battery_voltage = canMsg.data[2];
+      }
+
       for (int i = 0; i < canMsg.can_dlc; i++)  {
         outputString += String(canMsg.data[i], HEX);
         outputString += " ";
       }
       outputString += "\n";
-  
+
       appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
       Serial.print(outputString);
     }
@@ -417,6 +458,62 @@ void set_rpm_label(int rpm_value, bool clear_text) {
     display.setCursor(START_COLUMN + COLUMN_OFFSET, 60);
     display.print(text);
   }
+}
+
+void set_speed_label(int speed_value, bool clear_text) {
+  String text = String(speed_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 100);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 100);
+    display.print(text);
+  }
+}
+
+void set_gear_label(int gear_value, bool clear_text) {
+  String gear_text = "";
+  if (gear_value == 0) {
+    gear_text = "N";
+  } else {
+    gear_text = String(gear_value);
+  }
+
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 140);
+    display.print(gear_text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, 140);
+    display.print(gear_text);
+  }
+}
+
+void update_rpm_display() {
+  // Set RPM Light and RPM value on GUI
+  if (rpm != rpm_old_value && rpm > 0) {
+    set_rpm_label(rpm_old_value, true); // Clear the old value
+    set_rpm_label(rpm, false); // Set the new value
+    setRPMLights(rpm);
+    rpm_old_value = rpm;
+  }
+}
+
+void update_mph_display() {
+  // Set MPH value on GUI
+  if (mph != mph_old_value && mph >= 0) {
+    set_speed_label(mph_old_value, true);
+    set_speed_label(mph, false);
+    mph_old_value = mph;
+  }
+}
+
+void update_display_data() {
+  update_rpm_display();
+  update_mph_display();
 }
 
 //-----------------------------
@@ -517,23 +614,16 @@ void setup() {
 
 void loop() {
   long start = micros();
-  get_gps_data();            
-  get_compass_data();        
+  get_gps_data();
+  get_compass_data();
   get_three_axis_gyro_data();
-  rpm = get_can_bus_data();
+  rpm = get_can_bus_data(); // TODO remove the return statement and keep rpm global
+  update_display_data();
 
-  // Set RPM Light and RPM value on GUI
-  if(rpm != rpm_old_value && rpm > 0) {
-    set_rpm_label(rpm_old_value, true); // Clear the old value
-    set_rpm_label(rpm, false); // Set the new value
-    setRPMLights(rpm);
-    rpm_old_value = rpm;
-  }
-    
   //  simulateRPMLights();
-    
+  
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
-  Serial.print(duration/1000.0);
+  Serial.print(duration / 1000.0);
   Serial.println(" ms\n");
 }
