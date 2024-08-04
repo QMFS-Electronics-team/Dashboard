@@ -24,13 +24,13 @@ The below table are for components used for evaluating the feasibility of the Da
 |----------------|---------------|------------|
 |     5V         |     5V        |   RED      |
 |     GND        |     GND       |   BLACK    |
-|     CS         |     G22       |   ORANGE   |
-|     RESET      |     G15       |   ORANGE   |
-|     DC         |     G3        |   ORANGE   |
-|     SDI (MOSI) |     G23       |   ORANGE   |
-|     SCK        |     G18       |   ORANGE   |
+|     CS         |     G0        |   WHITE    |
+|     RESET      |     G15       |   WHITE    |
+|     DC         |     G3        |   WHITE    |
+|     SDI (MOSI) |     G23       |   WHITE    |
+|     SCK        |     G18       |   WHITE    |
 |     LED        |     5V        |   RED      |
-|     SDO (MISO) |     G19       |   ORANGE   |
+|     SDO (MISO) |     G19       |   WHITE    |
 
 ### Micro SD Card to ESP32
 
