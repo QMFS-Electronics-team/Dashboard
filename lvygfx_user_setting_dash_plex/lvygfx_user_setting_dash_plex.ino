@@ -109,7 +109,7 @@ public:
     { // 表示パネル制御の設定を行います。
       auto cfg = _panel_instance.config();    // 表示パネル設定用の構造体を取得します。
 
-      cfg.pin_cs           =    22;  // CSが接続されているピン番号   (-1 = disable)
+      cfg.pin_cs           =    0;  // CSが接続されているピン番号   (-1 = disable)
       cfg.pin_rst          =    17;  // RSTが接続されているピン番号  (-1 = disable)
       cfg.pin_busy         =    -1;  // BUSYが接続されているピン番号 (-1 = disable)
 
@@ -170,7 +170,7 @@ public:
       cfg.pin_sclk = 18;     // SCLKが接続されているピン番号
       cfg.pin_mosi = 23;     // MOSIが接続されているピン番号
       cfg.pin_miso = 19;     // MISOが接続されているピン番号
-      cfg.pin_cs   = 22;     //   CSが接続されているピン番号
+      cfg.pin_cs   = 0;     //   CSが接続されているピン番号
 
 // I2C接続の場合
       //cfg.i2c_port = 1;      // 使用するI2Cを選択 (0 or 1)
