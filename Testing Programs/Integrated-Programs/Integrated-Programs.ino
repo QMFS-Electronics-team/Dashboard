@@ -357,8 +357,7 @@ void get_compass_data(void) {
   Serial.println(outputString);
 }
 
-int get_can_bus_data() {
-  int rpm = -1;
+void get_can_bus_data() {
   for (int start = millis(); millis() - start < CANBUSCPUTIME; ) {
     while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
@@ -390,7 +389,6 @@ int get_can_bus_data() {
     }
   }
   Serial.println(F(""));
-  return rpm;
 }
 
 //----------------
@@ -419,14 +417,14 @@ void setRPMLights(int rpmValue) {
 }
 
 void simulateRPMIncrease() {
-  for (int rpm = 0; rpm < 3500; rpm += 100) {
-    setRPMLights(rpm);
+  for (int r = 0; r < 3500; r += 100) {
+    setRPMLights(r);
   }
 }
 
 void simulateRPMDecrease() {
-  for (int rpm = 3500; rpm > 0; rpm -= 100) {
-    setRPMLights(rpm);
+  for (int r = 3500; r > 0; r -= 100) {
+    setRPMLights(r);
   }
 }
 
@@ -617,7 +615,7 @@ void loop() {
   get_gps_data();
   get_compass_data();
   get_three_axis_gyro_data();
-  rpm = get_can_bus_data(); // TODO remove the return statement and keep rpm global
+  get_can_bus_data(); // TODO remove the return statement and keep rpm global
   update_display_data();
 
   //  simulateRPMLights();
