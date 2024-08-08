@@ -80,14 +80,14 @@ Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
 
 // For updating display data
 int rpm_old_value = -1;
-int tps_old_value = 0;
-int water_temp_old_value = 0;
-int kph_old_value = 0;
+int tps_old_value = -1;
+int water_temp_old_value = -1;
+int kph_old_value = -1;
 int gear_old_value = -1;
 int mph_old_value = -1;
-int oil_temp_old_value = 0;
-int battery_voltage_old_value = 0;
-int num_satellites_old_value = 0;
+int oil_temp_old_value = -1;
+int battery_voltage_old_value = -1;
+int num_satellites_old_value = -1;
 
 // 3 Axis Gyro
 Adafruit_MPU6050 mpu;
@@ -129,11 +129,10 @@ int battery_voltage = 0; // [2] Battery Voltage
 int gear = 0;            // [0] Gear
 
 // Other data for display
-
 // int bps = 0;             // Brake Position Sensor - Not currently implemented
 // int gforce = 0;          // GForce                - Not currently implemented
-int num_satellites = 0;  // Number of Satellites - Done!
-int mph = 0;             // Miles per hour - Done !
+int num_satellites = 0;  // Number of Satellites
+int mph = 0;             // Miles per hour
 
 //----------------
 // Setup Functions
