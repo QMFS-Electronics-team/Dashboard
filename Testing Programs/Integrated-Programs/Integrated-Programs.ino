@@ -631,7 +631,7 @@ void loop() {
   get_gps_data();
   get_compass_data();
   get_three_axis_gyro_data();
-  get_can_bus_data(); // TODO remove the return statement and keep rpm global
+  get_can_bus_data();
   update_display_data();
 
   //  simulateRPMLights();
