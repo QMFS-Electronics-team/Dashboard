@@ -79,11 +79,12 @@ Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_M
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
 
 // For updating display data
-int rpm_old_value = 0;
+int rpm_old_value = -1;
 int tps_old_value = 0;
 int water_temp_old_value = 0;
 int kph_old_value = 0;
-int mph_old_value = 0;
+int gear_old_value = -1;
+int mph_old_value = -1;
 int oil_temp_old_value = 0;
 int battery_voltage_old_value = 0;
 int num_satellites_old_value = 0;
@@ -123,6 +124,9 @@ int kph = 0;             // [2] Speed reported by ECU
 // Packet 2002
 int oil_temp = 0;        // [1] Oil Temperature
 int battery_voltage = 0; // [2] Battery Voltage
+
+// Packet 2003
+int gear = 0;            // [0] Gear
 
 // Other data for display
 
@@ -378,6 +382,10 @@ void get_can_bus_data() {
         battery_voltage = canMsg.data[2];
       }
 
+      if(canMsg.can_id == 3) {
+        gear = canMsg.data[0];
+      }
+
       for (int i = 0; i < canMsg.can_dlc; i++)  {
         outputString += String(canMsg.data[i], HEX);
         outputString += " ";
@@ -492,9 +500,9 @@ void set_gear_label(int gear_value, bool clear_text) {
 
 void update_rpm_display() {
   // Set RPM Light and RPM value on GUI
-  if (rpm != rpm_old_value && rpm > 0) {
-    set_rpm_label(rpm_old_value, true); // Clear the old value
-    set_rpm_label(rpm, false); // Set the new value
+  if (rpm != rpm_old_value && rpm >= 0) {
+    set_rpm_label(rpm_old_value, true);
+    set_rpm_label(rpm, false);
     setRPMLights(rpm);
     rpm_old_value = rpm;
   }
@@ -509,9 +517,18 @@ void update_mph_display() {
   }
 }
 
+void update_gear_display() {
+  if(gear != gear_old_value && gear >= 0) {
+    set_gear_label(gear_old_value, true);
+    set_gear_label(gear, false);
+    gear_old_value = gear;
+  }
+}
+
 void update_display_data() {
   update_rpm_display();
   update_mph_display();
+  update_gear_display();
 }
 
 //-----------------------------
