@@ -31,6 +31,12 @@
 #define HORIZONTAL        3
 #define COLUMN_OFFSET     180
 
+// Rows for Information
+#define RPM_ROW           20
+#define MPH_ROW           60
+#define GEAR_ROW          100
+#define FUEL_ROW          140
+
 // LEDs
 #define LED_PIN       4
 #define NUM_LEDS      30
@@ -184,21 +190,12 @@ void set_display_data() {
   display.setRotation(HORIZONTAL);
   display.setTextSize(TEXT_SIZE);
   display.setTextColor(FONT_COLOUR);
-
-  display.setCursor(START_COLUMN, 20);
-  display.print("FS Dashboard");
-
-  display.setCursor(START_COLUMN, 60);
+  display.setCursor(START_COLUMN, RPM_ROW);
   display.print("RPM:");
-
-  display.setCursor(START_COLUMN, 100);
+  display.setCursor(START_COLUMN, MPH_ROW);
   display.print("MPH:");
-
-  display.setCursor(START_COLUMN, 140);
+  display.setCursor(START_COLUMN, GEAR_ROW);
   display.print("Gear:");
-
-  display.setCursor(START_COLUMN, 180);
-  display.print("Fuel:");
 }
 
 void setup_sd_card() {
@@ -455,12 +452,12 @@ void set_rpm_label(int rpm_value, bool clear_text) {
   if (clear_text) {
     Serial.println("Clearning rpm label");
     display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 60);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
     display.print(text);
   } else {
     Serial.println("Setting new rpm label value");
     display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 60);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
     display.print(text);
   }
 }
@@ -469,11 +466,11 @@ void set_speed_label(int speed_value, bool clear_text) {
   String text = String(speed_value);
   if (clear_text) {
     display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 100);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
     display.print(text);
   } else {
     display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 100);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
     display.print(text);
   }
 }
@@ -488,11 +485,11 @@ void set_gear_label(int gear_value, bool clear_text) {
 
   if (clear_text) {
     display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 140);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
     display.print(gear_text);
   } else {
     display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, 140);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
     display.print(gear_text);
   }
 }
