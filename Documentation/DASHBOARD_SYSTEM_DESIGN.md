@@ -18,19 +18,21 @@ The below table are for components used for evaluating the feasibility of the Da
 
 ### Abbreviation Key
 
+
 ### TFT Display (ILI9341 2.8" 240x320) to ESP32
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     CS         |     G0        |   WHITE    |
-|     RESET      |     G15       |   WHITE    |
-|     DC         |     G3        |   WHITE    |
-|     SDI (MOSI) |     G23       |   WHITE    |
-|     SCK        |     G18       |   WHITE    |
-|     LED        |     5V        |   RED      |
-|     SDO (MISO) |     G19       |   WHITE    |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|     5V         |     5V        |   RED      |         NO          |
+|     GND        |     GND       |   BLACK    |         NO          |
+|     CS         |     G0        |   WHITE    |         YES         |
+|     RESET      |     G15       |   WHITE    |         YES         |
+|     DC         |     G3        |   WHITE    |         YES         |
+|     SDI (MOSI) |     G23       |   WHITE    |         NO          |
+|     SCK        |     G18       |   WHITE    |         NO          |
+|     LED        |     5V        |   RED      |         NO          |
+|     SDO (MISO) |     G19       |   WHITE    |         NO          |
+
 
 ### TFT Display (ILI9486 3.5" 480x320) to ESP 32
 
@@ -65,25 +67,28 @@ The below table are for components used for evaluating the feasibility of the Da
 |     X          |     A1              |     X
 |     X          |     A0              |     X
 
+
 ### Micro SD Card to ESP32
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     MISO       |     G19       |   YELLOW   |
-|     MOSI       |     G23       |   YELLOW   |
-|     SCK        |     G18       |   YELLOW   |
-|     CS         |     G22       |   YELLOW   |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|     5V         |     5V        |   RED      |        NO           |
+|     GND        |     GND       |   BLACK    |        NO           |
+|     MISO       |     G19       |   YELLOW   |        NO           |
+|     MOSI       |     G23       |   YELLOW   |        NO           |
+|     SCK        |     G18       |   YELLOW   |        NO           |
+|     CS         |     G22       |   YELLOW   |        YES          |
+
 
 ### 3 Axis Gyro to ESP32
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     SCL        |     G22       |   BLUE     |
-|     SDA        |     G21       |   BLUE     |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|     5V         |     5V        |   RED      |        NO           |
+|     GND        |     GND       |   BLACK    |        NO           |
+|     SCL        |     G22       |   BLUE     |        NO           |
+|     SDA        |     G21       |   BLUE     |        NO           |
+
 
 ### GPS to ESP32
 
@@ -92,35 +97,36 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 
 !["GPS Module"](/images/BN-880-GPS.PNG)
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|   D - SDA      |     G21       |   BLACK    |
-|   G - GND      |     GND       |   WHITE    |
-|   T - TX       |     G35       |   GREEN    |
-|   R - RX       |     G34       |   RED      |
-|   V - 5V       |     5V        |   YELLOW   |
-|   C - SCL      |     G22       |   BLUE     |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|   D - SDA      |     G21       |   BLACK    |        NO           |
+|   G - GND      |     GND       |   WHITE    |        NO           |
+|   T - TX       |     G35       |   GREEN    |        YES          |
+|   R - RX       |     G34       |   RED      |        YES          |
+|   V - 5V       |     5V        |   YELLOW   |        NO           |
+|   C - SCL      |     G22       |   BLUE     |        NO           |
 
 
 ### RGB LEDs to ESP32
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     Din        |     G4        |   GREEN    |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|     5V         |     5V        |   RED      |        NO           |
+|     GND        |     GND       |   BLACK    |        NO           |
+|     Din        |     G4        |   GREEN    |        YES          |
+
 
 ### CAN Bus Module to ESP32
 
-| **Device Pin** | **ESP32 Pin** | **Colour** |
-|----------------|---------------|------------|
-|     5V         |     5V        |   RED      |
-|     GND        |     GND       |   BLACK    |
-|     CS         |     G22       |   WHITE    |
-|     MISO       |     G19       |   BLUE     |
-|     MOSI       |     G23       |   BLUE     |
-|     SCK        |     G18       |   WHITE    |
-|     INT        |     GX        |   N/A      |
+| **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
+|----------------|---------------|------------|---------------------|
+|     5V         |     5V        |   RED      |        NO           |
+|     GND        |     GND       |   BLACK    |        NO           |
+|     CS         |     G22       |   WHITE    |        YES          |
+|     MISO       |     G19       |   BLUE     |        NO           |
+|     MOSI       |     G23       |   BLUE     |        NO           |
+|     SCK        |     G18       |   WHITE    |        NO           |
+|     INT        |     GX        |   N/A      |        X            |
 
 
 ### ESP32 Pin Utilisation
