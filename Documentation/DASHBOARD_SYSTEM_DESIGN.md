@@ -38,23 +38,23 @@ The below table are for components used for evaluating the feasibility of the Da
 
 | **Device Pin** | **Prototype Board** | **ESP32 Pin** | **Colour** |
 |----------------|---------------------|---------------|------------|
-|     RESET      |     D19             |     
-|     3.3V       |     D18             |     3.3V
-|     5V         |     D17             |     5V
-|     GND        |     D16             |     GND 
-|     GND        |     D15             |     GND 
-|     X          |     D14             |     X
+|     RESET      |     D19             |               |
+|     3.3V       |     D18             |     3.3V      |
+|     5V         |     D17             |     5V        |
+|     GND        |     D16             |     GND       |
+|     GND        |     D15             |     GND       |
+|     X          |     D14             |     X         |
 |     LCD_RD     |     D0              |     
 |     LCD_WR     |     D1              |     
 |     LCD_RS     |     D2              |     
 |     LCD_CS     |     D3              |     
 |     LCD_RST    |     D5              |     
 |     F_CS       |     D6              |     
-|     X          |     A15             |     X
-|     X          |     A14             |     X
-|     SD_SCK     |     A13             |     X
-|     SD_D0      |     A12             |     X 
-|     SD_D1      |     A11             |     X  
+|     X          |     A15             |     X         |
+|     X          |     A14             |     X         |
+|     SD_SCK     |     A13             |     X         |
+|     SD_D0      |     A12             |     X         |
+|     SD_D1      |     A11             |     X         |
 |     LCD_SS     |     A10             |        
 |     LCD_D1     |     A9              |     
 |     LCD_D0     |     A8              |         
@@ -64,8 +64,8 @@ The below table are for components used for evaluating the feasibility of the Da
 |     LCD_D4     |     A4              |        
 |     LCD_D3     |     A3              |         
 |     LCD_D2     |     A2              |          
-|     X          |     A1              |     X
-|     X          |     A0              |     X
+|     X          |     A1              |     X         |
+|     X          |     A0              |     X         |
 
 
 ### Micro SD Card to ESP32
@@ -131,46 +131,46 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 
 ### ESP32 Pin Utilisation
 
-| **Device Pin** | **Used** | **Notes** |
+| **Device Pin** | **Used** | **Usage** |
 | -------------- | -------- | --------- |
-|     3.3V       |    NO    |
-|     EN         |    NO    | 
-|     36/VP      |    NO    | 
-|     39/VN      |    NO    | 
-|     34         |    YES   |
-|     35         |    YES   |
-|     32         |    NO    |
-|     33         |    NO    |
-|     25         |    NO    |
-|     26         |    NO    |
-|     27         |    NO    |
-|     14         |    NO    |
-|     12         |    NO    |
-|     GND        |    YES   |
-|     13         |    NO    |
-|     9/SD2      |    NO    |
-|     10/SD3     |    NO    |
-|     11/CMD     |    NO    |
-|     5V         |    YES   |
-|     5V         |    YES   |
-|     GND        |    YES   |
-|     23         |    YES   |
-|     22         |    YES   |
-|     1/TX       |    NO    |
-|     3/RX       |    YES   |
-|     21         |    YES   |
-|     GND        |    YES   |
-|     19         |    YES   |
-|     18         |    YES   |
-|     5          |    YES   |
-|     GND        |    YES   |
-|     GND        |    YES   |
-|     4          |    YES   |
-|     0          |    YES   |
-|     2          |    YES   |
-|     15         |    YES   |
-|     8/SD1      |    NO    |
-|     7/SD0      |    NO    |
-|     6/CLK      |    NO    |
-|     GND        |    YES   |
+|     3.3V       |    NO    |   N/A     |
+|     EN         |    NO    |   N/A     | 
+|     G36/VP     |    NO    |   N/A     | 
+|     G39/VN     |    NO    |   N/A     | 
+|     G34        |    YES   |   GPS RX  |
+|     G35        |    YES   |   GPS TX  |
+|     G32        |    NO    |   N/A     |
+|     G33        |    NO    |   N/A     |
+|     G25        |    NO    |   N/A     |
+|     G26        |    NO    |   N/A     |
+|     G27        |    NO    |   N/A     |
+|     G14        |    NO    |   N/A     |
+|     G12        |    NO    |   N/A     |
+|     GND        |    YES   |   Power   |
+|     G13        |    NO    |   N/A     |
+|     G9/SD2     |    NO    |   N/A     |
+|     G10/SD3    |    NO    |   N/A     |
+|     G11/CMD    |    NO    |   N/A     |
+|     5V         |    YES   |   Power   |
+|     5V         |    YES   |   Power   |
+|     GND        |    YES   |   Power   |
+|     G23        |    YES   |   MOSI    |
+|     G22        |    YES   |   SCL     |
+|     G1/TX      |    NO    |   N/A     |
+|     G3/RX      |    YES   |   TFT DC  |
+|     G21        |    YES   |   SDA     |
+|     GND        |    YES   |   Power   |
+|     G19        |    YES   |   MISO    |
+|     G18        |    YES   |   SCK     |
+|     G5         |    YES   |           |
+|     GND        |    YES   |   Power   |
+|     GND        |    YES   |   Power   |
+|     G4         |    YES   |   LED Din |
+|     G0         |    YES   |   TFT CS  |
+|     G2         |    YES   |           |
+|     G15        |    YES   |   TFT RST |
+|     G8/SD1     |    NO    |   N/A     |
+|     G7/SD0     |    NO    |   N/A     |
+|     G6/CLK     |    NO    |   N/A     |
+|     GND        |    YES   |   Power   |
 
