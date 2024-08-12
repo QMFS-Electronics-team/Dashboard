@@ -1,17 +1,600 @@
 
-
 // v1.0.0 を有効にします(v0からの移行期間の特別措置です。これを書かない場合は旧v0系で動作します。)
 #define LGFX_USE_V1
 
+//----------------
+// Definitions
+//----------------
+
+// Display
+#define TFT_SCK    18
+#define TFT_MOSI   23
+#define TFT_MISO   19
+#define TFT_CS     0
+#define TFT_DC     3
+#define TFT_RESET  15
+
+// GUI Default Values
+#define TEXT_SIZE         4
+#define BACKGROUND_COLOUR BLACK
+#define FONT_COLOUR       ORANGE
+#define START_COLUMN      20
+#define HORIZONTAL        3
+#define COLUMN_OFFSET     180
+
+// Rows for Information
+#define RPM_ROW           20
+#define MPH_ROW           60
+#define GEAR_ROW          100
+#define FUEL_ROW          140
+
+// LEDs
+#define LED_PIN       4
+#define NUM_LEDS      30
+#define BRIGHTNESS    64
+#define SHIFT_DELAY   1
+#define MAX_SHIFT_RPM 3000
+#define COLOR_ORDER   GRB
+#define LED_TYPE      WS2811
+
+// GPS
+#define TXPIN       35
+#define RXPIN       34
+#define GPSBAUD     9600
+#define GPSCPUTIME  20
+
+// SD Card
+#define SDCS 5
+
+// CAN BUS
+#define MCPCS         2
+#define CANBUSCPUTIME 20
+
+//----------------
+// Libraries
+//----------------
+
+#include <Adafruit_HMC5883_U.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Arduino_GFX_Library.h>
+#include <FS.h>
 #include <FastLED.h>
+#include <SD.h>
+#include <SPI.h>
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+#include <Wire.h>
+#include <mcp2515.h>
+
 #include <LovyanGFX.hpp>
 #include <lvgl.h>
 #include "ui.h"
 
-#define NUM_LEDS 10
-CRGBArray<NUM_LEDS> leds;
+//----------------
+// Objects
+//----------------
 
-// ESP32でLovyanGFXを独自設定で利用する場合の設定例
+// Display
+Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
+Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
+
+// For updating display data
+int rpm_old_value = -1;
+int tps_old_value = -1;
+int water_temp_old_value = -1;
+int kph_old_value = -1;
+int gear_old_value = -1;
+int mph_old_value = -1;
+int oil_temp_old_value = -1;
+int battery_voltage_old_value = -1;
+int num_satellites_old_value = -1;
+
+// 3 Axis Gyro
+Adafruit_MPU6050 mpu;
+
+// GPS and Compass
+TinyGPSPlus gps;                        // The TinyGPS++ object
+SoftwareSerial gpsSerial(TXPIN, RXPIN); // The serial interface to the GPS device
+Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
+
+// LEDs
+int rpmLightInterval = MAX_SHIFT_RPM / NUM_LEDS;
+CRGB leds[NUM_LEDS];
+
+// RPM Lights
+boolean rpmState = true; // Simulation
+
+// SD Card (Write)
+String outputString;
+
+// CAN BUS
+struct can_frame canMsg;
+MCP2515 mcp2515(MCPCS);
+
+// CAN BUS Data to present on display
+
+// Packet 2000
+int rpm = 0;             // [0] RPM
+int tps = 0;             // [1] Throttle Position Sensor
+int water_temp = 0;      // [2] Water Temperature
+
+// Packet 2001
+int kph = 0;             // [2] Speed reported by ECU
+
+// Packet 2002
+int oil_temp = 0;        // [1] Oil Temperature
+int battery_voltage = 0; // [2] Battery Voltage
+
+// Packet 2003
+int gear = 0;            // [0] Gear
+
+// Other data for display
+// int bps = 0;             // Brake Position Sensor - Not currently implemented
+// int gforce = 0;          // GForce                - Not currently implemented
+int num_satellites = 0;  // Number of Satellites
+int mph = 0;             // Miles per hour
+
+//----------------
+// Setup Functions
+//----------------
+
+void setup_three_axis_gyro(void) {
+  while (!Serial)
+    delay(10); // will pause until serial console opens
+
+  Serial.println(F("Setting up MPU6050"));
+
+  // Try to initialize!
+  if (!mpu.begin()) {
+    Serial.println(F("No MPU6050 detected"));
+    while (1) {
+      delay(10);
+    }
+  }
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+}
+
+void setup_gps(void) {
+  gpsSerial.begin(GPSBAUD);
+  Serial.println(F("Setting up BN880"));
+}
+
+void setup_compass(void) {
+  Serial.println(F("Setting up HMC5883"));
+
+  // Initialise the sensor
+  if (!mag.begin()) {
+    Serial.println(F("No HMC5883 detected"));
+    while (1);
+  }
+}
+
+void setup_leds() {
+  delay(500); // Delay powerup
+  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+}
+
+void set_display_data() {
+  Serial.println(F("Setting up Display"));
+  display.begin();
+  display.fillScreen(BACKGROUND_COLOUR);
+  display.setRotation(HORIZONTAL);
+  display.setTextSize(TEXT_SIZE);
+  display.setTextColor(FONT_COLOUR);
+  display.setCursor(START_COLUMN, RPM_ROW);
+  display.print("RPM:");
+  display.setCursor(START_COLUMN, MPH_ROW);
+  display.print("MPH:");
+  display.setCursor(START_COLUMN, GEAR_ROW);
+  display.print("Gear:");
+}
+
+void setup_sd_card() {
+
+  Serial.println(F("Setting up SD Reader"));
+  if (!SD.begin(SDCS)) {
+    Serial.println(F("Card Mount Failed"));
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE) {
+    Serial.println(F("No SD card attached"));
+    return;
+  }
+
+  listDir(SD, "/", 0);
+
+  // GPS Data
+  if (!SD.exists("/gps-data/gps-data.txt")) {
+    Serial.println(F("Creating GPS File"));
+    createDir(SD, "/gps-data");
+    writeFile(SD, "/gps-data/gps-data.txt", "Start of GPS Data\n");
+  } else {
+    Serial.println(F("GPS File Exists"));
+    appendFile(SD, "/gps-data/gps-data.txt", "Start of New GPS Data\n");
+  }
+
+  // Compass Data
+  if (!SD.exists("/compass-data/compass-data.txt")) {
+    Serial.println(F("Creating Compass File"));
+    createDir(SD, "/compass-data");
+    writeFile(SD, "/compass-data/compass-data.txt", "Start of Compass Data\n");
+  } else {
+    Serial.println(F("Compass File Exists"));
+    appendFile(SD, "/compass-data/compass-data.txt", "Start of New Compass Data\n");
+  }
+
+  // MPU Data
+  if (!SD.exists("/mpu-data/mpu-data.txt")) {
+    Serial.println(F("Creating MPU File"));
+    createDir(SD, "/mpu-data");
+    writeFile(SD, "/mpu-data/mpu-data.txt", "Start of MPU Data\n");
+  } else {
+    Serial.println(F("MPU File Exists"));
+    appendFile(SD, "/mpu-data/mpu-data.txt", "Start of New MPU Data\n");
+  }
+
+  // CAN Data
+  if (!SD.exists("/can-bus-data/can-bus-data.txt")) {
+    Serial.println(F("Creating CAN-BUS File"));
+    createDir(SD, "/can-bus-data");
+    writeFile(SD, "/can-bus-data/can-bus-data.txt", "Start of CAN-BUS Data\n");
+  } else {
+    Serial.println(F("CAN-BUS File Exists"));
+    appendFile(SD, "/can-bus-data/can-bus-data.txt", "Start of New CAN-BUS Data\n");
+  }
+
+  Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
+  Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+}
+
+void setup_can_bus() {
+  SPI.begin();
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                   // Set CAN at normal mode
+}
+
+//----------------
+// Sensor Related
+//----------------
+void get_three_axis_gyro_data() {
+
+  // Get new sensor events with the readings
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  outputString = "Acceleration X: " + String(a.acceleration.x) + ", Y: " + String(a.acceleration.y) + ", Z: " + String(a.acceleration.z) + " m/s^2" + "\n";
+  outputString += "Rotation X: " + String(g.gyro.x) + ", Y: " + String(g.gyro.y) + ", Z: " + String(g.gyro.z) + " rad/s" + "\n";
+  outputString += "Temperature: " + String(temp.temperature) + " C" + "\n";
+
+  appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
+  Serial.println(outputString);
+}
+
+void read_gps_data() {
+
+  if (gps.location.isValid()) {
+    mph = gps.speed.mph();
+    outputString = "Speed (Mph): " + String(mph) + "\n";
+    outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
+    outputString += "Deg: " + String(gps.course.deg()) + "\n";
+    outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
+    outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
+  }
+  if (gps.satellites.isValid()) {
+    num_satellites = gps.satellites.value();
+    outputString += "Number of Satellite: " + String(num_satellites) + "\n";
+  }
+  if (gps.date.isValid()) {
+    outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
+    outputString += "Time: " + String(gps.time.hour() + 1) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+  }
+
+  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+  Serial.println(outputString);
+}
+
+void get_gps_data() {
+  boolean newData = false;
+
+  for (int start = millis(); millis() - start < GPSCPUTIME; ) {
+    while (gpsSerial.available()) {
+      if (gps.encode(gpsSerial.read())) {
+        newData = true;
+        break;
+      }
+    }
+  }
+
+  if (newData) {
+    newData = false;
+    read_gps_data();
+  }
+
+}
+
+void get_compass_data(void) {
+  // Get a new sensor event
+  sensors_event_t event;
+  mag.getEvent(&event);
+
+  // Display the results (magnetic vector values are in micro-Tesla (uT))
+  outputString = "Compass - X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
+
+  // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
+  // Calculate heading when the magnetometer is level, then correct for signs of axis.
+  float heading = atan2(event.magnetic.y, event.magnetic.x);
+
+  // Once you have your heading, you must then add your 'Declination Angle'- the 'Error' of the magnetic field in your location.
+  // Find yours here: http://www.magnetic-declination.com/
+  float declinationAngle = 1.13;
+  heading += declinationAngle;
+
+  // Correct for when signs are reversed.
+  if (heading < 0)
+    heading += 2 * PI;
+
+  // Check for wrap due to addition of declination.
+  if (heading > 2 * PI)
+    heading -= 2 * PI;
+
+  // Convert radians to degrees for readability.
+  float headingDegrees = heading * 180 / M_PI;
+
+  outputString += "Heading (degrees): " + String(headingDegrees) + "\n";
+  appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
+  Serial.println(outputString);
+}
+
+void get_can_bus_data() {
+  for (int start = millis(); millis() - start < CANBUSCPUTIME; ) {
+    while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+
+      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+
+      if (canMsg.can_id == 0) {
+        rpm = canMsg.data[0] * 100;
+        tps = canMsg.data[1];
+        water_temp = canMsg.data[2];
+      }
+
+      if (canMsg.can_id == 1) {
+        kph = canMsg.data[2];
+      }
+
+      if (canMsg.can_id == 2) {
+        oil_temp = canMsg.data[1];
+        battery_voltage = canMsg.data[2];
+      }
+
+      if(canMsg.can_id == 3) {
+        gear = canMsg.data[0];
+      }
+
+      for (int i = 0; i < canMsg.can_dlc; i++)  {
+        outputString += String(canMsg.data[i], HEX);
+        outputString += " ";
+      }
+      outputString += "\n";
+
+      appendFile(SD, "/can-bus-data/can-bus-data.txt", outputString.c_str());
+      Serial.print(outputString);
+    }
+  }
+  Serial.println(F(""));
+}
+
+//----------------
+// LED Related
+//----------------
+
+void setRPMLights(int rpmValue) {
+  for (int i = 0; i <= NUM_LEDS; i++) {
+    if (rpmValue >= (i + 1)*rpmLightInterval) {
+      if (i < 10) {               // LEDs should be Green
+        leds[i].setRGB(0, BRIGHTNESS, 0);
+        delay(SHIFT_DELAY);
+      } else if (i < 20) {        // LEDs should be Red
+        leds[i].setRGB(BRIGHTNESS, 0, 0);
+        delay(SHIFT_DELAY);
+      } else if (i < 30) {        // LEDs should be Blue
+        leds[i].setRGB(0, 0, BRIGHTNESS);
+        delay(SHIFT_DELAY);
+      }
+      FastLED.show();
+    } else {
+      leds[i].setRGB(0, 0, 0);
+      FastLED.show();
+    }
+  }
+}
+
+void simulateRPMIncrease() {
+  for (int r = 0; r < 3500; r += 100) {
+    setRPMLights(r);
+  }
+}
+
+void simulateRPMDecrease() {
+  for (int r = 3500; r > 0; r -= 100) {
+    setRPMLights(r);
+  }
+}
+
+void simulateRPMLights() {
+  if (rpmState) {
+    simulateRPMIncrease();
+  } else {
+    simulateRPMDecrease();
+  }
+  delay(200);
+  rpmState = !rpmState;
+}
+
+//-----------------------------
+// Display Functions
+//-----------------------------
+
+void set_rpm_label(int rpm_value, bool clear_text) {
+  Serial.println("Setting rpm label");
+  String text = String(rpm_value);
+  if (clear_text) {
+    Serial.println("Clearning rpm label");
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
+    display.print(text);
+  } else {
+    Serial.println("Setting new rpm label value");
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
+    display.print(text);
+  }
+}
+
+void set_speed_label(int speed_value, bool clear_text) {
+  String text = String(speed_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
+    display.print(text);
+  }
+}
+
+void set_gear_label(int gear_value, bool clear_text) {
+  String gear_text = "";
+  if (gear_value == 0) {
+    gear_text = "N";
+  } else {
+    gear_text = String(gear_value);
+  }
+
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
+    display.print(gear_text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
+    display.print(gear_text);
+  }
+}
+
+void update_rpm_display() {
+  // Set RPM Light and RPM value on GUI
+  if (rpm != rpm_old_value && rpm >= 0) {
+    set_rpm_label(rpm_old_value, true);
+    set_rpm_label(rpm, false);
+    setRPMLights(rpm);
+    rpm_old_value = rpm;
+  }
+}
+
+void update_mph_display() {
+  // Set MPH value on GUI
+  if (mph != mph_old_value && mph >= 0) {
+    set_speed_label(mph_old_value, true);
+    set_speed_label(mph, false);
+    mph_old_value = mph;
+  }
+}
+
+void update_gear_display() {
+  if(gear != gear_old_value && gear >= 0) {
+    set_gear_label(gear_old_value, true);
+    set_gear_label(gear, false);
+    gear_old_value = gear;
+  }
+}
+
+void update_display_data() {
+  update_rpm_display();
+  update_mph_display();
+  update_gear_display();
+}
+
+//-----------------------------
+// Directory and File Functions
+//-----------------------------
+
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = fs.open(dirname);
+  if (!root) {
+    Serial.println(F("Failed to open directory"));
+    return;
+  }
+  if (!root.isDirectory()) {
+    Serial.println(F("Not a directory"));
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      Serial.print(F("  DIR : "));
+      Serial.println(file.name());
+      if (levels) {
+        listDir(fs, file.path(), levels - 1);
+      }
+    } else {
+      Serial.print(F("  FILE: "));
+      Serial.print(file.name());
+      Serial.print(F("  SIZE: "));
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+void createDir(fs::FS &fs, const char * path) {
+  Serial.printf("Creating Dir: %s\n", path);
+  if (fs.mkdir(path)) {
+    Serial.println(F("Dir created"));
+  } else {
+    Serial.println(F("mkdir failed"));
+  }
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message) {
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file) {
+    Serial.println(F("Failed to open file for writing"));
+    return;
+  }
+  if (file.print(message)) {
+    Serial.println(F("File written"));
+  } else {
+    Serial.println(F("Write failed"));
+  }
+  file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message) {
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    Serial.println(F("Failed to open file for appending"));
+    return;
+  }
+  if (file.print(message)) {
+  } else {
+    Serial.println(F("Append failed"));
+  }
+  file.close();
+}
 
 /// 独自の設定を行うクラスを、LGFX_Deviceから派生して作成します。
 class LGFX : public lgfx::LGFX_Device
@@ -188,64 +771,7 @@ public:
   }
 };
 
-// 準備したクラスのインスタンスを作成します。
-//LGFX display;
-//
-//void setup(void)
-//{
-//  // SPIバスとパネルの初期化を実行すると使用可能になります。
-//  display.init();
-//
-//  display.setTextSize((std::max(display.width(), display.height()) + 255) >> 8);
-//
-//  // タッチが使用可能な場合のキャリブレーションを行います。（省略可）
-////  if (display.touch())
-////  {
-////    if (display.width() < display.height()) display.setRotation(display.getRotation() ^ 1);
-////
-////    // 画面に案内文章を描画します。
-////    display.setTextDatum(textdatum_t::middle_center);
-////    display.drawString("touch the arrow marker.", display.width()>>1, display.height() >> 1);
-////    display.setTextDatum(textdatum_t::top_left);
-////
-////    // タッチを使用する場合、キャリブレーションを行います。画面の四隅に表示される矢印の先端を順にタッチしてください。
-////    std::uint16_t fg = TFT_WHITE;
-////    std::uint16_t bg = TFT_BLACK;
-////    if (display.isEPD()) std::swap(fg, bg);
-////    display.calibrateTouch(nullptr, fg, bg, std::max(display.width(), display.height()) >> 3);
-////  }
-//
-//  display.fillScreen(TFT_WHITE);
-//}
-//
-//uint32_t count = ~0;
-//void loop(void)
-//{
-//  display.startWrite();
-//  display.setRotation(++count & 7);
-//  display.setColorDepth((count & 8) ? 16 : 24);
-//
-//  display.setTextColor(TFT_WHITE);
-//  display.drawNumber(display.getRotation(), 16, 0);
-//
-//  display.setTextColor(0xFF0000U);
-//  display.drawString("R", 30, 16);
-//  display.setTextColor(0x00FF00U);
-//  display.drawString("G", 40, 16);
-//  display.setTextColor(0x0000FFU);
-//  display.drawString("B", 50, 16);
-//
-//  display.drawRect(30,30,display.width()-60,display.height()-60,count*7);
-//  display.drawFastHLine(0, 0, 10);
-//
-//  display.endWrite();
-//
-//  int32_t x, y;
-//  if (display.getTouch(&x, &y)) {
-//    display.fillRect(x-2, y-2, 5, 5, count*7);
-//  }
-//
-//}
+
 
 static LGFX tft;
 
@@ -310,39 +836,23 @@ void setup(void)
 {
 
   Serial.begin( 115200 ); /* prepare for possible serial debug */
-
+  Serial.println(F("\nSetting up Dashboard"));
+  setup_can_bus();
+  setup_sd_card();
+  setup_three_axis_gyro();
+  setup_compass();
+  setup_gps();
+  setup_leds();
+  setRPMLights(0);
+  Serial.println(F("Dashboard Setup Complete\n"));
+  
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   
   Serial.println( LVGL_Arduino );
-  
-  FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
-  FastLED.setBrightness(50);
-  //reset 
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
   tft.init();
-
-  // if (tft.width() < tft.height()) {
-  //   tft.setRotation(tft.getRotation() ^ 1);
-  // }
-
   tft.setRotation(1);
-
   tft.setBrightness(255);
-  //tft.fillScreen(TFT_BLACK);
-
-
   lv_init();
 
 #if LV_USE_LOG != 0
@@ -383,32 +893,7 @@ void setup(void)
   
 }
 
-void upshifting_blink(){
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-  delay(200);
-}
+
 
 void simulation_task(void *pvParameters) {
 
@@ -428,95 +913,9 @@ void simulation_task(void *pvParameters) {
 
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
 
-  //LED RPM simulation
-  leds[0] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[1] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[2] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[3] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[4] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[5] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[6] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[7] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[8] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[9] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  
-  for(int i = 0; i<10; i++){
-    upshifting_blink();
-  }
-
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
-  leds[0] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[1] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[2] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[3] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[4] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[5] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[6] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[7] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[8] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[9] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-
-  for(int i = 0; i<10; i++){
-    upshifting_blink();
-  }
-
   delay(30000);
-
-
-
+  
   ESP.restart();
-
 
   while (1) {
 
@@ -526,11 +925,7 @@ void simulation_task(void *pvParameters) {
 }
 
 
-int rpm = 0;
 int speed_value = 0;
-int gear = 1;
-int tps = 0; 
-int bps = 0;
 int g_force = 0;
 
 void loop(void)
