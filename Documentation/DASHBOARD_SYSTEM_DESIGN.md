@@ -77,7 +77,7 @@ The below table are for components used for evaluating the feasibility of the Da
 |     MISO       |     G19       |   YELLOW   |        NO           |
 |     MOSI       |     G23       |   YELLOW   |        NO           |
 |     SCK        |     G18       |   YELLOW   |        NO           |
-|     CS         |     G22       |   YELLOW   |        YES          |
+|     CS         |     G5        |   YELLOW   |        YES          |
 
 
 ### 3 Axis Gyro to ESP32
@@ -122,7 +122,7 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |----------------|---------------|------------|---------------------|
 |     5V         |     5V        |   RED      |        NO           |
 |     GND        |     GND       |   BLACK    |        NO           |
-|     CS         |     G22       |   WHITE    |        YES          |
+|     CS         |     G2        |   WHITE    |        YES          |
 |     MISO       |     G19       |   BLUE     |        NO           |
 |     MOSI       |     G23       |   BLUE     |        NO           |
 |     SCK        |     G18       |   WHITE    |        NO           |
@@ -162,12 +162,12 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |     GND        |    YES   |   Power   |
 |     G19        |    YES   |   MISO    |
 |     G18        |    YES   |   SCK     |
-|     G5         |    YES   |           |
+|     G5         |    YES   |   SD CS   |
 |     GND        |    YES   |   Power   |
 |     GND        |    YES   |   Power   |
 |     G4         |    YES   |   LED Din |
 |     G0         |    YES   |   TFT CS  |
-|     G2         |    YES   |           |
+|     G2         |    YES   |   CAN CS  |
 |     G15        |    YES   |   TFT RST |
 |     G8/SD1     |    NO    |   N/A     |
 |     G7/SD0     |    NO    |   N/A     |
