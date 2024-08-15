@@ -3,8 +3,6 @@
 #include <mcp2515.h>      // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
 #define PACKETDELAY 100
 
-int sensorValue = 0;      // For potentiometer
-
 struct can_frame canMsg2000;
 struct can_frame canMsg2001;
 struct can_frame canMsg2002;
@@ -26,15 +24,15 @@ void setup() {
   Serial.println("CAN-Simulator-S60");
 }
 
-void sendPacket2000(int rpm) {
+void sendPacket2000(int water_temp, int tps, int rpm) {
   canMsg2000.can_id  = 0x2000;
   canMsg2000.can_dlc = 4;               
-  canMsg2000.data[0] = rpm;    // RPM         
-  canMsg2000.data[1] = 0x50;   // TPS %         
-  canMsg2000.data[2] = 0x30;   // Water Temp C   
-  canMsg2000.data[3] = 0x20;   // Air Temp C
+  canMsg2000.data[0] = rpm;         // RPM         
+  canMsg2000.data[1] = tps;         // TPS %         
+  canMsg2000.data[2] = water_temp;  // Water Temp C   
+  canMsg2000.data[3] = 0x20;        // Air Temp C
 
-  Serial.println("Sending Packet 2000");
+Serial.println("Sending Packet 2000");
   mcp2515.sendMessage(&canMsg2000);
 }
 
@@ -46,31 +44,31 @@ void sendPacket2001() {
   canMsg2001.data[2] = 0x06; // KPH x 10  
   canMsg2001.data[3] = 0x02; // Oil P Kpa
 
-  Serial.println("Sending Packet 2001");
+Serial.println("Sending Packet 2001");
   mcp2515.sendMessage(&canMsg2001);
 }
 
-void sendPacket2002() {
+void sendPacket2002(int oil_temp, int battery_voltage) {
   canMsg2002.can_id  = 0x2002;
   canMsg2002.can_dlc = 4;               
-  canMsg2002.data[0] = 0x03; // Fuel P Kpa         
-  canMsg2002.data[1] = 0x50; // Oil Temp C       
-  canMsg2002.data[2] = 0x01; // Volts x 10  
-  canMsg2002.data[3] = 0x20; // Fuel Con. L/100Km x 10
+  canMsg2002.data[0] = 0x03;            // Fuel P Kpa         
+  canMsg2002.data[1] = oil_temp;        // Oil Temp C       
+  canMsg2002.data[2] = battery_voltage; // Volts x 10  
+  canMsg2002.data[3] = 0x20;            // Fuel Con. L/100Km x 10
 
-  Serial.println("Sending Packet 2002");
+Serial.println("Sending Packet 2002");
   mcp2515.sendMessage(&canMsg2002);
 }
 
-void sendPacket2003() {
+void sendPacket2003(int gear) {
   canMsg2003.can_id  = 0x2003;
   canMsg2003.can_dlc = 4;               
-  canMsg2003.data[0] = 0x05; // Gear
+  canMsg2003.data[0] = gear; // Gear
   canMsg2003.data[1] = 0x02; // Advance Degx10   
   canMsg2003.data[2] = 0x03; // Injection ms x 100
   canMsg2003.data[3] = 0x02; // Fuel Con. L/Hr x 10
 
-  Serial.println("Sending Packet 2003");
+Serial.println("Sending Packet 2003");
   mcp2515.sendMessage(&canMsg2003);
 }
 
@@ -82,7 +80,7 @@ void sendPacket2004() {
   canMsg2004.data[2] = 0x03; // Ana3 mV
   canMsg2004.data[3] = 0x05; // Cam Advance x 10
 
-  Serial.println("Sending Packet 2004");
+Serial.println("Sending Packet 2004");
   mcp2515.sendMessage(&canMsg2004);
 }
 
@@ -98,24 +96,70 @@ void sendPacket2005() {
   mcp2515.sendMessage(&canMsg2005);
 }
 
+
+// Packet 2000
 int get_rpm() {
-  sensorValue = analogRead(A2);
-  int rpm = map(sensorValue, 0, 1023, 5, 30);
-  delay(10);
+  int rpm = map(analogRead(A2), 0, 1023, 5, 30);
+  Serial.print("A2 RPM - ");
+  Serial.println(rpm);
   return rpm;
 }
 
+int get_tps() {
+  int tps = map(analogRead(A1), 0, 1023, 0, 100);
+  Serial.print("A1 TPS - ");
+  Serial.println(tps);
+  return tps;
+}
+
+int get_water_temp() {
+  int water_temp = map(analogRead(A0), 0, 1023, 0, 100);
+  Serial.print("A0 Water Temp - ");
+  Serial.println(water_temp);
+  return water_temp;
+}
+
+// Packet 2003
+int get_gear() {
+  int gear = map(analogRead(A3), 0, 1023, 0, 5);
+  Serial.print("A3 Gear - ");
+  Serial.println(gear);
+  return gear;
+}
+
+// Packet 2002
+int get_oil_temp() {
+  int oil_temp = map(analogRead(A4), 0, 1023, 0, 100);
+  Serial.print("A4 Oil Temp - ");
+  Serial.println(oil_temp);
+  return oil_temp;
+}
+
+int get_battery_voltage() {
+  int tps = map(analogRead(A5), 0, 1023, 0, 15);
+  Serial.print("A5 TPS - ");
+  Serial.println(tps);
+  return tps;
+}
+
 void loop() {
-  sendPacket2000(get_rpm());
+  sendPacket2000(get_water_temp(), get_tps(), get_rpm());
   delay(PACKETDELAY);
+  
   sendPacket2001();
   delay(PACKETDELAY);
-  sendPacket2002();
+  
+  sendPacket2002(get_oil_temp(), get_battery_voltage());
   delay(PACKETDELAY);
-  sendPacket2003();
+  
+  sendPacket2003(get_gear());
   delay(PACKETDELAY);
+  
   sendPacket2004();
   delay(PACKETDELAY);
+  
   sendPacket2005();
   delay(PACKETDELAY); 
+
+  Serial.println("");
 }
