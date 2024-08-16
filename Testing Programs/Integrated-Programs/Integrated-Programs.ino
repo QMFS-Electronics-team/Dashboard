@@ -24,18 +24,22 @@
 #define TFT_RESET  15
 
 // GUI Default Values
-#define TEXT_SIZE         4
+#define TEXT_SIZE         3
 #define BACKGROUND_COLOUR BLACK
 #define FONT_COLOUR       ORANGE
 #define START_COLUMN      20
 #define HORIZONTAL        3
-#define COLUMN_OFFSET     180
+#define COLUMN_OFFSET     220
 
 // Rows for Information
-#define RPM_ROW           20
-#define MPH_ROW           60
-#define GEAR_ROW          100
-#define FUEL_ROW          140
+#define RPM_ROW               10
+#define MPH_ROW               40
+#define GEAR_ROW              70
+// #define FUEL_ROW              70
+#define TPS_ROW               100
+#define WATER_TEMP_ROW        130
+#define OIL_TEMP_ROW          160
+#define BATTERY_VOLTAGE_ROW   190
 
 // LEDs
 #define LED_PIN       4
@@ -196,6 +200,14 @@ void set_display_data() {
   display.print("MPH:");
   display.setCursor(START_COLUMN, GEAR_ROW);
   display.print("Gear:");
+  display.setCursor(START_COLUMN, TPS_ROW);
+  display.print("TPS: ");
+  display.setCursor(START_COLUMN, WATER_TEMP_ROW);
+  display.print("Water Temp: ");
+  display.setCursor(START_COLUMN, OIL_TEMP_ROW);
+  display.println("Oil Temp: ");
+  display.setCursor(START_COLUMN, BATTERY_VOLTAGE_ROW);
+  display.println("Voltage: ");
 }
 
 void setup_sd_card() {
@@ -446,6 +458,7 @@ void simulateRPMLights() {
 // Display Functions
 //-----------------------------
 
+// Label Setters
 void set_rpm_label(int rpm_value, bool clear_text) {
   Serial.println("Setting rpm label");
   String text = String(rpm_value);
@@ -494,6 +507,60 @@ void set_gear_label(int gear_value, bool clear_text) {
   }
 }
 
+void set_tps_label(int tps_value, bool clear_text) {
+  String text = String(tps_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, TPS_ROW);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, TPS_ROW);
+    display.print(text);
+  }
+}
+
+void set_water_temp_label(int water_temp_value, bool clear_text) {
+  String text = String(water_temp_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, WATER_TEMP_ROW);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, WATER_TEMP_ROW);
+    display.print(text);
+  }
+}
+
+void set_oil_temp_label(int oil_temp_value, bool clear_text) {
+  String text = String(oil_temp_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, OIL_TEMP_ROW);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, OIL_TEMP_ROW);
+    display.print(text);
+  }
+}
+
+void set_battery_voltage_label(int battery_voltage_value, bool clear_text) {
+  String text = String(battery_voltage_value);
+  if (clear_text) {
+    display.setTextColor(BLACK);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, BATTERY_VOLTAGE_ROW);
+    display.print(text);
+  } else {
+    display.setTextColor(FONT_COLOUR);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, BATTERY_VOLTAGE_ROW);
+    display.print(text);
+  }
+}
+
+
+// Display Update functions
 void update_rpm_display() {
   // Set RPM Light and RPM value on GUI
   if (rpm != rpm_old_value && rpm >= 0) {
@@ -521,10 +588,48 @@ void update_gear_display() {
   }
 }
 
+void update_tps_display() {
+  if(tps != tps_old_value && tps >= 0) {
+    set_tps_label(tps_old_value, true);
+    set_tps_label(tps, false);
+    tps_old_value = tps;
+  }
+}
+
+void update_water_temp_display() {
+  if(water_temp != water_temp_old_value && water_temp >= 0) {
+    set_water_temp_label(water_temp_old_value, true);
+    set_water_temp_label(water_temp, false);
+    water_temp_old_value = water_temp;
+  }
+}
+
+void update_oil_temp_display() {
+  if(oil_temp != oil_temp_old_value && oil_temp >= 0) {
+    set_oil_temp_label(oil_temp_old_value, true);
+    set_oil_temp_label(oil_temp, false);
+    oil_temp_old_value = oil_temp;
+  }
+}
+
+void update_battery_voltage_display() {
+  if(battery_voltage != battery_voltage_old_value && battery_voltage >= 0) {
+    set_battery_voltage_label(battery_voltage_old_value, true);
+    set_battery_voltage_label(battery_voltage, false);
+    battery_voltage_old_value = battery_voltage;
+  }
+}
+
+
+// Main function to update all display data
 void update_display_data() {
   update_rpm_display();
   update_mph_display();
   update_gear_display();
+  update_tps_display();
+  update_water_temp_display();
+  update_oil_temp_display();
+  update_battery_voltage_display();
 }
 
 //-----------------------------
