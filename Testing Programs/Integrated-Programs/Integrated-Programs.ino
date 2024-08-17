@@ -119,7 +119,6 @@ void setup_compass(void) {
 }
 
 void setup_leds() {
-  delay(500); // Delay powerup
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 }
 
