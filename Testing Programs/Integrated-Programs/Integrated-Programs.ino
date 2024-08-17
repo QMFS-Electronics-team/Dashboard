@@ -227,46 +227,32 @@ void get_three_axis_gyro_data() {
   Serial.println(outputString);
 }
 
-void read_gps_data() {
-
-  if (gps.location.isValid()) {
-    mph = gps.speed.mph();
-    outputString = "Speed (Mph): " + String(mph) + "\n";
-    outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
-    outputString += "Deg: " + String(gps.course.deg()) + "\n";
-    outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
-    outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
-  }
-  if (gps.satellites.isValid()) {
-    num_satellites = gps.satellites.value();
-    outputString += "Number of Satellite: " + String(num_satellites) + "\n";
-  }
-  if (gps.date.isValid()) {
-    outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
-    outputString += "Time: " + String(gps.time.hour() + 1) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
-  }
-
-  appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-  Serial.println(outputString);
-}
-
 void get_gps_data() {
-  boolean newData = false;
-
   for (int start = millis(); millis() - start < GPSCPUTIME; ) {
     while (gpsSerial.available()) {
       if (gps.encode(gpsSerial.read())) {
-        newData = true;
-        break;
+        if (gps.location.isValid()) {
+          mph = gps.speed.mph();
+          outputString = "Speed (Mph): " + String(mph) + "\n";
+          outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
+          outputString += "Deg: " + String(gps.course.deg()) + "\n";
+          outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
+          outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
+        }
+        if (gps.satellites.isValid()) {
+          num_satellites = gps.satellites.value();
+          outputString += "Number of Satellite: " + String(num_satellites) + "\n";
+        }
+        if (gps.date.isValid()) {
+          outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
+          outputString += "Time: " + String(gps.time.hour() + 1) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
+        }
+
+        appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
+        Serial.println(outputString);
       }
     }
   }
-
-  if (newData) {
-    newData = false;
-    read_gps_data();
-  }
-
 }
 
 void get_compass_data(void) {
