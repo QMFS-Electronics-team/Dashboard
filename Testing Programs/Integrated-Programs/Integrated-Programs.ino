@@ -90,7 +90,6 @@ void setup_three_axis_gyro(void) {
 
   Serial.println(F("Setting up MPU6050"));
 
-  // Try to initialize!
   if (!mpu.begin()) {
     Serial.println(F("No MPU6050 detected"));
     while (1) {
@@ -111,7 +110,6 @@ void setup_gps(void) {
 void setup_compass(void) {
   Serial.println(F("Setting up HMC5883"));
 
-  // Initialise the sensor
   if (!mag.begin()) {
     Serial.println(F("No HMC5883 detected"));
     while (1);
