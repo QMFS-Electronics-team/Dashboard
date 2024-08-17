@@ -382,28 +382,6 @@ void setRPMLights(int rpmValue) {
   }
 }
 
-void simulateRPMIncrease() {
-  for (int r = 0; r < 3500; r += 100) {
-    setRPMLights(r);
-  }
-}
-
-void simulateRPMDecrease() {
-  for (int r = 3500; r > 0; r -= 100) {
-    setRPMLights(r);
-  }
-}
-
-void simulateRPMLights() {
-  if (rpmState) {
-    simulateRPMIncrease();
-  } else {
-    simulateRPMDecrease();
-  }
-  delay(200);
-  rpmState = !rpmState;
-}
-
 //-----------------------------
 // Display Functions
 //-----------------------------
