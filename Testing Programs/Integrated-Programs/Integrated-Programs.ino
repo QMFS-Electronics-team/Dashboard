@@ -458,164 +458,92 @@ void simulateRPMLights() {
 // Display Functions
 //-----------------------------
 
-// Label Setters
-void set_rpm_label(int rpm_value, bool clear_text) {
-  Serial.println("Setting rpm label");
-  String text = String(rpm_value);
-  if (clear_text) {
-    Serial.println("Clearning rpm label");
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
-    display.print(text);
-  } else {
-    Serial.println("Setting new rpm label value");
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, RPM_ROW);
-    display.print(text);
-  }
-}
+// Label Setter
+void set_label(int value, bool clear_text, int row) {
+  String text = String(value);
 
-void set_speed_label(int speed_value, bool clear_text) {
-  String text = String(speed_value);
-  if (clear_text) {
+  if(row == GEAR_ROW && value == 0) {
+      text = "N";
+  }
+
+  if(clear_text) {
     display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, row);
     display.print(text);
   } else {
     display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, MPH_ROW);
+    display.setCursor(START_COLUMN + COLUMN_OFFSET, row);
     display.print(text);
   }
 }
-
-void set_gear_label(int gear_value, bool clear_text) {
-  String gear_text = "";
-  if (gear_value == 0) {
-    gear_text = "N";
-  } else {
-    gear_text = String(gear_value);
-  }
-
-  if (clear_text) {
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
-    display.print(gear_text);
-  } else {
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, GEAR_ROW);
-    display.print(gear_text);
-  }
-}
-
-void set_tps_label(int tps_value, bool clear_text) {
-  String text = String(tps_value);
-  if (clear_text) {
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, TPS_ROW);
-    display.print(text);
-  } else {
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, TPS_ROW);
-    display.print(text);
-  }
-}
-
-void set_water_temp_label(int water_temp_value, bool clear_text) {
-  String text = String(water_temp_value);
-  if (clear_text) {
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, WATER_TEMP_ROW);
-    display.print(text);
-  } else {
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, WATER_TEMP_ROW);
-    display.print(text);
-  }
-}
-
-void set_oil_temp_label(int oil_temp_value, bool clear_text) {
-  String text = String(oil_temp_value);
-  if (clear_text) {
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, OIL_TEMP_ROW);
-    display.print(text);
-  } else {
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, OIL_TEMP_ROW);
-    display.print(text);
-  }
-}
-
-void set_battery_voltage_label(int battery_voltage_value, bool clear_text) {
-  String text = String(battery_voltage_value);
-  if (clear_text) {
-    display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, BATTERY_VOLTAGE_ROW);
-    display.print(text);
-  } else {
-    display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, BATTERY_VOLTAGE_ROW);
-    display.print(text);
-  }
-}
-
 
 // Display Update functions
+
+// Currently not implemented
+void update_label(int current_value, int old_value, int row) {
+  if(current_value != old_value && current_value >= 0) {
+    set_label(old_value, true, row);
+    set_label(current_value, false, row);
+    old_value = current_value;
+  }
+}
+
 void update_rpm_display() {
   // Set RPM Light and RPM value on GUI
   if (rpm != rpm_old_value && rpm >= 0) {
-    set_rpm_label(rpm_old_value, true);
-    set_rpm_label(rpm, false);
+    set_label(rpm_old_value, true, RPM_ROW);
+    set_label(rpm, false, RPM_ROW);
     setRPMLights(rpm);
     rpm_old_value = rpm;
   }
 }
 
 void update_mph_display() {
-  // Set MPH value on GUI
   if (mph != mph_old_value && mph >= 0) {
-    set_speed_label(mph_old_value, true);
-    set_speed_label(mph, false);
+    set_label(mph_old_value, true, MPH_ROW);
+    set_label(mph, false, MPH_ROW);
     mph_old_value = mph;
   }
 }
 
 void update_gear_display() {
   if(gear != gear_old_value && gear >= 0) {
-    set_gear_label(gear_old_value, true);
-    set_gear_label(gear, false);
+    set_label(gear_old_value, true, GEAR_ROW);
+    set_label(gear, false, GEAR_ROW);
+    // set_gear_label(gear_old_value, true);
+    // set_gear_label(gear, false);
     gear_old_value = gear;
   }
 }
 
 void update_tps_display() {
   if(tps != tps_old_value && tps >= 0) {
-    set_tps_label(tps_old_value, true);
-    set_tps_label(tps, false);
+    set_label(tps_old_value, true, TPS_ROW);
+    set_label(tps, false, TPS_ROW);
     tps_old_value = tps;
   }
 }
 
 void update_water_temp_display() {
   if(water_temp != water_temp_old_value && water_temp >= 0) {
-    set_water_temp_label(water_temp_old_value, true);
-    set_water_temp_label(water_temp, false);
+    set_label(water_temp_old_value, true, WATER_TEMP_ROW);
+    set_label(water_temp, false, WATER_TEMP_ROW);
     water_temp_old_value = water_temp;
   }
 }
 
 void update_oil_temp_display() {
   if(oil_temp != oil_temp_old_value && oil_temp >= 0) {
-    set_oil_temp_label(oil_temp_old_value, true);
-    set_oil_temp_label(oil_temp, false);
+    set_label(oil_temp_old_value, true, OIL_TEMP_ROW);
+    set_label(oil_temp, false, OIL_TEMP_ROW);
     oil_temp_old_value = oil_temp;
   }
 }
 
 void update_battery_voltage_display() {
   if(battery_voltage != battery_voltage_old_value && battery_voltage >= 0) {
-    set_battery_voltage_label(battery_voltage_old_value, true);
-    set_battery_voltage_label(battery_voltage, false);
+    set_label(battery_voltage_old_value, true, BATTERY_VOLTAGE_ROW);
+    set_label(battery_voltage, false, BATTERY_VOLTAGE_ROW);
     battery_voltage_old_value = battery_voltage;
   }
 }
