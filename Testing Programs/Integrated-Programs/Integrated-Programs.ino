@@ -308,7 +308,7 @@ void get_can_bus_data() {
 //----------------
 
 void setRPMLights(int rpmValue) {
-  for (int i = 0; i <= NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_LEDS; i++) {
     if (rpmValue >= (i + 1)*rpmLightInterval) {
       if (i < 10) {               // LEDs should be Green
         leds[i].setRGB(0, BRIGHTNESS, 0);
@@ -354,13 +354,13 @@ void update_display_label(int &current_value, int &old_value, int row) {
   if(current_value != old_value && current_value >= 0) {
     set_label(old_value, true, row);
     set_label(current_value, false, row);
-  }
-  
-  if (row == RPM_ROW) {
-    setRPMLights(rpm);
-  }
-
-  old_value = current_value;
+    
+    if (row == RPM_ROW) {
+      setRPMLights(rpm);
+    }
+    
+    old_value = current_value;
+  }  
 }
 
 // Main function to update all display data
