@@ -98,7 +98,7 @@ void sendPacket2005() {
 
 // Packet 2000
 int get_rpm() {
-  int rpm = map(analogRead(A2), 0, 1023, 5, 30);
+  int rpm = map(analogRead(A2), 0, 1023, 0, 30);
   return rpm;
 }
 
