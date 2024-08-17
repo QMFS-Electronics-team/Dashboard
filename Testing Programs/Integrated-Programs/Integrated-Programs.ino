@@ -159,48 +159,24 @@ void setup_sd_card() {
 
   listDir(SD, "/", 0);
 
-  // GPS Data
-  if (!SD.exists("/gps-data/gps-data.txt")) {
-    Serial.println(F("Creating GPS File"));
-    createDir(SD, "/gps-data");
-    writeFile(SD, "/gps-data/gps-data.txt", "Start of GPS Data\n");
-  } else {
-    Serial.println(F("GPS File Exists"));
-    appendFile(SD, "/gps-data/gps-data.txt", "Start of New GPS Data\n");
-  }
-
-  // Compass Data
-  if (!SD.exists("/compass-data/compass-data.txt")) {
-    Serial.println(F("Creating Compass File"));
-    createDir(SD, "/compass-data");
-    writeFile(SD, "/compass-data/compass-data.txt", "Start of Compass Data\n");
-  } else {
-    Serial.println(F("Compass File Exists"));
-    appendFile(SD, "/compass-data/compass-data.txt", "Start of New Compass Data\n");
-  }
-
-  // MPU Data
-  if (!SD.exists("/mpu-data/mpu-data.txt")) {
-    Serial.println(F("Creating MPU File"));
-    createDir(SD, "/mpu-data");
-    writeFile(SD, "/mpu-data/mpu-data.txt", "Start of MPU Data\n");
-  } else {
-    Serial.println(F("MPU File Exists"));
-    appendFile(SD, "/mpu-data/mpu-data.txt", "Start of New MPU Data\n");
-  }
-
-  // CAN Data
-  if (!SD.exists("/can-bus-data/can-bus-data.txt")) {
-    Serial.println(F("Creating CAN-BUS File"));
-    createDir(SD, "/can-bus-data");
-    writeFile(SD, "/can-bus-data/can-bus-data.txt", "Start of CAN-BUS Data\n");
-  } else {
-    Serial.println(F("CAN-BUS File Exists"));
-    appendFile(SD, "/can-bus-data/can-bus-data.txt", "Start of New CAN-BUS Data\n");
-  }
+  check_and_create_directory("gps-data", "GPS");
+  check_and_create_directory("compass-data", "Compass");
+  check_and_create_directory("mpu-data", "MPU");
+  check_and_create_directory("can-bus-data", "CAN BUS");
 
   Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
   Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
+}
+
+void check_and_create_directory(String directory, String module) {
+    if (!SD.exists(("/" + directory + "/" + directory + ".txt").c_str())) {
+    createDir(SD, ("/" + directory).c_str());
+    Serial.println(("Creating " + module + " File").c_str());
+    writeFile(SD, ("/" + directory + "/" + directory + ".txt").c_str(), ("Start of " + module + "\n").c_str());
+  } else {
+    Serial.println((module + " File Exists").c_str());
+    appendFile(SD, ("/" + directory+ "/" + directory + ".txt").c_str(), ("Start of New " + module + " Data\n").c_str());
+  }
 }
 
 void setup_can_bus() {
