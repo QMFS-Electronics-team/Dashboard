@@ -20,7 +20,7 @@ void setup() {
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Sets CAN at speed 500KBPS and Clock 8MHz
   mcp2515.setNormalMode();
 
-  Serial.println("CAN-Simulator-S60");
+  Serial.println(F("CAN-Simulator-S60"));
 }
 
 void sendPacket2000(int water_temp, int tps, int rpm) {
@@ -31,7 +31,7 @@ void sendPacket2000(int water_temp, int tps, int rpm) {
   canMsg2000.data[2] = water_temp;  // Water Temp C
   canMsg2000.data[3] = 0x20;        // Air Temp C
 
-  Serial.println("Sending Packet 2000");
+  Serial.println(F("Sending Packet 2000"));
   mcp2515.sendMessage(&canMsg2000);
 }
 
@@ -43,7 +43,7 @@ void sendPacket2001() {
   canMsg2001.data[2] = 0x06; // KPH x 10
   canMsg2001.data[3] = 0x02; // Oil P Kpa
 
-  Serial.println("Sending Packet 2001");
+  Serial.println(F("Sending Packet 2001"));
   mcp2515.sendMessage(&canMsg2001);
 }
 
@@ -55,7 +55,7 @@ void sendPacket2002(int oil_temp, int battery_voltage) {
   canMsg2002.data[2] = battery_voltage; // Volts x 10
   canMsg2002.data[3] = 0x20;            // Fuel Con. L/100Km x 10
 
-  Serial.println("Sending Packet 2002");
+  Serial.println(F("Sending Packet 2002"));
   mcp2515.sendMessage(&canMsg2002);
 }
 
@@ -67,7 +67,7 @@ void sendPacket2003(int gear) {
   canMsg2003.data[2] = 0x03; // Injection ms x 100
   canMsg2003.data[3] = 0x02; // Fuel Con. L/Hr x 10
 
-  Serial.println("Sending Packet 2003");
+  Serial.println(F("Sending Packet 2003"));
   mcp2515.sendMessage(&canMsg2003);
 }
 
@@ -79,7 +79,7 @@ void sendPacket2004() {
   canMsg2004.data[2] = 0x03; // Ana3 mV
   canMsg2004.data[3] = 0x05; // Cam Advance x 10
 
-  Serial.println("Sending Packet 2004");
+  Serial.println(F("Sending Packet 2004"));
   mcp2515.sendMessage(&canMsg2004);
 }
 
@@ -91,7 +91,7 @@ void sendPacket2005() {
   canMsg2005.data[2] = 0x00; // Crank Errors
   canMsg2005.data[3] = 0x00; // CAM Errors
 
-  Serial.println("Sending Packet 2005");
+  Serial.println(F("Sending Packet 2005"));
   mcp2515.sendMessage(&canMsg2005);
 }
 
@@ -131,20 +131,20 @@ int get_battery_voltage() {
 
 
 void logOutput() {
-  Serial.println("");
-  Serial.print("A0 Water Temp - ");
+  Serial.println(F(""));
+  Serial.print(F("A0 Water Temp - "));
   Serial.println(get_water_temp());
-  Serial.print("A1 TPS - ");
+  Serial.print(F("A1 TPS - "));
   Serial.println(get_tps());
-  Serial.print("A2 RPM - ");
+  Serial.print(F("A2 RPM - "));
   Serial.println(get_rpm());
-  Serial.print("A3 Gear - ");
+  Serial.print(F("A3 Gear - "));
   Serial.println(get_gear());
-  Serial.print("A4 Oil Temp - ");
+  Serial.print(F("A4 Oil Temp - "));
   Serial.println(get_oil_temp());
-  Serial.print("A5 Battery Voltage - ");
+  Serial.print(F("A5 Battery Voltage - "));
   Serial.println(get_battery_voltage());
-  Serial.println("");
+  Serial.println(F(""));
 }
 
 void loop() {
