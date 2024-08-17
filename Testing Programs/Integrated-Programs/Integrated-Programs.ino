@@ -369,25 +369,25 @@ void setRPMLights(int rpmValue) {
 // Display Functions
 //-----------------------------
 
-void set_label(int value, bool clear_text, int row) {
+void set_label(int &value, bool clear_text, int row) {
   String text = String(value);
 
   if(row == GEAR_ROW && value == 0) {
       text = "N";
   }
 
+  display.setCursor(START_COLUMN + COLUMN_OFFSET, row);
+
   if(clear_text) {
     display.setTextColor(BLACK);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, row);
     display.print(text);
   } else {
     display.setTextColor(FONT_COLOUR);
-    display.setCursor(START_COLUMN + COLUMN_OFFSET, row);
     display.print(text);
   }
 }
 
-int update_display_label(int current_value, int old_value, int row) {
+void update_display_label(int &current_value, int &old_value, int row) {
   if(current_value != old_value && current_value >= 0) {
     set_label(old_value, true, row);
     set_label(current_value, false, row);
@@ -397,18 +397,18 @@ int update_display_label(int current_value, int old_value, int row) {
     setRPMLights(rpm);
   }
 
-  return current_value;
+  old_value = current_value;
 }
 
 // Main function to update all display data
 void update_display_data() {
-  rpm_old_value = update_display_label(rpm, rpm_old_value, RPM_ROW);
-  mph_old_value = update_display_label(mph, mph_old_value, MPH_ROW);
-  gear_old_value = update_display_label(gear, gear_old_value, GEAR_ROW);
-  tps_old_value = update_display_label(tps, tps_old_value, TPS_ROW);
-  water_temp_old_value = update_display_label(water_temp, water_temp_old_value, WATER_TEMP_ROW);
-  oil_temp_old_value = update_display_label(oil_temp, oil_temp_old_value, OIL_TEMP_ROW);
-  battery_voltage_old_value = update_display_label(battery_voltage, battery_voltage_old_value, BATTERY_VOLTAGE_ROW);
+  update_display_label(rpm, rpm_old_value, RPM_ROW);
+  update_display_label(mph, mph_old_value, MPH_ROW);
+  update_display_label(gear, gear_old_value, GEAR_ROW);
+  update_display_label(tps, tps_old_value, TPS_ROW);
+  update_display_label(water_temp, water_temp_old_value, WATER_TEMP_ROW);
+  update_display_label(oil_temp, oil_temp_old_value, OIL_TEMP_ROW);
+  update_display_label(battery_voltage, battery_voltage_old_value, BATTERY_VOLTAGE_ROW);
 }
 
 //-----------------------------
