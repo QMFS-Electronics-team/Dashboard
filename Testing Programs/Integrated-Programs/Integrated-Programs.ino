@@ -312,13 +312,10 @@ void setRPMLights(int rpmValue) {
     if (rpmValue >= (i + 1)*rpmLightInterval) {
       if (i < 10) {               // LEDs should be Green
         leds[i].setRGB(0, BRIGHTNESS, 0);
-        delay(SHIFT_DELAY);
       } else if (i < 20) {        // LEDs should be Red
         leds[i].setRGB(BRIGHTNESS, 0, 0);
-        delay(SHIFT_DELAY);
       } else if (i < 30) {        // LEDs should be Blue
         leds[i].setRGB(0, 0, BRIGHTNESS);
-        delay(SHIFT_DELAY);
       }
       FastLED.show();
     } else {
