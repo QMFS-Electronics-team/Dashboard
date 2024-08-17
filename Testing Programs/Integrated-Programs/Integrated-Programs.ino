@@ -533,8 +533,6 @@ void loop() {
   get_three_axis_gyro_data();
   get_can_bus_data();
   update_display_data();
-
-  //  simulateRPMLights();
   
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
