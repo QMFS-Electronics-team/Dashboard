@@ -41,7 +41,7 @@ Adafruit_MPU6050 mpu;
 // GPS and Compass
 TinyGPSPlus gps;                        // The TinyGPS++ object
 SoftwareSerial gpsSerial(TXPIN, RXPIN); // The serial interface to the GPS device
-Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345);
+Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345); // Magnetometer
 
 // LEDs
 int rpmLightInterval = MAX_SHIFT_RPM / NUM_LEDS;
@@ -369,7 +369,6 @@ void setRPMLights(int rpmValue) {
 // Display Functions
 //-----------------------------
 
-// Label Setter
 void set_label(int value, bool clear_text, int row) {
   String text = String(value);
 
@@ -388,7 +387,6 @@ void set_label(int value, bool clear_text, int row) {
   }
 }
 
-// Display Update
 int update_display_label(int current_value, int old_value, int row) {
   if(current_value != old_value && current_value >= 0) {
     set_label(old_value, true, row);
