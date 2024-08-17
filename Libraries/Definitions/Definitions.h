@@ -32,7 +32,6 @@
 #define LED_PIN               4
 #define NUM_LEDS              30
 #define BRIGHTNESS            64
-#define SHIFT_DELAY           1
 #define MAX_SHIFT_RPM         3000
 #define COLOR_ORDER           GRB
 #define LED_TYPE              WS2811
