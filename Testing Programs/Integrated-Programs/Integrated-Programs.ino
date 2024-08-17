@@ -250,6 +250,7 @@ void get_gps_data() {
 
         appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
         Serial.println(outputString);
+        break;
       }
     }
   }
