@@ -25,6 +25,15 @@
 Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
 
+static LGFX tft;
+
+/*Change to your screen resolution*/
+static const uint16_t screenWidth  = 320;
+static const uint16_t screenHeight = 240;
+
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf[ screenWidth * screenHeight / 10 ];
+
 // 3 Axis Gyro
 Adafruit_MPU6050 mpu;
 
@@ -151,13 +160,13 @@ void setup_sd_card() {
 }
 
 void check_and_create_directory(String directory, String module) {
-    if (!SD.exists(("/" + directory + "/" + directory + ".txt").c_str())) {
+  if (!SD.exists(("/" + directory + "/" + directory + ".txt").c_str())) {
     createDir(SD, ("/" + directory).c_str());
     Serial.println(("Creating " + module + " File").c_str());
     writeFile(SD, ("/" + directory + "/" + directory + ".txt").c_str(), ("Start of " + module + "\n").c_str());
   } else {
     Serial.println((module + " File Exists").c_str());
-    appendFile(SD, ("/" + directory+ "/" + directory + ".txt").c_str(), ("Start of New " + module + " Data\n").c_str());
+    appendFile(SD, ("/" + directory + "/" + directory + ".txt").c_str(), ("Start of New " + module + " Data\n").c_str());
   }
 }
 
@@ -271,11 +280,11 @@ void get_can_bus_data() {
         battery_voltage = canMsg.data[2];
       }
 
-      if(canMsg.can_id == 3) {
+      if (canMsg.can_id == 3) {
         gear = canMsg.data[0];
       }
 
-      if(canMsg.can_id == 4) {
+      if (canMsg.can_id == 4) {
         bps = canMsg.data[0];
       }
 
@@ -392,159 +401,151 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 class LGFX : public lgfx::LGFX_Device
 {
 
-  lgfx::Panel_ILI9341     _panel_instance;
-  lgfx::Bus_SPI       _bus_instance;   
-  lgfx::Light_PWM     _light_instance;
-lgfx::Touch_XPT2046          _touch_instance;
+    lgfx::Panel_ILI9341     _panel_instance;
+    lgfx::Bus_SPI       _bus_instance;
+    lgfx::Light_PWM     _light_instance;
+    lgfx::Touch_XPT2046          _touch_instance;
 
-public:
+  public:
 
-  LGFX(void)
-  {
-    { 
-      auto cfg = _bus_instance.config();  
-
-      cfg.spi_host = VSPI_HOST;
-      cfg.spi_mode = 0;             
-      cfg.freq_write = 80000000;    
-      cfg.freq_read  = 16000000;    
-      cfg.spi_3wire  = false;       
-      cfg.use_lock   = true;        
-      cfg.dma_channel = 1;
-      cfg.pin_sclk = 18;
-      cfg.pin_mosi = 23;
-      cfg.pin_miso = 19;
-      cfg.pin_dc   = 3; 
-
-        
-
-      _bus_instance.config(cfg);
-      _panel_instance.setBus(&_bus_instance);
-    }
-
+    LGFX(void)
     {
-      auto cfg = _panel_instance.config();
+      {
+        auto cfg = _bus_instance.config();
 
-      cfg.pin_cs           =    0;  
-      cfg.pin_rst          =    17;  
-      cfg.pin_busy         =    -1;  
-
-
-      cfg.memory_width     =   240;  
-      cfg.memory_height    =   320;  
-
-      cfg.panel_width      =   240;  
-      cfg.panel_height     =   320;  
-      cfg.offset_x         =   0;    
-      cfg.offset_y         =   0;    
-      cfg.offset_rotation  =     0;  
-      cfg.dummy_read_pixel =     8;  
-      cfg.dummy_read_bits  =     1;  
-      cfg.readable         =  true;  
-      cfg.invert           = false;  
-      cfg.rgb_order        = false;  
-      cfg.dlen_16bit       = false;  
-      cfg.bus_shared       =  true;  
+        cfg.spi_host = VSPI_HOST;
+        cfg.spi_mode = 0;
+        cfg.freq_write = 80000000;
+        cfg.freq_read  = 16000000;
+        cfg.spi_3wire  = false;
+        cfg.use_lock   = true;
+        cfg.dma_channel = 1;
+        cfg.pin_sclk = 18;
+        cfg.pin_mosi = 23;
+        cfg.pin_miso = 19;
+        cfg.pin_dc   = 3;
 
 
-      _panel_instance.config(cfg);
+
+        _bus_instance.config(cfg);
+        _panel_instance.setBus(&_bus_instance);
+      }
+
+      {
+        auto cfg = _panel_instance.config();
+
+        cfg.pin_cs           =    0;
+        cfg.pin_rst          =    17;
+        cfg.pin_busy         =    -1;
+
+
+        cfg.memory_width     =   240;
+        cfg.memory_height    =   320;
+
+        cfg.panel_width      =   240;
+        cfg.panel_height     =   320;
+        cfg.offset_x         =   0;
+        cfg.offset_y         =   0;
+        cfg.offset_rotation  =     0;
+        cfg.dummy_read_pixel =     8;
+        cfg.dummy_read_bits  =     1;
+        cfg.readable         =  true;
+        cfg.invert           = false;
+        cfg.rgb_order        = false;
+        cfg.dlen_16bit       = false;
+        cfg.bus_shared       =  true;
+
+
+        _panel_instance.config(cfg);
+      }
+
+
+      {
+        auto cfg = _light_instance.config();
+
+        cfg.pin_bl = 21;
+        cfg.invert = false;
+        cfg.freq   = 44100;
+        cfg.pwm_channel = 7;
+
+        _light_instance.config(cfg);
+        _panel_instance.setLight(&_light_instance);
+      }
+
+      {
+        auto cfg = _touch_instance.config();
+
+        cfg.x_min      = 0;
+        cfg.x_max      = 239;
+        cfg.y_min      = 0;
+        cfg.y_max      = 319;
+        cfg.pin_int    = -1;
+        cfg.bus_shared = true;
+        cfg.offset_rotation = 0;
+
+        cfg.spi_host = VSPI_HOST;
+        cfg.freq = 1000000;
+        cfg.pin_sclk = 18;
+        cfg.pin_mosi = 23;
+        cfg.pin_miso = 19;
+        cfg.pin_cs   = 0;
+
+        _touch_instance.config(cfg);
+        _panel_instance.setTouch(&_touch_instance);  // タッチスクリーンをパネルにセットします。
+      }
+      setPanel(&_panel_instance); // 使用するパネルをセットします。
     }
-
-
-    { 
-      auto cfg = _light_instance.config();
-
-      cfg.pin_bl = 21;              
-      cfg.invert = false;           
-      cfg.freq   = 44100;           
-      cfg.pwm_channel = 7;          
-
-      _light_instance.config(cfg);
-      _panel_instance.setLight(&_light_instance);
-    }
-
-    { 
-      auto cfg = _touch_instance.config();
-
-      cfg.x_min      = 0;    
-      cfg.x_max      = 239;  
-      cfg.y_min      = 0;    
-      cfg.y_max      = 319;  
-      cfg.pin_int    = -1;   
-      cfg.bus_shared = true; 
-      cfg.offset_rotation = 0;
-
-      cfg.spi_host = VSPI_HOST;
-      cfg.freq = 1000000;     
-      cfg.pin_sclk = 18;     
-      cfg.pin_mosi = 23;     
-      cfg.pin_miso = 19;     
-      cfg.pin_cs   = 0;     
-
-      _touch_instance.config(cfg);
-      _panel_instance.setTouch(&_touch_instance);  // タッチスクリーンをパネルにセットします。
-    }
-    setPanel(&_panel_instance); // 使用するパネルをセットします。
-  }
 };
 
-static LGFX tft;
-
-/*Change to your screen resolution*/
-static const uint16_t screenWidth  = 320;
-static const uint16_t screenHeight = 240;
-
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ screenWidth * screenHeight / 10 ];
 
 #if LV_USE_LOG != 0
 /* Serial debugging */
 void my_print(const char * buf)
 {
-    Serial.printf(buf);
-    Serial.flush();
+  Serial.printf(buf);
+  Serial.flush();
 }
 #endif
 
 /* Display flushing */
 void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
 {
-    uint32_t w = ( area->x2 - area->x1 + 1 );
-    uint32_t h = ( area->y2 - area->y1 + 1 );
+  uint32_t w = ( area->x2 - area->x1 + 1 );
+  uint32_t h = ( area->y2 - area->y1 + 1 );
 
-    tft.startWrite();
-    tft.setAddrWindow( area->x1, area->y1, w, h );
-    tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
-    tft.endWrite();
+  tft.startWrite();
+  tft.setAddrWindow( area->x1, area->y1, w, h );
+  tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+  tft.endWrite();
 
-    lv_disp_flush_ready( disp_drv );
+  lv_disp_flush_ready( disp_drv );
 }
 
 /*Read the touchpad*/
 void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
 {
-    uint16_t touchX, touchY;
+  uint16_t touchX, touchY;
 
-    bool touched = tft.getTouch( &touchX, &touchY, 600 );
+  bool touched = tft.getTouch( &touchX, &touchY, 600 );
 
-    if( !touched )
-    {
-        data->state = LV_INDEV_STATE_REL;
-    }
-    else
-    {
-        data->state = LV_INDEV_STATE_PR;
+  if (!touched)
+  {
+    data->state = LV_INDEV_STATE_REL;
+  }
+  else
+  {
+    data->state = LV_INDEV_STATE_PR;
 
-        /*Set the coordinates*/
-        data->point.x = touchX;
-        data->point.y = touchY;
+    /*Set the coordinates*/
+    data->point.x = touchX;
+    data->point.y = touchY;
 
-        Serial.print( "Data x " );
-        Serial.println( touchX );
+    Serial.print( "Data x " );
+    Serial.println( touchX );
 
-        Serial.print( "Data y " );
-        Serial.println( touchY );
-    }
+    Serial.print( "Data y " );
+    Serial.println( touchY );
+  }
 }
 
 void setup(void)
@@ -559,19 +560,19 @@ void setup(void)
   setup_leds();
   setRPMLights(0);
   Serial.println(F("Dashboard Setup Complete\n"));
-  
+
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  
+
   Serial.println( LVGL_Arduino );
   tft.init();
   tft.setRotation(1);
   tft.setBrightness(255);
   lv_init();
 
-  #if LV_USE_LOG != 0
-      lv_log_register_print_cb( my_print ); /* register print function for debugging */
-  #endif
+#if LV_USE_LOG != 0
+  lv_log_register_print_cb( my_print ); /* register print function for debugging */
+#endif
 
   lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
 
@@ -602,7 +603,7 @@ void setup(void)
 
   int count_value = 0;
 
-  for(int i=0;i<100;i++){
+  for (int i = 0; i < 100; i++) {
     delay(50);
     lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
     count_value++;
@@ -612,7 +613,7 @@ void setup(void)
 
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
 
-//   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
+  //   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
 }
 
 void simulation_task(void *pvParameters) {
@@ -623,7 +624,7 @@ void simulation_task(void *pvParameters) {
 
   int count_value = 0;
 
-  for(int i=0;i<100;i++){
+  for (int i = 0; i < 100; i++) {
     delay(50);
     lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
     count_value++;
@@ -634,7 +635,7 @@ void simulation_task(void *pvParameters) {
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
 
   delay(30000);
-  
+
   ESP.restart();
 
   while (1) {
@@ -645,38 +646,38 @@ void simulation_task(void *pvParameters) {
 }
 
 bool update_display_label(int &current_value, int &old_value) {
-  if(current_value != old_value && current_value >= 0) {
+  if (current_value != old_value && current_value >= 0) {
     old_value = current_value;
     return true;
-  } 
+  }
   return false;
 }
 
 void update_display_data() {
-  
-  if(update_display_label(rpm, rpm_old_value)) {
+
+  if (update_display_label(rpm, rpm_old_value)) {
     lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
-    lv_bar_set_value(ui_BarRPM, rpm/30, LV_ANIM_OFF);
+    lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
     setRPMLights(rpm);
   }
-  
-  if(update_display_label(gear, gear_old_value)) {
+
+  if (update_display_label(gear, gear_old_value)) {
     lv_label_set_text(ui_LabelGear, String(gear).c_str());
   }
 
-  if(update_display_label(mph, mph_old_value)) {
+  if (update_display_label(mph, mph_old_value)) {
     lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
   }
 
-  if(update_display_label(g_force, g_force_old_value)) {
+  if (update_display_label(g_force, g_force_old_value)) {
     lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
   }
-  
-  if(update_display_label(tps, tps_old_value)) {
+
+  if (update_display_label(tps, tps_old_value)) {
     lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
   }
 
-  if(update_display_label(bps, bps_old_value)) {
+  if (update_display_label(bps, bps_old_value)) {
     lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
   }
 
@@ -686,13 +687,13 @@ void loop(void)
 {
   long start = micros();
 
-  lv_timer_handler(); /* let the GUI do its work */  
+  lv_timer_handler(); /* let the GUI do its work */
   get_gps_data();
   get_compass_data();
   get_three_axis_gyro_data();
   get_can_bus_data();
   update_display_data();
-  
+
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
   Serial.print(duration / 1000.0);
