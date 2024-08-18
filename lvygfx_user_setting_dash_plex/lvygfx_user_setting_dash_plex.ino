@@ -181,7 +181,7 @@ void get_three_axis_gyro_data() {
   outputString += "Temperature: " + String(temp.temperature) + " C" + "\n";
 
   g_force = sqrt(sq(g.gyro.x) + sq(g.gyro.y) + sq(g.gyro.z));
-  
+
   appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
   Serial.println(outputString);
 }
@@ -271,6 +271,10 @@ void get_can_bus_data() {
 
       if(canMsg.can_id == 3) {
         gear = canMsg.data[0];
+      }
+
+      if(canMsg.can_id == 4) {
+        bps = canMsg.data[0];
       }
 
       for (int i = 0; i < canMsg.can_dlc; i++)  {
