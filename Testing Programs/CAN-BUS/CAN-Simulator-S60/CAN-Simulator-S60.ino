@@ -82,7 +82,7 @@ void sendPacket2003(int gear) {
 void sendPacket2004(int bps) {
   canMsg2004.can_id  = 0x2004;
   canMsg2004.can_dlc = 4;
-  canMsg2004.data[0] = bps; // Ana1 mV - BPS
+  canMsg2004.data[0] = bps;  // Ana1 mV - BPS
   canMsg2004.data[1] = 0x02; // Ana2 mV
   canMsg2004.data[2] = 0x03; // Ana3 mV
   canMsg2004.data[3] = 0x05; // Cam Advance x 10
