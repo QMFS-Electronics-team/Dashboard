@@ -36,36 +36,38 @@ The below table are for components used for evaluating the feasibility of the Da
 
 ### TFT Display (ILI9486 3.5" 480x320) to ESP 32
 
+Note this is currently used without any other devices connected to the ESP 32
+
 | **Device Pin** | **Prototype Board** | **ESP32 Pin** | **Colour** |
 |----------------|---------------------|---------------|------------|
-|     RESET      |     D19             |               |
-|     3.3V       |     D18             |     3.3V      |
-|     5V         |     D17             |     5V        |
-|     GND        |     D16             |     GND       |
-|     GND        |     D15             |     GND       |
-|     X          |     D14             |     X         |
-|     LCD_RD     |     D0              |     
-|     LCD_WR     |     D1              |     
-|     LCD_RS     |     D2              |     
-|     LCD_CS     |     D3              |     
-|     LCD_RST    |     D5              |     
-|     F_CS       |     D6              |     
-|     X          |     A15             |     X         |
-|     X          |     A14             |     X         |
-|     SD_SCK     |     A13             |     X         |
-|     SD_D0      |     A12             |     X         |
-|     SD_D1      |     A11             |     X         |
-|     LCD_SS     |     A10             |        
-|     LCD_D1     |     A9              |     
-|     LCD_D0     |     A8              |         
-|     LCD_D7     |     A7              |     
-|     LCD_D6     |     A6              |      
-|     LCD_D5     |     A5              |       
-|     LCD_D4     |     A4              |        
-|     LCD_D3     |     A3              |         
-|     LCD_D2     |     A2              |          
-|     X          |     A1              |     X         |
-|     X          |     A0              |     X         |
+|     RESET      |     D19             |     X         |            |
+|     3.3V       |     D18             |     3.3V      |            |
+|     5V         |     D17             |     5V        |            |
+|     GND        |     D16             |     GND       |            |
+|     GND        |     D15             |     GND       |            |
+|     X          |     D14             |     X         |            |
+|     LCD_RD     |     D0              |     G2        |            |
+|     LCD_WR     |     D1              |     G4        |            |
+|     LCD_RS     |     D2              |     G18       |            |
+|     LCD_CS     |     D3              |     G33       |            |
+|     LCD_RST    |     D5              |     G32       |            |
+|     F_CS       |     D6              |     X         |            |
+|     X          |     A15             |     X         |            |
+|     X          |     A14             |     X         |            |
+|     SD_SCK     |     A13             |     X         |            |
+|     SD_D0      |     A12             |     X         |            |
+|     SD_D1      |     A11             |     X         |            |
+|     LCD_SS     |     A10             |     X         |            |
+|     LCD_D1     |     A9              |     G13       |            |
+|     LCD_D0     |     A8              |     G12       |            |
+|     LCD_D7     |     A7              |     G14       |            |
+|     LCD_D6     |     A6              |     G27       |            |
+|     LCD_D5     |     A5              |     G5        |            |
+|     LCD_D4     |     A4              |     G21       |            |
+|     LCD_D3     |     A3              |     G25       |            |
+|     LCD_D2     |     A2              |     G26       |            |
+|     X          |     A1              |     X         |            |
+|     X          |     A0              |     X         |            |
 
 
 ### Micro SD Card to ESP32
