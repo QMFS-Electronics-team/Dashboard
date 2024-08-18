@@ -17,6 +17,105 @@
 #include <lvgl.h>
 #include "ui.h"
 
+class LGFX : public lgfx::LGFX_Device
+{
+
+    lgfx::Panel_ILI9341     _panel_instance;
+    lgfx::Bus_SPI       _bus_instance;
+    lgfx::Light_PWM     _light_instance;
+    lgfx::Touch_XPT2046          _touch_instance;
+
+  public:
+
+    LGFX(void)
+    {
+      {
+        auto cfg = _bus_instance.config();
+
+        cfg.spi_host = VSPI_HOST;
+        cfg.spi_mode = 0;
+        cfg.freq_write = 80000000;
+        cfg.freq_read  = 16000000;
+        cfg.spi_3wire  = false;
+        cfg.use_lock   = true;
+        cfg.dma_channel = 1;
+        cfg.pin_sclk = 18;
+        cfg.pin_mosi = 23;
+        cfg.pin_miso = 19;
+        cfg.pin_dc   = 3;
+
+
+
+        _bus_instance.config(cfg);
+        _panel_instance.setBus(&_bus_instance);
+      }
+
+      {
+        auto cfg = _panel_instance.config();
+
+        cfg.pin_cs           =    0;
+        cfg.pin_rst          =    17;
+        cfg.pin_busy         =    -1;
+
+
+        cfg.memory_width     =   240;
+        cfg.memory_height    =   320;
+
+        cfg.panel_width      =   240;
+        cfg.panel_height     =   320;
+        cfg.offset_x         =   0;
+        cfg.offset_y         =   0;
+        cfg.offset_rotation  =     0;
+        cfg.dummy_read_pixel =     8;
+        cfg.dummy_read_bits  =     1;
+        cfg.readable         =  true;
+        cfg.invert           = false;
+        cfg.rgb_order        = false;
+        cfg.dlen_16bit       = false;
+        cfg.bus_shared       =  true;
+
+
+        _panel_instance.config(cfg);
+      }
+
+
+      {
+        auto cfg = _light_instance.config();
+
+        cfg.pin_bl = 21;
+        cfg.invert = false;
+        cfg.freq   = 44100;
+        cfg.pwm_channel = 7;
+
+        _light_instance.config(cfg);
+        _panel_instance.setLight(&_light_instance);
+      }
+
+      {
+        auto cfg = _touch_instance.config();
+
+        cfg.x_min      = 0;
+        cfg.x_max      = 239;
+        cfg.y_min      = 0;
+        cfg.y_max      = 319;
+        cfg.pin_int    = -1;
+        cfg.bus_shared = true;
+        cfg.offset_rotation = 0;
+
+        cfg.spi_host = VSPI_HOST;
+        cfg.freq = 1000000;
+        cfg.pin_sclk = 18;
+        cfg.pin_mosi = 23;
+        cfg.pin_miso = 19;
+        cfg.pin_cs   = 0;
+
+        _touch_instance.config(cfg);
+        _panel_instance.setTouch(&_touch_instance);  // タッチスクリーンをパネルにセットします。
+      }
+      setPanel(&_panel_instance); // 使用するパネルをセットします。
+    }
+};
+
 //----------------
 // Objects
 //----------------
@@ -398,105 +497,9 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 }
 
 
-class LGFX : public lgfx::LGFX_Device
-{
-
-    lgfx::Panel_ILI9341     _panel_instance;
-    lgfx::Bus_SPI       _bus_instance;
-    lgfx::Light_PWM     _light_instance;
-    lgfx::Touch_XPT2046          _touch_instance;
-
-  public:
-
-    LGFX(void)
-    {
-      {
-        auto cfg = _bus_instance.config();
-
-        cfg.spi_host = VSPI_HOST;
-        cfg.spi_mode = 0;
-        cfg.freq_write = 80000000;
-        cfg.freq_read  = 16000000;
-        cfg.spi_3wire  = false;
-        cfg.use_lock   = true;
-        cfg.dma_channel = 1;
-        cfg.pin_sclk = 18;
-        cfg.pin_mosi = 23;
-        cfg.pin_miso = 19;
-        cfg.pin_dc   = 3;
-
-
-
-        _bus_instance.config(cfg);
-        _panel_instance.setBus(&_bus_instance);
-      }
-
-      {
-        auto cfg = _panel_instance.config();
-
-        cfg.pin_cs           =    0;
-        cfg.pin_rst          =    17;
-        cfg.pin_busy         =    -1;
-
-
-        cfg.memory_width     =   240;
-        cfg.memory_height    =   320;
-
-        cfg.panel_width      =   240;
-        cfg.panel_height     =   320;
-        cfg.offset_x         =   0;
-        cfg.offset_y         =   0;
-        cfg.offset_rotation  =     0;
-        cfg.dummy_read_pixel =     8;
-        cfg.dummy_read_bits  =     1;
-        cfg.readable         =  true;
-        cfg.invert           = false;
-        cfg.rgb_order        = false;
-        cfg.dlen_16bit       = false;
-        cfg.bus_shared       =  true;
-
-
-        _panel_instance.config(cfg);
-      }
-
-
-      {
-        auto cfg = _light_instance.config();
-
-        cfg.pin_bl = 21;
-        cfg.invert = false;
-        cfg.freq   = 44100;
-        cfg.pwm_channel = 7;
-
-        _light_instance.config(cfg);
-        _panel_instance.setLight(&_light_instance);
-      }
-
-      {
-        auto cfg = _touch_instance.config();
-
-        cfg.x_min      = 0;
-        cfg.x_max      = 239;
-        cfg.y_min      = 0;
-        cfg.y_max      = 319;
-        cfg.pin_int    = -1;
-        cfg.bus_shared = true;
-        cfg.offset_rotation = 0;
-
-        cfg.spi_host = VSPI_HOST;
-        cfg.freq = 1000000;
-        cfg.pin_sclk = 18;
-        cfg.pin_mosi = 23;
-        cfg.pin_miso = 19;
-        cfg.pin_cs   = 0;
-
-        _touch_instance.config(cfg);
-        _panel_instance.setTouch(&_touch_instance);  // タッチスクリーンをパネルにセットします。
-      }
-      setPanel(&_panel_instance); // 使用するパネルをセットします。
-    }
-};
-
+//-----------------------------
+// Debug Logging
+//-----------------------------
 
 #if LV_USE_LOG != 0
 /* Serial debugging */
@@ -507,7 +510,10 @@ void my_print(const char * buf)
 }
 #endif
 
-/* Display flushing */
+//-----------------------------
+// Display Related
+//-----------------------------
+
 void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
 {
   uint32_t w = ( area->x2 - area->x1 + 1 );
@@ -521,7 +527,6 @@ void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *
   lv_disp_flush_ready( disp_drv );
 }
 
-/*Read the touchpad*/
 void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
 {
   uint16_t touchX, touchY;
@@ -547,6 +552,77 @@ void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
     Serial.println( touchY );
   }
 }
+
+bool update_display_label(int &current_value, int &old_value) {
+  if (current_value != old_value && current_value >= 0) {
+    old_value = current_value;
+    return true;
+  }
+  return false;
+}
+
+void update_display_data() {
+
+  if (update_display_label(rpm, rpm_old_value)) {
+    lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
+    lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
+    setRPMLights(rpm);
+  }
+
+  if (update_display_label(gear, gear_old_value)) {
+    lv_label_set_text(ui_LabelGear, String(gear).c_str());
+  }
+
+  if (update_display_label(mph, mph_old_value)) {
+    lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
+  }
+
+  if (update_display_label(g_force, g_force_old_value)) {
+    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+  }
+
+  if (update_display_label(tps, tps_old_value)) {
+    lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
+  }
+
+  if (update_display_label(bps, bps_old_value)) {
+    lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
+  }
+
+}
+
+void simulation_task(void *pvParameters) {
+
+  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
+
+  delay(2000);
+
+  int count_value = 0;
+
+  for (int i = 0; i < 100; i++) {
+    delay(50);
+    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
+    count_value++;
+  }
+
+  //lv_scr_load(ui_Screen3);
+
+  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
+
+  delay(30000);
+
+  ESP.restart();
+
+  while (1) {
+
+    vTaskDelay(10);
+
+  }
+}
+
+//-----------------------------
+// Setup
+//-----------------------------
 
 void setup(void)
 {
@@ -614,73 +690,6 @@ void setup(void)
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
 
   //   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
-}
-
-void simulation_task(void *pvParameters) {
-
-  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
-
-  delay(2000);
-
-  int count_value = 0;
-
-  for (int i = 0; i < 100; i++) {
-    delay(50);
-    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  //lv_scr_load(ui_Screen3);
-
-  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
-
-  delay(30000);
-
-  ESP.restart();
-
-  while (1) {
-
-    vTaskDelay(10);
-
-  }
-}
-
-bool update_display_label(int &current_value, int &old_value) {
-  if (current_value != old_value && current_value >= 0) {
-    old_value = current_value;
-    return true;
-  }
-  return false;
-}
-
-void update_display_data() {
-
-  if (update_display_label(rpm, rpm_old_value)) {
-    lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
-    lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
-    setRPMLights(rpm);
-  }
-
-  if (update_display_label(gear, gear_old_value)) {
-    lv_label_set_text(ui_LabelGear, String(gear).c_str());
-  }
-
-  if (update_display_label(mph, mph_old_value)) {
-    lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
-  }
-
-  if (update_display_label(g_force, g_force_old_value)) {
-    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
-  }
-
-  if (update_display_label(tps, tps_old_value)) {
-    lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
-  }
-
-  if (update_display_label(bps, bps_old_value)) {
-    lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
-  }
-
 }
 
 void loop(void)
