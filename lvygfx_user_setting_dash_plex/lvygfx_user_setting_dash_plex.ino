@@ -51,7 +51,6 @@ MCP2515 mcp2515(MCPCS);
 
 // Packet 2000
 int rpm = 0;             // [0] RPM
-int rpm_old_value = 0;   // For LED control
 int tps = 0;             // [1] Throttle Position Sensor
 int water_temp = 0;      // [2] Water Temperature
 
@@ -70,6 +69,19 @@ int bps = 0;             // Brake Position Sensor - Not currently implemented
 int g_force = 0;          // GForce                - Not currently implemented
 int num_satellites = 0;  // Number of Satellites
 int mph = 0;             // Miles per hour
+
+// Hold old values of readings
+int rpm_old_value = -1;
+int tps_old_value = -1;
+int bps_old_value = -1;
+int g_force_old_value = -1;
+int water_temp_old_value = -1;
+int kph_old_value = -1;
+int gear_old_value = -1;
+int mph_old_value = -1;
+int oil_temp_old_value = -1;
+int battery_voltage_old_value = -1;
+int num_satellites_old_value = -1;
 
 //----------------
 // Setup Functions
@@ -624,21 +636,42 @@ void simulation_task(void *pvParameters) {
   }
 }
 
+bool update_display_label(int &current_value, int &old_value) {
+  if(current_value != old_value && current_value >= 0) {
+    old_value = current_value;
+    return true;
+  } 
+  return false;
+}
+
 void update_display_data() {
-  lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
   
-  if(rpm != rpm_old_value && rpm > 0) {
+  if(update_display_label(rpm, rpm_old_value)) {
+    lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
+    lv_bar_set_value(ui_BarRPM, rpm/30, LV_ANIM_OFF);
     setRPMLights(rpm);
-    rpm_old_value = rpm;
   }
 
+  if(update_display_label(gear, gear_old_value)) {
   lv_label_set_text(ui_LabelGear, String(gear).c_str());
+  }
+
+  if(update_display_label(mph, mph_old_value)) {
   lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
+  }
+
+  if(update_display_label(g_force, g_force_old_value)) {
   lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+  }
   
+  if(update_display_label(tps, tps_old_value)) {
   lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
+  }
+
+  if(update_display_label(bps, bps_old_value)) {
   lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
-  lv_bar_set_value(ui_BarRPM, rpm/30, LV_ANIM_OFF);
+  }
+
 }
 
 void loop(void)
