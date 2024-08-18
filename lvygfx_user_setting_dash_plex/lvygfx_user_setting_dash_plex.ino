@@ -180,6 +180,8 @@ void get_three_axis_gyro_data() {
   outputString += "Rotation X: " + String(g.gyro.x) + ", Y: " + String(g.gyro.y) + ", Z: " + String(g.gyro.z) + " rad/s" + "\n";
   outputString += "Temperature: " + String(temp.temperature) + " C" + "\n";
 
+  g_force = sqrt(sq(g.gyro.x) + sq(g.gyro.y) + sq(g.gyro.z));
+  
   appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
   Serial.println(outputString);
 }
@@ -651,25 +653,25 @@ void update_display_data() {
     lv_bar_set_value(ui_BarRPM, rpm/30, LV_ANIM_OFF);
     setRPMLights(rpm);
   }
-
+  
   if(update_display_label(gear, gear_old_value)) {
-  lv_label_set_text(ui_LabelGear, String(gear).c_str());
+    lv_label_set_text(ui_LabelGear, String(gear).c_str());
   }
 
   if(update_display_label(mph, mph_old_value)) {
-  lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
+    lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
   }
 
   if(update_display_label(g_force, g_force_old_value)) {
-  lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
   }
   
   if(update_display_label(tps, tps_old_value)) {
-  lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
+    lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
   }
 
   if(update_display_label(bps, bps_old_value)) {
-  lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
+    lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
   }
 
 }
