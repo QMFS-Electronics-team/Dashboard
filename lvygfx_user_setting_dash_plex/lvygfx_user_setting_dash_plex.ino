@@ -65,8 +65,8 @@ int battery_voltage = 0; // [2] Battery Voltage
 int gear = 0;            // [0] Gear
 
 // Other data for display
-int bps = 0;             // Brake Position Sensor - Not currently implemented
-int g_force = 0;          // GForce                - Not currently implemented
+int bps = 0;             // Brake Position Sensor
+int g_force = 0;         // G-Force
 int num_satellites = 0;  // Number of Satellites
 int mph = 0;             // Miles per hour
 
