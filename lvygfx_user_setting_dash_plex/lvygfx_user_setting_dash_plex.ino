@@ -64,8 +64,10 @@ int battery_voltage = 0; // [2] Battery Voltage
 // Packet 2003
 int gear = 0;            // [0] Gear
 
+// Packet 2004
+int bps = 0;             // [0] Brake Position Sensor
+
 // Other data for display
-int bps = 0;             // Brake Position Sensor
 int g_force = 0;         // G-Force
 int num_satellites = 0;  // Number of Satellites
 int mph = 0;             // Miles per hour
