@@ -136,9 +136,9 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 | **Device Pin** | **Used** | **Usage** |
 | -------------- | -------- | --------- |
 |     3.3V       |    NO    |   N/A     |
-|     EN         |    NO    |   N/A     | 
-|     G36/VP     |    NO    |   N/A     | 
-|     G39/VN     |    NO    |   N/A     | 
+|     EN         |    NO    |   N/A     |
+|     G36/VP     |    NO    |   N/A     |
+|     G39/VN     |    NO    |   N/A     |
 |     G34        |    YES   |   GPS RX  |
 |     G35        |    YES   |   GPS TX  |
 |     G32        |    NO    |   N/A     |
