@@ -44,8 +44,6 @@ class LGFX : public lgfx::LGFX_Device
         cfg.pin_miso = 19;
         cfg.pin_dc   = 3;
 
-
-
         _bus_instance.config(cfg);
         _panel_instance.setBus(&_bus_instance);
       }
@@ -56,7 +54,6 @@ class LGFX : public lgfx::LGFX_Device
         cfg.pin_cs           =    0;
         cfg.pin_rst          =    17;
         cfg.pin_busy         =    -1;
-
 
         cfg.memory_width     =   240;
         cfg.memory_height    =   320;
@@ -73,7 +70,6 @@ class LGFX : public lgfx::LGFX_Device
         cfg.rgb_order        = false;
         cfg.dlen_16bit       = false;
         cfg.bus_shared       =  true;
-
 
         _panel_instance.config(cfg);
       }
@@ -110,9 +106,9 @@ class LGFX : public lgfx::LGFX_Device
         cfg.pin_cs   = 0;
 
         _touch_instance.config(cfg);
-        _panel_instance.setTouch(&_touch_instance);  // タッチスクリーンをパネルにセットします。
+        _panel_instance.setTouch(&_touch_instance);
       }
-      setPanel(&_panel_instance); // 使用するパネルをセットします。
+      setPanel(&_panel_instance);
     }
 };
 
@@ -234,7 +230,6 @@ void setup_leds() {
 }
 
 void setup_sd_card() {
-
   Serial.println(F("Setting up SD Reader"));
   if (!SD.begin(SDCS)) {
     Serial.println(F("Card Mount Failed"));
@@ -300,9 +295,10 @@ void get_gps_data() {
   for (int start = millis(); millis() - start < GPSCPUTIME; ) {
     while (gpsSerial.available()) {
       if (gps.encode(gpsSerial.read())) {
+        outputString = "";
         if (gps.location.isValid()) {
           mph = gps.speed.mph();
-          outputString = "Speed (Mph): " + String(mph) + "\n";
+          outputString += "Speed (Mph): " + String(mph) + "\n";
           outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
           outputString += "Deg: " + String(gps.course.deg()) + "\n";
           outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
