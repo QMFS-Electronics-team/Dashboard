@@ -75,4 +75,7 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# Output files for arduino compiliations
+ArduinoOutput
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
