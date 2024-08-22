@@ -280,10 +280,9 @@ void print_RaceBox_Data_message_payload_to_serial() {
     Serial.println("Latitude: " + String(latitude / 1e7, 7) + " Longitude: " + String(longitude / 1e7, 7) + " deg");
     Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + " m" + " MSL Altitude: " + String(mslAltitude / 1000.0, 2) + " m");
 
-    Serial.println("Speed: " + String((speed / 1000.0)/0.44704, 2) + " mph");
-    
+    Serial.println("Speed: " + String((speed / 1000.0) / 0.44704, 2) + " mph");
 
-    if((fixStatusFlags & 0x20) == false) {
+    if ((fixStatusFlags & 0x20) == false) {
       Serial.println("Heading NOT valid - may need movement to become valid");
     } else {
       Serial.print("Heading: " + String(heading / 1e5, 1) + " deg ");
@@ -329,6 +328,6 @@ void loop() {
     }
   }
 
-  delay(5000); // Delay output to make serial output more readable
+  delay(500); // Delay output to make serial output more readable
 
 }
