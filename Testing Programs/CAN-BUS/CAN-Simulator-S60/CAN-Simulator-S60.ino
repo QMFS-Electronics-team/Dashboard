@@ -106,41 +106,34 @@ void sendPacket2005() {
 
 // Packet 2000
 int get_rpm() {
-  int rpm = map(analogRead(KNOB_THREE), 0, 1023, 0, 30);
-  return rpm;
+  return int(map(analogRead(KNOB_SIX), 0, 1023, 30, 0));
 }
 
 int get_tps() {
-  int tps = map(analogRead(KNOB_TWO), 0, 1023, 0, 100);
-  return tps;
+  return int(map(analogRead(KNOB_FOUR), 0, 1023, 100, 0));
 }
 
 int get_water_temp() {
-  int water_temp = map(analogRead(KNOB_SIX), 0, 1023, 0, 100);
-  return water_temp;
+  return int(map(analogRead(KNOB_THREE), 0, 1023, 100, 0));
 }
 
 // Packet 2002
 int get_oil_temp() {
-  int oil_temp = map(analogRead(KNOB_FIVE), 0, 1023, 0, 100);
-  return oil_temp;
+  return int(map(analogRead(KNOB_TWO), 0, 1023, 100, 0));
 }
 
 int get_battery_voltage() {
-  int battery_voltage = map(analogRead(KNOB_SEVEN), 0, 1023, 0, 15);
-  return battery_voltage;
+  return int(map(analogRead(KNOB_ONE), 0, 1023, 15, 0));
 }
 
 // Packet 2003
 int get_gear() {
-  int gear = map(analogRead(KNOB_FOUR), 0, 1023, 0, 5);
-  return gear;
+ return int(map(analogRead(KNOB_FIVE), 0, 1023, 5, 0));
 }
 
 // Packet 2004
 int get_bps() {
-  int bps = map(analogRead(KNOB_ONE), 0, 1023, 0,100);
-  return bps;
+  return int(map(analogRead(KNOB_SEVEN), 0, 1023, 100, 0));
 }
 
 void logOutput() {
