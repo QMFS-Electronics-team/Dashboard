@@ -340,10 +340,12 @@ void get_three_axis_gyro_data() {
   g_force = sqrt(sq(g.gyro.x) + sq(g.gyro.y) + sq(g.gyro.z));
 
   appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
+  Serial.println("---       3-Axis Gyro Data    ---");
   Serial.println(outputString);
 }
 
 void get_gps_data() {
+  Serial.println("---         GPS Data          ---");
   for (int start = millis(); millis() - start < GPSCPUTIME; ) {
     while (gpsSerial.available()) {
       if (gps.encode(gpsSerial.read())) {
@@ -403,10 +405,14 @@ void get_compass_data(void) {
 
   outputString += "Heading (degrees): " + String(headingDegrees) + "\n";
   appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
+  
+  Serial.println("---       Compass Data        ---");
   Serial.println(outputString);
 }
 
 void get_can_bus_data() {
+
+  Serial.println("---       CAN BUS Data        ---");
   for (int start = millis(); millis() - start < CANBUSCPUTIME; ) {
     while (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
@@ -453,20 +459,22 @@ void get_can_bus_data() {
 //----------------
 
 void setRPMLights(int rpmValue) {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    if (rpmValue >= (i + 1)*rpmLightInterval) {
-      if (i < 10) {               // LEDs should be Green
-        leds[i].setRGB(0, BRIGHTNESS, 0);
-      } else if (i < 20) {        // LEDs should be Red
-        leds[i].setRGB(BRIGHTNESS, 0, 0);
-      } else if (i < 30) {        // LEDs should be Blue
-        leds[i].setRGB(0, 0, BRIGHTNESS);
+  if(rpmValue != rpm_old_value) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+      if (rpmValue >= (i + 1)*rpmLightInterval) {
+        if (i < 10) {               // LEDs should be Green
+          leds[i].setRGB(0, BRIGHTNESS, 0);
+        } else if (i < 20) {        // LEDs should be Red
+          leds[i].setRGB(BRIGHTNESS, 0, 0);
+        } else if (i < 30) {        // LEDs should be Blue
+          leds[i].setRGB(0, 0, BRIGHTNESS);
+        }
+      } else {
+        leds[i].setRGB(0, 0, 0);
       }
       FastLED.show();
-    } else {
-      leds[i].setRGB(0, 0, 0);
-      FastLED.show();
     }
+    rpm_old_value = rpm;
   }
 }
 
@@ -608,12 +616,15 @@ bool update_display_label(int &current_value, int &old_value) {
   return false;
 }
 
+void update_rpm_lights() {
+  setRPMLights(rpm);
+}
+
 void update_display_data() {
 
   if (update_display_label(rpm, rpm_old_value)) {
     lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
     lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
-    setRPMLights(rpm);
   }
 
   if (update_display_label(gear, gear_old_value)) {
@@ -624,9 +635,9 @@ void update_display_data() {
     lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
   }
 
-  if (update_display_label(g_force, g_force_old_value)) {
-    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
-  }
+  // if (update_display_label(g_force, g_force_old_value)) {
+    // lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+  // }
 
   if (update_display_label(tps, tps_old_value)) {
     lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
@@ -658,7 +669,7 @@ void simulation_task(void *pvParameters) {
 
   delay(30000);
 
-  ESP.restart();
+  // ESP.restart();
 
   while (1) {
 
@@ -700,7 +711,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
       Serial.print(F("Advertised BLE Device found: "));
-      Serial.println(advertisedDevice->toString().c_str());
+      // Serial.println(advertisedDevice->toString().c_str());
 
       if (advertisedDevice->isAdvertisingService(UART_service_UUID)) {
         // Check if the device name starts with "RaceBox"
@@ -711,7 +722,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           Serial.println(F("RaceBox found. TARGET_DEVICE_ADDRESS is not set in code (or commented out ), so we connect to any RaceBox that we find."));
           NimBLEDevice::getScan()->stop();  // Stop scanning
           Serial.println(F("stopped bluetooth scanning."));
-          Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
+          // Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
           myRaceBox = advertisedDevice;
           doConnect = true;
         }
@@ -959,10 +970,10 @@ void setup(void)
   Serial.println(F("\nSetting up Dashboard"));
   setup_can_bus();
   setup_sd_card();
-  // setup_three_axis_gyro();
+  setup_three_axis_gyro();
   setup_bluetooth_gps();
-  // setup_compass();
-  // setup_gps();
+  setup_compass();
+  setup_gps();
   setup_leds();
   setRPMLights(0);
   Serial.println(F("Dashboard Setup Complete\n"));
@@ -970,14 +981,14 @@ void setup(void)
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
-  Serial.println( LVGL_Arduino );
+  Serial.println(LVGL_Arduino);
   tft.init();
   tft.setRotation(1);
   tft.setBrightness(255);
   lv_init();
 
 #if LV_USE_LOG != 0
-  lv_log_register_print_cb( my_print ); /* register print function for debugging */
+  lv_log_register_print_cb(my_print); /* register print function for debugging */
 #endif
 
   lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
@@ -1001,7 +1012,7 @@ void setup(void)
   lv_indev_drv_register(&indev_drv);
 
   ui_init();
-  //ui_reset();
+  // ui_reset();
 
   lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
 
@@ -1020,6 +1031,8 @@ void setup(void)
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
 
   //   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
+
+  Serial.println("Finished Setup Function");
 }
 
 //-----------------------------
@@ -1031,12 +1044,21 @@ void loop(void)
   long start = micros();
 
   lv_timer_handler(); /* let the GUI do its work */
-  // get_gps_data();
-  // get_compass_data();
+  Serial.println("Lv timer complete");
+  get_gps_data();
+  Serial.println("GPS Data complete");
+  get_compass_data();
+  Serial.println("Compass data complete");
   get_bluetooth_gps_data();
-  // get_three_axis_gyro_data();
+  Serial.println("BLE GPS Data complete");
+  get_three_axis_gyro_data();
+  Serial.println("Gyro data complete");
+  update_rpm_lights();
+  Serial.println("RPM Lights complete");
   get_can_bus_data();
+  Serial.println("Can bus data complete");
   update_display_data();
+  Serial.println("Update display complete");
 
   long duration = micros() - start;
   Serial.print("Loop cycle time: ");
