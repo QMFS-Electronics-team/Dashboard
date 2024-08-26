@@ -1,8 +1,5 @@
 #define LGFX_USE_V1
 
-#include <Adafruit_HMC5883_U.h>
-#include <Adafruit_MPU6050.h>
-#include <Adafruit_Sensor.h>
 #include <Arduino_GFX_Library.h>
 #include <Definitions.h>
 #include <FS.h>
@@ -10,16 +7,12 @@
 #include <NimBLEDevice.h>
 #include <SD.h>
 #include <SPI.h>
-#include <SoftwareSerial.h>
-#include <TinyGPS++.h>
-#include <Wire.h>
 #include <mcp2515.h>
 #include <LovyanGFX.hpp>
 #include <lvgl.h>
 #include "ui.h"
 
-class LGFX : public lgfx::LGFX_Device
-{
+class LGFX : public lgfx::LGFX_Device {
 
     lgfx::Panel_ILI9341     _panel_instance;
     lgfx::Bus_SPI       _bus_instance;
@@ -28,8 +21,7 @@ class LGFX : public lgfx::LGFX_Device
 
   public:
 
-    LGFX(void)
-    {
+    LGFX(void) {
       {
         auto cfg = _bus_instance.config();
 
@@ -120,7 +112,6 @@ class LGFX : public lgfx::LGFX_Device
 // Display
 Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
-
 static LGFX tft;
 
 /*Change to your screen resolution*/
@@ -129,14 +120,6 @@ static const uint16_t screenHeight = 240;
 
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[ screenWidth * screenHeight / 10 ];
-
-// 3 Axis Gyro
-Adafruit_MPU6050 mpu;
-
-// GPS and Compass
-TinyGPSPlus gps;                        // The TinyGPS++ object
-SoftwareSerial gpsSerial(TXPIN, RXPIN); // The serial interface to the GPS device
-Adafruit_HMC5883_Unified mag = Adafruit_HMC5883_Unified(12345); // Magnetometer
 
 // LEDs
 int rpmLightInterval = MAX_SHIFT_RPM / NUM_LEDS;
@@ -152,7 +135,7 @@ String outputString;
 struct can_frame canMsg;
 MCP2515 mcp2515(MCPCS);
 
-// CAN BUS Data to present on display
+// CAN BUS Data
 
 // Packet 2000
 int rpm = 0;             // [0] RPM
@@ -245,17 +228,9 @@ String compass_direction;
 // Setup Functions
 //----------------
 
-void setup_compass(void) {
-  Serial.println(F("Setting up HMC5883"));
-
-  if (!mag.begin()) {
-    Serial.println(F("No HMC5883 detected"));
-    while (1);
-  }
-}
-
 void setup_leds() {
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  setRPMLights(0);
 }
 
 void setup_sd_card() {
@@ -353,19 +328,18 @@ void get_can_bus_data() {
 //----------------
 
 void setRPMLights(int rpmValue) {
-  if(rpmValue != rpm_old_value) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      if (rpmValue >= (i + 1)*rpmLightInterval) {
-        if (i < 10) {               // LEDs should be Green
-          leds[i].setRGB(0, BRIGHTNESS, 0);
-        } else if (i < 20) {        // LEDs should be Red
-          leds[i].setRGB(BRIGHTNESS, 0, 0);
-        } else if (i < 30) {        // LEDs should be Blue
-          leds[i].setRGB(0, 0, BRIGHTNESS);
-        }
-      } else {
-        leds[i].setRGB(0, 0, 0);
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (rpmValue >= (i + 1)*rpmLightInterval) {
+      if (i < 10) {               // LEDs should be Green
+        leds[i].setRGB(0, BRIGHTNESS, 0);
+      } else if (i < 20) {        // LEDs should be Red
+        leds[i].setRGB(BRIGHTNESS, 0, 0);
+      } else if (i < 30) {        // LEDs should be Blue
+        leds[i].setRGB(0, 0, BRIGHTNESS);
       }
+      FastLED.show();
+    } else {
+      leds[i].setRGB(0, 0, 0);
       FastLED.show();
     }
     rpm_old_value = rpm;
@@ -459,46 +433,48 @@ void my_print(const char * buf)
 }
 #endif
 
+void report_loop_duration(long start) {
+  long duration = micros() - start;
+  Serial.print("Loop cycle time: ");
+  Serial.print(duration / 1000.0);
+  Serial.println(" ms\n");
+}
+
 //-----------------------------
 // Display Related
 //-----------------------------
 
-void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
-{
-  uint32_t w = ( area->x2 - area->x1 + 1 );
-  uint32_t h = ( area->y2 - area->y1 + 1 );
+void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p ) {
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
 
   tft.startWrite();
-  tft.setAddrWindow( area->x1, area->y1, w, h );
-  tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t * )&color_p->full, w * h, true) ;
   tft.endWrite();
 
   lv_disp_flush_ready( disp_drv );
 }
 
-void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
-{
+void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data ) {
   uint16_t touchX, touchY;
 
   bool touched = tft.getTouch( &touchX, &touchY, 600 );
 
-  if (!touched)
-  {
+  if (!touched) {
     data->state = LV_INDEV_STATE_REL;
-  }
-  else
-  {
+  } else {
     data->state = LV_INDEV_STATE_PR;
 
     /*Set the coordinates*/
     data->point.x = touchX;
     data->point.y = touchY;
 
-    Serial.print( "Data x " );
-    Serial.println( touchX );
+    Serial.print("Data x ");
+    Serial.println(touchX);
 
-    Serial.print( "Data y " );
-    Serial.println( touchY );
+    Serial.print("Data y ");
+    Serial.println(touchY);
   }
 }
 
@@ -510,15 +486,12 @@ bool update_display_label(int &current_value, int &old_value) {
   return false;
 }
 
-void update_rpm_lights() {
-  setRPMLights(rpm);
-}
-
 void update_display_data() {
 
   if (update_display_label(rpm, rpm_old_value)) {
     lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
     lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
+    setRPMLights(rpm);
   }
 
   if (update_display_label(gear, gear_old_value)) {
@@ -529,9 +502,9 @@ void update_display_data() {
     lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
   }
 
-  // if (update_display_label(g_force, g_force_old_value)) {
-    // lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
-  // }
+  if (update_display_label(g_force, g_force_old_value)) {
+    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+  }
 
   if (update_display_label(tps, tps_old_value)) {
     lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
@@ -539,36 +512,6 @@ void update_display_data() {
 
   if (update_display_label(bps, bps_old_value)) {
     lv_bar_set_value(ui_BarBPS, bps, LV_ANIM_OFF);
-  }
-
-}
-
-void simulation_task(void *pvParameters) {
-
-  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
-
-  delay(2000);
-
-  int count_value = 0;
-
-  for (int i = 0; i < 100; i++) {
-    delay(50);
-    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  //lv_scr_load(ui_Screen3);
-
-  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
-
-  delay(30000);
-
-  // ESP.restart();
-
-  while (1) {
-
-    vTaskDelay(10);
-
   }
 }
 
@@ -854,21 +797,7 @@ void get_bluetooth_gps_data() {
 
 }
 
-//-----------------------------
-// Setup
-//-----------------------------
-
-void setup(void)
-{
-  Serial.begin(115200);
-  Serial.println(F("\nSetting up Dashboard"));
-  setup_can_bus();
-  setup_sd_card();
-  setup_bluetooth_gps();
-  setup_leds();
-  setRPMLights(0);
-  Serial.println(F("Dashboard Setup Complete\n"));
-
+void setup_display() {
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
@@ -909,44 +838,48 @@ void setup(void)
 
   delay(2000);
 
-  int count_value = 0;
-
   for (int i = 0; i < 100; i++) {
     delay(50);
-    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
+    lv_bar_set_value(ui_loadingBar, i, LV_ANIM_OFF);
   }
 
-  //lv_scr_load(ui_Screen3);
-
   lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
+}
 
-  //   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
+//-----------------------------
+// Setup
+//-----------------------------
 
-  Serial.println("Finished Setup Function");
+void setup(void) {
+  Serial.begin(115200);
+  Serial.println("\nSetting up Dashboard");
+  setup_can_bus();
+  setup_sd_card();
+  setup_bluetooth_gps();
+  setup_leds();
+  setup_display();
+  Serial.println("Dashboard Setup Complete\n");
+
 }
 
 //-----------------------------
 // Loop
 //-----------------------------
 
-void loop(void)
-{
+void loop(void) {
   long start = micros();
 
-  lv_timer_handler(); /* let the GUI do its work */
-  Serial.println("Lv timer complete");
-  get_bluetooth_gps_data();
-  Serial.println("BLE GPS Data complete");
-  update_rpm_lights();
-  Serial.println("RPM Lights complete");
-  get_can_bus_data();
-  Serial.println("Can bus data complete");
-  update_display_data();
-  Serial.println("Update display complete");
+  // lv_timer_handler(); /* let the GUI do its work */
+  // Serial.println("Lv timer complete");
 
-  long duration = micros() - start;
-  Serial.print("Loop cycle time: ");
-  Serial.print(duration / 1000.0);
-  Serial.println(" ms\n");
+  get_bluetooth_gps_data();
+//  Serial.println("BLE GPS Data complete");
+
+  get_can_bus_data();
+//  Serial.println("Can bus data complete");
+
+  // update_display_data();
+  // Serial.println("Update display complete");
+
+  report_loop_duration(start);
 }
