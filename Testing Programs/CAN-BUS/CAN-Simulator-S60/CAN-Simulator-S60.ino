@@ -114,7 +114,7 @@ int get_tps() {
 }
 
 int get_water_temp() {
-  return int(map(analogRead(KNOB_THREE), 0, 1023, 100, 0));
+  return int(map(analogRead(KNOB_SEVEN), 0, 1023, 100, 0));
 }
 
 // Packet 2002
@@ -133,7 +133,7 @@ int get_gear() {
 
 // Packet 2004
 int get_bps() {
-  return int(map(analogRead(KNOB_SEVEN), 0, 1023, 100, 0));
+  return int(map(analogRead(KNOB_THREE), 0, 1023, 100, 0));
 }
 
 void logOutput() {
