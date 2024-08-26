@@ -235,10 +235,7 @@ bool connectToRaceBox() {
   return false;
 }
 
-void setup() {
-  Serial.begin(115200);
-  Serial.flush();
-
+void setup_bluetooth_gps() {
   Serial.println("Scanning for Bluetooth devices.");
   Serial.println();
   Serial.println("Scan Results:");
@@ -253,7 +250,6 @@ void setup() {
   pScan->setActiveScan(true);
   // pScan->start(5, false); // scan for 5 s
   pScan->start(0, false); // scan indefinitely until we stop it manually
-
 }
 
 void print_RaceBox_Data_message_payload_to_serial() {
@@ -302,7 +298,13 @@ void print_RaceBox_Data_message_payload_to_serial() {
 
 }
 
-void loop() {
+void setup() {
+  Serial.begin(115200);
+  Serial.flush();
+  setup_bluetooth_gps();
+}
+
+void get_bluetooth_gps_data() {
 
   if (doConnect) {
     if (connectToRaceBox()) {
@@ -328,6 +330,9 @@ void loop() {
     }
   }
 
-  delay(500); // Delay output to make serial output more readable
+}
 
+void loop() {
+  get_bluetooth_gps_data();
+  delay(500); // Delay output to make serial output more readable
 }
