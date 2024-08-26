@@ -407,18 +407,18 @@ void get_can_bus_data() {
 //----------------
 
 void setRPMLights(int rpmValue) {
-    for (int i = 0; i < NUM_LEDS; i++) {
-      if (rpmValue >= (i + 1)*rpmLightInterval) {
-        if (i < 10) {               // LEDs should be Green
-          leds[i].setRGB(0, BRIGHTNESS, 0);
-        } else if (i < 20) {        // LEDs should be Red
-          leds[i].setRGB(BRIGHTNESS, 0, 0);
-        } else if (i < 30) {        // LEDs should be Blue
-          leds[i].setRGB(0, 0, BRIGHTNESS);
-        }
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (rpmValue >= (i + 1)*rpmLightInterval) {
+      if (i < 10) {               // LEDs should be Green
+        leds[i].setRGB(0, BRIGHTNESS, 0);
+      } else if (i < 20) {        // LEDs should be Red
+        leds[i].setRGB(BRIGHTNESS, 0, 0);
+      } else if (i < 30) {        // LEDs should be Blue
+        leds[i].setRGB(0, 0, BRIGHTNESS);
+      }
       FastLED.show();
-      } else {
-        leds[i].setRGB(0, 0, 0);
+    } else {
+      leds[i].setRGB(0, 0, 0);
       FastLED.show();
     }
   }
