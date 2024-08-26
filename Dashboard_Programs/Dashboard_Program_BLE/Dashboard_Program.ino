@@ -245,29 +245,6 @@ String compass_direction;
 // Setup Functions
 //----------------
 
-void setup_three_axis_gyro(void) {
-  while (!Serial)
-    delay(10); // will pause until serial console opens
-
-  Serial.println(F("Setting up MPU6050"));
-
-  if (!mpu.begin()) {
-    Serial.println(F("No MPU6050 detected"));
-    while (1) {
-      delay(10);
-    }
-  }
-
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_2000_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-}
-
-void setup_gps(void) {
-  gpsSerial.begin(GPSBAUD);
-  Serial.println(F("Setting up BN880"));
-}
-
 void setup_compass(void) {
   Serial.println(F("Setting up HMC5883"));
 
@@ -324,91 +301,8 @@ void setup_can_bus() {
 }
 
 //----------------
-// Sensor Related
+// CAN BUS
 //----------------
-
-void get_three_axis_gyro_data() {
-
-  // Get new sensor events with the readings
-  sensors_event_t a, g, temp;
-  mpu.getEvent(&a, &g, &temp);
-
-  outputString = "Acceleration X: " + String(a.acceleration.x) + ", Y: " + String(a.acceleration.y) + ", Z: " + String(a.acceleration.z) + " m/s^2" + "\n";
-  outputString += "Rotation X: " + String(g.gyro.x) + ", Y: " + String(g.gyro.y) + ", Z: " + String(g.gyro.z) + " rad/s" + "\n";
-  outputString += "Temperature: " + String(temp.temperature) + " C" + "\n";
-
-  g_force = sqrt(sq(g.gyro.x) + sq(g.gyro.y) + sq(g.gyro.z));
-
-  appendFile(SD, "/mpu-data/mpu-data.txt", outputString.c_str());
-  Serial.println("---       3-Axis Gyro Data    ---");
-  Serial.println(outputString);
-}
-
-void get_gps_data() {
-  Serial.println("---         GPS Data          ---");
-  for (int start = millis(); millis() - start < GPSCPUTIME; ) {
-    while (gpsSerial.available()) {
-      if (gps.encode(gpsSerial.read())) {
-        outputString = "";
-        if (gps.location.isValid()) {
-          mph = gps.speed.mph();
-          outputString += "Speed (Mph): " + String(mph) + "\n";
-          outputString += "Lat: " + String(gps.location.lat(), 7)  + " Long: " + String(gps.location.lng(), 7) + "\n";
-          outputString += "Deg: " + String(gps.course.deg()) + "\n";
-          outputString += "Heading: " + String(gps.cardinal(gps.course.value())) + "\n";
-          outputString += "Altitude (Miles): " + String(gps.altitude.miles()) + "\n";
-        }
-        if (gps.satellites.isValid()) {
-          num_satellites = gps.satellites.value();
-          outputString += "Number of Satellite: " + String(num_satellites) + "\n";
-        }
-        if (gps.date.isValid()) {
-          outputString += "Date: " + String(gps.date.day()) + "/" + String(gps.date.month()) + "/" + String(gps.date.year()) + "\n";
-          outputString += "Time: " + String(gps.time.hour() + 1) + ":" + String(gps.time.minute()) + ":" + String(gps.time.second()) + "\n";
-        }
-
-        appendFile(SD, "/gps-data/gps-data.txt", outputString.c_str());
-        Serial.println(outputString);
-        break;
-      }
-    }
-  }
-}
-
-void get_compass_data(void) {
-  // Get a new sensor event
-  sensors_event_t event;
-  mag.getEvent(&event);
-
-  // Display the results (magnetic vector values are in micro-Tesla (uT))
-  outputString = "Compass - X: " + String(event.magnetic.x) + "  Y:" + String(event.magnetic.y) + "  Z:" + String(event.magnetic.z) + "  uT\n";
-
-  // Hold the module so that Z is pointing 'up' and you can measure the heading with x&y
-  // Calculate heading when the magnetometer is level, then correct for signs of axis.
-  float heading = atan2(event.magnetic.y, event.magnetic.x);
-
-  // Once you have your heading, you must then add your 'Declination Angle'- the 'Error' of the magnetic field in your location.
-  // Find yours here: http://www.magnetic-declination.com/
-  float declinationAngle = 1.13;
-  heading += declinationAngle;
-
-  // Correct for when signs are reversed.
-  if (heading < 0)
-    heading += 2 * PI;
-
-  // Check for wrap due to addition of declination.
-  if (heading > 2 * PI)
-    heading -= 2 * PI;
-
-  // Convert radians to degrees for readability.
-  float headingDegrees = heading * 180 / M_PI;
-
-  outputString += "Heading (degrees): " + String(headingDegrees) + "\n";
-  appendFile(SD, "/compass-data/compass-data.txt", outputString.c_str());
-  
-  Serial.println("---       Compass Data        ---");
-  Serial.println(outputString);
-}
 
 void get_can_bus_data() {
 
@@ -970,10 +864,7 @@ void setup(void)
   Serial.println(F("\nSetting up Dashboard"));
   setup_can_bus();
   setup_sd_card();
-  setup_three_axis_gyro();
   setup_bluetooth_gps();
-  setup_compass();
-  setup_gps();
   setup_leds();
   setRPMLights(0);
   Serial.println(F("Dashboard Setup Complete\n"));
@@ -1045,14 +936,8 @@ void loop(void)
 
   lv_timer_handler(); /* let the GUI do its work */
   Serial.println("Lv timer complete");
-  get_gps_data();
-  Serial.println("GPS Data complete");
-  get_compass_data();
-  Serial.println("Compass data complete");
   get_bluetooth_gps_data();
   Serial.println("BLE GPS Data complete");
-  get_three_axis_gyro_data();
-  Serial.println("Gyro data complete");
   update_rpm_lights();
   Serial.println("RPM Lights complete");
   get_can_bus_data();
