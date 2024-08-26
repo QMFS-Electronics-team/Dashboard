@@ -407,7 +407,6 @@ void get_can_bus_data() {
 //----------------
 
 void setRPMLights(int rpmValue) {
-  if(rpmValue != rpm_old_value) {
     for (int i = 0; i < NUM_LEDS; i++) {
       if (rpmValue >= (i + 1)*rpmLightInterval) {
         if (i < 10) {               // LEDs should be Green
@@ -417,12 +416,11 @@ void setRPMLights(int rpmValue) {
         } else if (i < 30) {        // LEDs should be Blue
           leds[i].setRGB(0, 0, BRIGHTNESS);
         }
+      FastLED.show();
       } else {
         leds[i].setRGB(0, 0, 0);
-      }
       FastLED.show();
     }
-    rpm_old_value = rpm;
   }
 }
 
@@ -564,15 +562,12 @@ bool update_display_label(int &current_value, int &old_value) {
   return false;
 }
 
-void update_rpm_lights() {
-  setRPMLights(rpm);
-}
-
 void update_display_data() {
 
   if (update_display_label(rpm, rpm_old_value)) {
     lv_label_set_text(ui_LabelRPM, String(rpm).c_str());
     lv_bar_set_value(ui_BarRPM, rpm / 30, LV_ANIM_OFF);
+    setRPMLights(rpm);
   }
 
   if (update_display_label(gear, gear_old_value)) {
@@ -583,9 +578,9 @@ void update_display_data() {
     lv_label_set_text(ui_LabelSpeed, String(mph).c_str());
   }
 
-  // if (update_display_label(g_force, g_force_old_value)) {
-    // lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
-  // }
+  if (update_display_label(g_force, g_force_old_value)) {
+    lv_label_set_text(ui_LabelGForce, String(g_force).c_str());
+  }
 
   if (update_display_label(tps, tps_old_value)) {
     lv_bar_set_value(ui_BarTPS, tps, LV_ANIM_OFF);
@@ -700,6 +695,13 @@ void setup(void)
   Serial.println("Finished Setup Function");
 }
 
+void report_loop_duration(long start) {
+  long duration = micros() - start;
+  Serial.print("Loop cycle time: ");
+  Serial.print(duration / 1000.0);
+  Serial.println(" ms\n");
+}
+
 //-----------------------------
 // Loop
 //-----------------------------
@@ -707,24 +709,11 @@ void setup(void)
 void loop(void)
 {
   long start = micros();
-
-  lv_timer_handler(); /* let the GUI do its work */
-  Serial.println("Lv timer complete");
+  lv_timer_handler();
   get_gps_data();
-  Serial.println("GPS Data complete");
   get_compass_data();
-  Serial.println("Compass data complete");
   get_three_axis_gyro_data();
-  Serial.println("Gyro data complete");
-  update_rpm_lights();
-  Serial.println("RPM Lights complete");
   get_can_bus_data();
-  Serial.println("Can bus data complete");
   update_display_data();
-  Serial.println("Update display complete");
-
-  long duration = micros() - start;
-  Serial.print("Loop cycle time: ");
-  Serial.print(duration / 1000.0);
-  Serial.println(" ms\n");
+  report_loop_duration(start);
 }
