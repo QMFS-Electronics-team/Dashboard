@@ -271,6 +271,55 @@ void setup_can_bus() {
   mcp2515.setNormalMode();                   // Set CAN at normal mode
 }
 
+void setup_display() {
+  String LVGL_Arduino = "LVGL Arduino ";
+  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+
+  Serial.println(LVGL_Arduino);
+  tft.init();
+  tft.setRotation(1);
+  tft.setBrightness(255);
+  lv_init();
+
+  #if LV_USE_LOG != 0
+    lv_log_register_print_cb(my_print); /* register print function for debugging */
+  #endif
+
+  lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
+
+  /*Initialize the display*/
+  static lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv);
+
+  /*Change the following line to your display resolution*/
+  disp_drv.hor_res = screenWidth;
+  disp_drv.ver_res = screenHeight;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.draw_buf = &draw_buf;
+  lv_disp_drv_register(&disp_drv);
+
+  /*Initialize the (dummy) input device driver*/
+  static lv_indev_drv_t indev_drv;
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = my_touchpad_read;
+  lv_indev_drv_register(&indev_drv);
+
+  ui_init();
+  // ui_reset();
+
+  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
+
+  delay(2000);
+
+  for (int i = 0; i < 100; i++) {
+    delay(50);
+    lv_bar_set_value(ui_loadingBar, i, LV_ANIM_OFF);
+  }
+
+  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
+}
+
 //----------------
 // Sensor Related
 //----------------
@@ -511,18 +560,25 @@ void my_print(const char * buf)
 }
 #endif
 
+void report_loop_duration(long start) {
+  long duration = micros() - start;
+  Serial.print("Loop cycle time: ");
+  Serial.print(duration / 1000.0);
+  Serial.println(" ms\n");
+}
+
 //-----------------------------
 // Display Related
 //-----------------------------
 
 void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
 {
-  uint32_t w = ( area->x2 - area->x1 + 1 );
-  uint32_t h = ( area->y2 - area->y1 + 1 );
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
 
   tft.startWrite();
-  tft.setAddrWindow( area->x1, area->y1, w, h );
-  tft.pushColors( ( uint16_t * )&color_p->full, w * h, true );
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t * )&color_p->full, w * h, true);
   tft.endWrite();
 
   lv_disp_flush_ready( disp_drv );
@@ -534,12 +590,9 @@ void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
 
   bool touched = tft.getTouch( &touchX, &touchY, 600 );
 
-  if (!touched)
-  {
+  if (!touched) {
     data->state = LV_INDEV_STATE_REL;
-  }
-  else
-  {
+  } else {
     data->state = LV_INDEV_STATE_PR;
 
     /*Set the coordinates*/
@@ -592,41 +645,11 @@ void update_display_data() {
 
 }
 
-void simulation_task(void *pvParameters) {
-
-  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
-
-  delay(2000);
-
-  int count_value = 0;
-
-  for (int i = 0; i < 100; i++) {
-    delay(50);
-    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  //lv_scr_load(ui_Screen3);
-
-  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
-
-  delay(30000);
-
-  // ESP.restart();
-
-  while (1) {
-
-    vTaskDelay(10);
-
-  }
-}
-
 //-----------------------------
 // Setup
 //-----------------------------
 
-void setup(void)
-{
+void setup(void) {
   Serial.begin(115200);
   Serial.println(F("\nSetting up Dashboard"));
   setup_can_bus();
@@ -636,78 +659,19 @@ void setup(void)
   setup_gps();
   setup_leds();
   setRPMLights(0);
+  setup_display();
   Serial.println(F("Dashboard Setup Complete\n"));
 
-  String LVGL_Arduino = "LVGL Arduino ";
-  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
 
-  Serial.println(LVGL_Arduino);
-  tft.init();
-  tft.setRotation(1);
-  tft.setBrightness(255);
-  lv_init();
-
-#if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print); /* register print function for debugging */
-#endif
-
-  lv_disp_draw_buf_init(&draw_buf, buf, NULL, screenWidth * 10);
-
-  /*Initialize the display*/
-  static lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-
-  /*Change the following line to your display resolution*/
-  disp_drv.hor_res = screenWidth;
-  disp_drv.ver_res = screenHeight;
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.draw_buf = &draw_buf;
-  lv_disp_drv_register(&disp_drv);
-
-  /*Initialize the (dummy) input device driver*/
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = my_touchpad_read;
-  lv_indev_drv_register(&indev_drv);
-
-  ui_init();
-  // ui_reset();
-
-  lv_bar_set_value(ui_loadingBar, 0, LV_ANIM_OFF);
-
-  delay(2000);
-
-  int count_value = 0;
-
-  for (int i = 0; i < 100; i++) {
-    delay(50);
-    lv_bar_set_value(ui_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  //lv_scr_load(ui_Screen3);
-
-  lv_scr_load_anim(ui_Screen2, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
-
-  //   xTaskCreatePinnedToCore(simulation_task, "simulation_task", 4000, NULL, 0, NULL, 1);
 
   Serial.println("Finished Setup Function");
-}
-
-void report_loop_duration(long start) {
-  long duration = micros() - start;
-  Serial.print("Loop cycle time: ");
-  Serial.print(duration / 1000.0);
-  Serial.println(" ms\n");
 }
 
 //-----------------------------
 // Loop
 //-----------------------------
 
-void loop(void)
-{
+void loop(void) {
   long start = micros();
   lv_timer_handler();
   get_gps_data();
