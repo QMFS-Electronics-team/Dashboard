@@ -17,8 +17,7 @@
 #include <lvgl.h>
 #include "ui.h"
 
-class LGFX : public lgfx::LGFX_Device
-{
+class LGFX : public lgfx::LGFX_Device {
 
     lgfx::Panel_ILI9341     _panel_instance;
     lgfx::Bus_SPI       _bus_instance;
@@ -27,8 +26,7 @@ class LGFX : public lgfx::LGFX_Device
 
   public:
 
-    LGFX(void)
-    {
+    LGFX(void) {
       {
         auto cfg = _bus_instance.config();
 
@@ -150,7 +148,7 @@ String outputString;
 struct can_frame canMsg;
 MCP2515 mcp2515(MCPCS);
 
-// CAN BUS Data to present on display
+// CAN BUS Data
 
 // Packet 2000
 int rpm = 0;             // [0] RPM
