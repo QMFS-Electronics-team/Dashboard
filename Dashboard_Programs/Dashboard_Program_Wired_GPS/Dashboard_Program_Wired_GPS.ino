@@ -119,7 +119,6 @@ class LGFX : public lgfx::LGFX_Device
 // Display
 Arduino_ESP32SPI bus = Arduino_ESP32SPI(TFT_DC, TFT_CS, TFT_SCK, TFT_MOSI, TFT_MISO);
 Arduino_ILI9341 display = Arduino_ILI9341(&bus, TFT_RESET);
-
 static LGFX tft;
 
 /*Change to your screen resolution*/
