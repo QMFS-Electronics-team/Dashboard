@@ -97,7 +97,7 @@ Note this is currently used without any other devices connected to the ESP 32
 Note the numbers are from left to right based on the barcode sticker on the GPS module.
 
 
-!["GPS Module"](/images/BN-880-GPS.PNG)
+!["GPS Module"](/Images/BN-880-GPS.PNG)
 
 | **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
 |----------------|---------------|------------|---------------------|
