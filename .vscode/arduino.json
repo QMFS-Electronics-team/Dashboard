@@ -1,8 +1,0 @@
-{
-    "configuration": "PartitionScheme=huge_app,FlashMode=qio,FlashFreq=80,UploadSpeed=115200,DebugLevel=none,EraseFlash=none",
-    "board": "esp32:esp32:esp32wrover",
-    "programmer": "esptool",
-    "port": "/dev/tty.usbserial-1460",
-    "output": "ArduinoOutput",
-    "sketch": "Dashboard_Program/Dashboard_Program.ino"
-}

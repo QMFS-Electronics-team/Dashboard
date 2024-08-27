@@ -78,4 +78,7 @@ $RECYCLE.BIN/
 # Output files for arduino compiliations
 ArduinoOutput
 
+# Ignore Vscode files
+.vscode
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
