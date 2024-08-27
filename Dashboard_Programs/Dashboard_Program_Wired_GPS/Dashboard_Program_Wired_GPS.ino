@@ -658,10 +658,6 @@ void setup(void) {
   setRPMLights(0);
   setup_display();
   Serial.println(F("Dashboard Setup Complete\n"));
-
-
-
-  Serial.println("Finished Setup Function");
 }
 
 //-----------------------------
