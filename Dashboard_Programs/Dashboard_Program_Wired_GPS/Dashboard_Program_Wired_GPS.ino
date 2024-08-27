@@ -414,7 +414,7 @@ void get_can_bus_data() {
       outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
 
       if (canMsg.can_id == 0) {
-        rpm = canMsg.data[0] * 100;
+        rpm = canMsg.data[0] * 10;
         tps = canMsg.data[1];
         water_temp = canMsg.data[2];
       }

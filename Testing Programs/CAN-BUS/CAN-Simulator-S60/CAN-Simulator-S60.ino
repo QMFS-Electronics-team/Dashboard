@@ -106,7 +106,7 @@ void sendPacket2005() {
 
 // Packet 2000
 int get_rpm() {
-  return int(map(analogRead(KNOB_SIX), 0, 1023, 30, 0));
+  return int(map(analogRead(KNOB_SIX), 0, 1023, 300, 0));
 }
 
 int get_tps() {
