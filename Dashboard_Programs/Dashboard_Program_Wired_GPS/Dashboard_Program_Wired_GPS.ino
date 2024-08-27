@@ -224,6 +224,7 @@ void setup_compass(void) {
 
 void setup_leds() {
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
+  setRPMLights(0);
 }
 
 void setup_sd_card() {
@@ -655,7 +656,6 @@ void setup(void) {
   setup_compass();
   setup_gps();
   setup_leds();
-  setRPMLights(0);
   setup_display();
   Serial.println(F("Dashboard Setup Complete\n"));
 }
