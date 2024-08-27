@@ -34,7 +34,7 @@ The below table are for components used for evaluating the feasibility of the Da
 |     SDO (MISO) |     G19       |   WHITE    |         NO          |
 
 
-### TFT Display (ILI9486 3.5" 480x320) to ESP 32
+### TFT Display (ILI9486 3.5" 480x320) to ESP 32 (WROOM-32)
 
 Note this is currently used without any other devices connected to the ESP 32
 
@@ -48,22 +48,22 @@ Note this is currently used without any other devices connected to the ESP 32
 |     X          |     D14             |     X         |            |
 |     LCD_RD     |     D0              |     G2        |            |
 |     LCD_WR     |     D1              |     G4        |            |
-|     LCD_RS     |     D2              |     G18       |            |
+|     LCD_RS     |     D2              |     G15       |            |
 |     LCD_CS     |     D3              |     G33       |            |
-|     LCD_RST    |     D5              |     G32       |            |
-|     F_CS       |     D6              |     X         |            |
+|     LCD_RST    |     D4              |     G32       |            |
+|     F_CS       |     D5              |     X         |            |
 |     X          |     A15             |     X         |            |
 |     X          |     A14             |     X         |            |
 |     SD_SCK     |     A13             |     X         |            |
 |     SD_D0      |     A12             |     X         |            |
 |     SD_D1      |     A11             |     X         |            |
-|     LCD_SS     |     A10             |     X         |            |
+|     SD_SS      |     A10             |     X         |            |
 |     LCD_D1     |     A9              |     G13       |            |
 |     LCD_D0     |     A8              |     G12       |            |
 |     LCD_D7     |     A7              |     G14       |            |
 |     LCD_D6     |     A6              |     G27       |            |
-|     LCD_D5     |     A5              |     G5        |            |
-|     LCD_D4     |     A4              |     G21       |            |
+|     LCD_D5     |     A5              |     G16       |            |
+|     LCD_D4     |     A4              |     G17       |            |
 |     LCD_D3     |     A3              |     G25       |            |
 |     LCD_D2     |     A2              |     G26       |            |
 |     X          |     A1              |     X         |            |
@@ -131,48 +131,48 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |     INT        |     GX        |   N/A      |        X            |
 
 
-### ESP32 Pin Utilisation
+### ESP32 (WROVER-E) Pin Utilisation
 
-| **Device Pin** | **Used** | **Usage** |
-| -------------- | -------- | --------- |
-|     3.3V       |    NO    |   N/A     |
-|     EN         |    NO    |   N/A     |
-|     G36/VP     |    NO    |   N/A     |
-|     G39/VN     |    NO    |   N/A     |
-|     G34        |    YES   |   GPS RX  |
-|     G35        |    YES   |   GPS TX  |
-|     G32        |    NO    |   N/A     |
-|     G33        |    NO    |   N/A     |
-|     G25        |    NO    |   N/A     |
-|     G26        |    NO    |   N/A     |
-|     G27        |    NO    |   N/A     |
-|     G14        |    NO    |   N/A     |
-|     G12        |    NO    |   N/A     |
-|     GND        |    YES   |   Power   |
-|     G13        |    NO    |   N/A     |
-|     G9/SD2     |    NO    |   N/A     |
-|     G10/SD3    |    NO    |   N/A     |
-|     G11/CMD    |    NO    |   N/A     |
-|     5V         |    YES   |   Power   |
-|     5V         |    YES   |   Power   |
-|     GND        |    YES   |   Power   |
-|     G23        |    YES   |   MOSI    |
-|     G22        |    YES   |   SCL     |
-|     G1/TX      |    NO    |   N/A     |
-|     G3/RX      |    YES   |   TFT DC  |
-|     G21        |    YES   |   SDA     |
-|     GND        |    YES   |   Power   |
-|     G19        |    YES   |   MISO    |
-|     G18        |    YES   |   SCK     |
-|     G5         |    YES   |   SD CS   |
-|     GND        |    YES   |   Power   |
-|     GND        |    YES   |   Power   |
-|     G4         |    YES   |   LED Din |
-|     G0         |    YES   |   TFT CS  |
-|     G2         |    YES   |   CAN CS  |
-|     G15        |    YES   |   TFT RST |
-|     G8/SD1     |    NO    |   N/A     |
-|     G7/SD0     |    NO    |   N/A     |
-|     G6/CLK     |    NO    |   N/A     |
-|     GND        |    YES   |   Power   |
+| **Device Pin** | **Used** | **Usage**                       |
+| -------------- | -------- | ------------------------------- |
+|     3.3V       |    NO    |   Power (For LCD Future Update) |
+|     EN         |    NO    |   N/A                           |
+|     G36/VP     |    NO    |   N/A                           |
+|     G39/VN     |    NO    |   N/A                           |
+|     G34        |    YES   |   GPS RX                        |
+|     G35        |    YES   |   GPS TX                        |
+|     G32        |    NO    |   LCD RST (Future Update)       |
+|     G33        |    NO    |   LCD CS (Future Update)        |
+|     G25        |    NO    |   LCD 8 bit bus (Future Update) |
+|     G26        |    NO    |   LCD 8 bit bus (Future Update) |
+|     G27        |    NO    |   LCD 8 bit bus (Future Update) |
+|     G14        |    NO    |   LCD 8 bit bus (Future Update) |
+|     G12        |    NO    |   LCD 8 bit bus (Future Update) |
+|     GND        |    YES   |   Power                         |
+|     G13        |    NO    |   LCD 8 bit bus (Future Update) |
+|     G9/SD2     |    NO    |   LCD WR (Future Update)        |
+|     G10/SD3    |    NO    |   LCD RD (Future Update)        |
+|     G11/CMD    |    NO    |   LCD RS (Future Update)        |
+|     5V         |    YES   |   Power                         |
+|     5V         |    YES   |   Power                         |
+|     GND        |    YES   |   Power                         |
+|     G23        |    YES   |   MOSI                          |
+|     G22        |    YES   |   SCL                           |
+|     G1/TX      |    NO    |   N/A                           |
+|     G3/RX      |    YES   |   TFT DC                        |
+|     G21        |    YES   |   SDA                           |
+|     GND        |    YES   |   Power                         |
+|     G19        |    YES   |   MISO                          |
+|     G18        |    YES   |   SCK                           |
+|     G5         |    YES   |   SD CS                         |
+|     GND        |    YES   |   Power                         |
+|     GND        |    YES   |   Power                         |
+|     G4         |    YES   |   LED Din                       |
+|     G0         |    YES   |   TFT CS                        |
+|     G2         |    YES   |   CAN CS                        |
+|     G15        |    YES   |   TFT RST                       |
+|     G8/SD1     |    NO    |   N/A                           |
+|     G7/SD0     |    NO    |   N/A                           |
+|     G6/CLK     |    NO    |   N/A                           |
+|     GND        |    YES   |   Power                         |
 
