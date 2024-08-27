@@ -342,7 +342,6 @@ void setRPMLights(int rpmValue) {
       leds[i].setRGB(0, 0, 0);
       FastLED.show();
     }
-    rpm_old_value = rpm;
   }
 }
 
@@ -559,7 +558,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           Serial.println(F("RaceBox found. TARGET_DEVICE_ADDRESS is not set in code (or commented out ), so we connect to any RaceBox that we find."));
           NimBLEDevice::getScan()->stop();  // Stop scanning
           Serial.println(F("stopped bluetooth scanning."));
-          // Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
+          Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
           myRaceBox = advertisedDevice;
           doConnect = true;
         }
@@ -592,7 +591,7 @@ void calculateChecksum(uint8_t* data, uint16_t length, uint8_t& CK_A, uint8_t& C
 void parsePayload(uint8_t* data) {
   // Check for correct frame start - may need to be removed or changed for other data than RaceBox Data Message!
   if (data[0] != 0xB5 || data[1] != 0x62) {
-    Serial.println(F("Invalid frame start of payload data - check may need to be removed or changed for other data than RaceBox Data Message!"));
+    // Serial.println("Invalid frame start of payload data - check may need to be removed or changed for other data than RaceBox Data Message!");
     return;
   }
 
@@ -605,10 +604,10 @@ void parsePayload(uint8_t* data) {
   // Validate the length of the packet
   uint16_t packetLength = 6 + payloadLength + 2; //header (6 bytes) + payload + checksum (2 bytes)
   if (packetLength > 512) { // Double check if 5
-    Serial.print(F("Received packet size exceeds maximum allowed size (512 bytes). "));
-    Serial.print(F("Packet length is "));
-    Serial.print(packetLength);
-    Serial.println(F(" bytes."));
+    // Serial.print("Received packet size exceeds maximum allowed size (512 bytes). ");
+    // Serial.print("Packet length is ");
+    // Serial.print(packetLength);
+    // Serial.println(" bytes.");
     return;
   }
 
@@ -616,7 +615,7 @@ void parsePayload(uint8_t* data) {
   uint8_t CK_A, CK_B;
   calculateChecksum(data, packetLength, CK_A, CK_B);
   if (data[packetLength - 2] != CK_A || data[packetLength - 1] != CK_B) {
-    Serial.println(F("*** Checksum validation of incoming data package failed. ***"));
+    Serial.println("*** Checksum validation of incoming data package failed. ***");
     return;
   }
 
@@ -624,12 +623,12 @@ void parsePayload(uint8_t* data) {
   if (messageClass == 0xFF || messageId == 0x01) {// In case we receive live data (standard on start of RaceBox) and interpret it accordingly
     parse_RaceBox_Data_Message_payload(data); // Sending variable data to this function to interpret it
   } else { // In case we receive different data class
-    Serial.print(F("unknown message class and message ID found (it may be other data?): "));
-    Serial.print(F("Message Class: 0x"));
-    Serial.print(messageClass, HEX);
-    Serial.print(F(", Message ID: 0x"));
-    Serial.println(messageId, HEX);
-    Serial.println(F("Ignoring packet. This is not a known/implemented data packet."));
+    // Serial.print("unknown message class and message ID found (it may be other data?): ");
+    // Serial.print("Message Class: 0x");
+    // Serial.print(messageClass, HEX);
+    // Serial.print(", Message ID: 0x");
+    // Serial.println(messageId, HEX);
+    // Serial.println("Ignoring packet. This is not a known/implemented data packet.");
     return;
   }
 
@@ -668,7 +667,7 @@ bool connectToRaceBox() {
     pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
     if (pClient) {
       if (!pClient->connect(myRaceBox)) {
-        Serial.println(F("Failed to reconnect. Retrying..."));
+        // Serial.println("Failed to reconnect. Retrying...");
         return false;
       }
     } else {
