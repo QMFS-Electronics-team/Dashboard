@@ -850,7 +850,7 @@ void setup_display() {
 //-----------------------------
 
 void setup(void) {
-  Serial.begin(115200);
+  Serial.begin(BAUDRATE);
   Serial.println("\nSetting up Dashboard");
   setup_can_bus();
   setup_sd_card();

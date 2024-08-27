@@ -48,3 +48,6 @@
 // CAN BUS
 #define MCPCS                 2
 #define CANBUSCPUTIME         20
+
+// Serial
+#define BAUDRATE              115200

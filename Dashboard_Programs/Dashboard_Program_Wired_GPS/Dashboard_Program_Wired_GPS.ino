@@ -647,7 +647,7 @@ void update_display_data() {
 //-----------------------------
 
 void setup(void) {
-  Serial.begin(115200);
+  Serial.begin(BAUDRATE);
   Serial.println(F("\nSetting up Dashboard"));
   setup_can_bus();
   setup_sd_card();
