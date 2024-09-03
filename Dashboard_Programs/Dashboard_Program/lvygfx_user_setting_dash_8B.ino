@@ -38,10 +38,8 @@ static BLEUUID NMEA_TX_characteristic_UUID("00001103-0000-1000-8000-00805F9B34FB
 //static BLEUUID Serial_Number_Characteristic_UUID ("00002a25-0000-1000-8000-00805f9b34fb"); //individual serial number UUID - currently not used in this code example
 
 // Configuration
-const int outputFrequencyHzSerial = 8; //in Hz
-const int outputFrequencyHzOLED = 5;   //in Hz //currently commented out
+const int outputFrequencyHzSerial = 1; //in Hz
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial; 
-const unsigned long outputIntervalMs_oled = 1000 / outputFrequencyHzOLED; 
 
 static bool doConnect = false;
 static bool connected = false;
@@ -653,7 +651,7 @@ void setup(void)
     return;
   }
 
-  FastLED.addLeds<NEOPIXEL, 35>(leds, NUM_LEDS); 
+  FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
   FastLED.setBrightness(50);
   //reset 
   leds[0] = CRGB::Black;
@@ -668,12 +666,29 @@ void setup(void)
   leds[9] = CRGB::Black;
   FastLED.show();
 
+  FastLED.setBrightness(20);
+  
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Yellow;
+  leds[2] = CRGB::Red;
+  leds[3] = CRGB::Green;
+  leds[4] = CRGB::Yellow;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Green;
+  leds[7] = CRGB::Yellow;
+  leds[8] = CRGB::Red;
+  leds[9] = CRGB::Green;
+  delay(500);
+  FastLED.show();
+
   //buzzer
   pinMode(5, OUTPUT);
   digitalWrite(5, HIGH);   // turn the LED on (HIGH is the voltage level)
   delay(200);                       // wait for a second
   digitalWrite(5, LOW);    // turn the LED off by making the voltage LOW          
   delay(200);  
+
+  
   
   xTaskCreatePinnedToCore(display_task,
                           "loading_task",
@@ -789,6 +804,11 @@ void display_task(void *pvParameters) {
   ui_init();
   //ui_reset();
 
+  //assign callback functins
+
+  //restart button
+  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart,LV_EVENT_PRESSED, NULL);
+
   // Main LVGL loop
   while (1) {
 
@@ -810,7 +830,7 @@ void display_task(void *pvParameters) {
 
 void display_update_task(void *pvParameters) {
 
-  delay(1000);
+  delay(1000); //wait for display init
   
    //loading screen is first initiated screen
   
@@ -829,8 +849,12 @@ void display_update_task(void *pvParameters) {
   lv_scr_load(ui_MainScreen);
 
   while (1) {
-
-    vTaskDelay(1);
+    // if racebox connected
+    if(connected){
+      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String(speed).c_str());
+      
+    }
+    vTaskDelay(10);
 
   }
 
@@ -861,7 +885,38 @@ void ble_task(void *pvParameters) {
 
   while (1) {
 
-    vTaskDelay(1);
+    if (doConnect) { //if we have requested to connect to a RaceBox
+    //Serial.println("DEBUG: doConnect = true (in void loop) - trying to (re)connect...");
+    if (connectToRaceBox()) {
+      Serial.println("successfully connected to RaceBox.");
+      Serial.println();
+      //stop scanning for Bluetooth devices, now that we're connected to our RaceBox
+        NimBLEDevice::getScan()->stop();
+    } else {
+      Serial.println("Failed to connect to RaceBox. Reattempting BLE connection...");
+      //NimBLEDevice::getScan()->start(0, false); //scan indefinitely (0) until we stop it manually  //-->this is a simple restart with known scanning parameters
+      //better approch: make sure scanning setup is correct, although slightly more complex:
+      NimBLEScan* pScan = NimBLEDevice::getScan();
+      pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
+      pScan->setInterval(45);
+      pScan->setWindow(15);
+      pScan->setActiveScan(true);
+      pScan->start(0, false); //scan indefinitely until we stop it manually
+    }
+    doConnect = false;
+    }
+    if (connected) { //if we are connected to RaceBox
+      //add your code here
+      interpret_serial_input(); //this function listens to serial console inputs from your computer (when a RaceBox is connected, due to the check 'if (connected)'. Sending 1, 2 or 3 will start functions (currently only empty function prototypes are implemented to give a starting point)
+      if(updated_RaceBox_Data_Message==true){ //if we have received updated values from a RaceBox data message
+        print_RaceBox_Data_message_payload_to_serial();
+        updated_RaceBox_Data_Message=false; //reset bool
+      }
+    }
+    else{
+      //do something else if not connected to RaceBox
+      interpret_serial_input(); //just for debugging purposes, we also interpret serial input here. Can be removed if we only want to start functions that e.g. send data to RaceBox, but can be useful for development so that the functions are called even if no racebox is connected.
+    }
 
   }
 }
@@ -1045,6 +1100,11 @@ int g_force = 0;
   }
 }
 
+static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t * event)
+{
+    delay(1000);
+    ESP.restart();
+}
 
 // Do not use loop to perform any functions
 void loop(void)
