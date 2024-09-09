@@ -1,10 +1,30 @@
 #include "NimBLEDevice.h"
+#include <SPI.h>
+#include <math.h>
+#include <mcp2515.h>          
 #include <FastLED.h>
 #include <LovyanGFX.hpp>
 #include <lvgl.h>
 #include "ui.h"
 
 #define LGFX_USE_V1
+
+#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
+#define VSPI FSPI
+#endif
+
+#define VSPI_MISO 7
+#define VSPI_MOSI 15
+#define VSPI_SCLK 16
+#define CANBUS_CS 40
+
+//static const int spiClk = 10000000;  // 10 MHz
+
+//uninitialized pointers to SPI objects
+SPIClass *vspi_canbus = NULL;
+
+struct can_frame canMsg;
+
 #define NUM_LEDS 10
 CRGBArray<NUM_LEDS> leds;
 
@@ -652,7 +672,7 @@ void setup(void)
   }
 
   FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
-  FastLED.setBrightness(50);
+  FastLED.setBrightness(20);
   //reset 
   leds[0] = CRGB::Black;
   leds[1] = CRGB::Black;
@@ -665,21 +685,111 @@ void setup(void)
   leds[8] = CRGB::Black;
   leds[9] = CRGB::Black;
   FastLED.show();
-
-  FastLED.setBrightness(20);
   
+//  leds[0] = CRGB::Green;
+//  leds[1] = CRGB::Yellow;
+//  leds[2] = CRGB::Red;
+//  leds[3] = CRGB::Green;
+//  leds[4] = CRGB::Yellow;
+//  leds[5] = CRGB::Red;
+//  leds[6] = CRGB::Green;
+//  leds[7] = CRGB::Yellow;
+//  leds[8] = CRGB::Red;
+//  leds[9] = CRGB::Green;
+//  delay(500);
+//  FastLED.show();
+
+  delay(250);
   leds[0] = CRGB::Green;
-  leds[1] = CRGB::Yellow;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Green;
-  leds[4] = CRGB::Yellow;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Green;
-  leds[7] = CRGB::Yellow;
-  leds[8] = CRGB::Red;
   leds[9] = CRGB::Green;
-  delay(500);
   FastLED.show();
+  delay(250);
+  leds[1] = CRGB::Green;
+  leds[8] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[2] = CRGB::Yellow;
+  leds[7] = CRGB::Yellow;
+  FastLED.show();
+  delay(250);
+  leds[3] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  FastLED.show();
+  delay(250);
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+
+  leds[0] = CRGB::Red;
+  leds[1] = CRGB::Red;
+  leds[2] = CRGB::Red;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Red;
+  leds[8] = CRGB::Red;
+  leds[9] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+  delay(200);
+
+
+  leds[0] = CRGB::Red;
+  leds[1] = CRGB::Red;
+  leds[2] = CRGB::Red;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Red;
+  leds[8] = CRGB::Red;
+  leds[9] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+  delay(200);
+
+
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Green;
+  leds[2] = CRGB::Yellow;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Yellow;
+  leds[8] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+
 
   //buzzer
   pinMode(5, OUTPUT);
@@ -700,7 +810,7 @@ void setup(void)
                         
   xTaskCreatePinnedToCore(display_update_task,
                           "loading_task",
-                          1024 * 10,
+                          1024 * 3,
                           NULL,
                           2,  
                           NULL,
@@ -709,6 +819,14 @@ void setup(void)
   xTaskCreatePinnedToCore(ble_task,
                           "ble_task",
                           1024 * 10,  
+                          NULL,
+                          1,  
+                          NULL,
+                          1);
+
+  xTaskCreatePinnedToCore(sensor_task,
+                          "sensor_task",
+                          1024 * 5,  
                           NULL,
                           1,  
                           NULL,
@@ -732,7 +850,8 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
-  
+  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
+
 }
 
 void upshifting_blink(){
@@ -804,11 +923,15 @@ void display_task(void *pvParameters) {
   ui_init();
   //ui_reset();
 
-  //assign callback functins
+  //assign callback functions
 
   //restart button
   lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart,LV_EVENT_PRESSED, NULL);
-
+  //LED brightness
+  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderLEDBrightness, ui_event_SettingScreen_Slider_SliderLEDBrightness, LV_EVENT_VALUE_CHANGED, NULL);
+  //Disp brightness
+  lv_obj_add_event_cb(ui_SettingScreen_Label_LabelDisplayBrightness, ui_event_SettingScreen_Label_LabelDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
+  
   // Main LVGL loop
   while (1) {
 
@@ -845,15 +968,46 @@ void display_update_task(void *pvParameters) {
     lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
     count_value++;
   }
+
+  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
   
   lv_scr_load(ui_MainScreen);
+
+  count_value = 0;
+
+  double gX = 0.0;
+  double gY = 0.0;
+  double gZ = 0.0;
+  double g_mag = 0.0;
+  
+  for(int i=0;i<100;i++){
+    delay(30);
+
+    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(count_value, 0, 12000, 0, 100), LV_ANIM_OFF);
+    lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(count_value).c_str());
+    count_value+=100;
+    
+  }
 
   while (1) {
     // if racebox connected
     if(connected){
-      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String(speed).c_str());
+
+      gX = gForceX / 1000.0;
+      gY = gForceY / 1000.0;
+      gZ = gForceZ / 1000.0;
+      g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
+     
+      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String(speed / 1000.0, 1).c_str());
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 2).c_str());
+
       
-    }
+    }else{
+      
+      lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
+      
+      }
     vTaskDelay(10);
 
   }
@@ -880,8 +1034,7 @@ void ble_task(void *pvParameters) {
   pScan->setInterval(45);
   pScan->setWindow(15);
   pScan->setActiveScan(true);
-  pScan->start(5, false); //scan for 5 s
-  //pScan->start(0, false); //scan indefinitely until we stop it manually
+  pScan->start(0, false); //scan indefinitely until we stop it manually
 
   while (1) {
 
@@ -921,6 +1074,42 @@ void ble_task(void *pvParameters) {
   }
 }
 
+void sensor_task(void *pvParameters) {
+
+
+
+  //vspi_canbus = new SPIClass(VSPI);
+
+  //vspi_canbus->begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, CANBUS_CS);
+
+  MCP2515 mcp2515(CANBUS_CS);
+
+  SPI.begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, CANBUS_CS);
+  
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                   // Set CAN at normal mode
+
+  while (1) {
+
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+    Serial.print(canMsg.can_id, HEX); // print ID
+    Serial.print(" "); 
+    Serial.print(canMsg.can_dlc, HEX); // print DLC
+    Serial.print(" ");
+    
+    for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+      Serial.print(canMsg.data[i],HEX);
+      Serial.print(" ");
+    }
+
+    Serial.println();      
+     }
+  
+
+  }
+
+}
 
 void simulation_task(void *pvParameters) {
 
@@ -1099,6 +1288,20 @@ int g_force = 0;
 
   }
 }
+
+static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t * event)
+{
+  lv_obj_t * slider = lv_event_get_target(event);
+  FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
+  FastLED.show();
+}
+
+static void ui_event_SettingScreen_Label_LabelDisplayBrightness(lv_event_t * event)
+{
+  lv_obj_t * slider = lv_event_get_target(event);
+  tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
+}
+
 
 static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t * event)
 {
