@@ -9,27 +9,15 @@
 
 #define LGFX_USE_V1
 
-#if CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
-#define VSPI FSPI
-#endif
-
-#define VSPI_MISO 7
-#define VSPI_MOSI 15
-#define VSPI_SCLK 16
-#define CANBUS_CS 40
-
-//static const int spiClk = 10000000;  // 10 MHz
-
-//uninitialized pointers to SPI objects
-SPIClass *vspi_canbus = NULL;
-
-struct can_frame canMsg;
-
 #define NUM_LEDS 10
-CRGBArray<NUM_LEDS> leds;
-
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
+#define CANBUS_CS 40
+
+struct can_frame canMsg;
+MCP2515 mcp2515(CANBUS_CS);
+
+CRGBArray<NUM_LEDS> leds;
 
 SemaphoreHandle_t gui_mutex;
 
@@ -48,6 +36,8 @@ SemaphoreHandle_t gui_mutex;
 //device type, will be set automatically:  0: RaceBox Mini/Mini S, 1: RaceBox Micro - used to handle different battery status decoding between racebox mini/mini s and micro.
 int deviceType = -1; //-1: unknown device type as default, the statement 'if (deviceName.rfind("RaceBox Micro", 0) == 0) {' and the following lines in class AdvertisedDeviceCallbacks automatically determines the device type.
 
+NimBLEClient* pClient = nullptr;
+
 // BLE UUIDs
 static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
 static BLEUUID RX_characteristic_UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"); //currently not used in this code example
@@ -62,6 +52,7 @@ const int outputFrequencyHzSerial = 1; //in Hz
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial; 
 
 static bool doConnect = false;
+static bool bleRequestDisconnect = false;
 static bool connected = false;
 static bool doScan = false;
 static bool updated_RaceBox_Data_Message = false; //used to determine if we have new live data to print
@@ -566,7 +557,6 @@ void parse_RaceBox_Data_Message_payload(uint8_t* data){ //function to handle pay
 
 // Function to connect to RaceBox via BLE
 bool connectToRaceBox() {
-  NimBLEClient* pClient = nullptr;
 
   // Check if there's an existing client that matches the address
   if (NimBLEDevice::getClientListSize()) {
@@ -927,6 +917,8 @@ void display_task(void *pvParameters) {
 
   //restart button
   lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart,LV_EVENT_PRESSED, NULL);
+  //BLE disconnect button
+  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonBLEDisconnect, ui_event_SettingScreen_Button_ButtonBLEDisconnect,LV_EVENT_PRESSED, NULL);
   //LED brightness
   lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderLEDBrightness, ui_event_SettingScreen_Slider_SliderLEDBrightness, LV_EVENT_VALUE_CHANGED, NULL);
   //Disp brightness
@@ -969,7 +961,7 @@ void display_update_task(void *pvParameters) {
     count_value++;
   }
 
-  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
+  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
   
   lv_scr_load(ui_MainScreen);
 
@@ -1004,8 +996,12 @@ void display_update_task(void *pvParameters) {
 
       
     }else{
-      
-      lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
+
+      if(bleRequestDisconnect){
+        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
+      }else{
+        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
+      }
       
       }
     vTaskDelay(10);
@@ -1075,16 +1071,6 @@ void ble_task(void *pvParameters) {
 }
 
 void sensor_task(void *pvParameters) {
-
-
-
-  //vspi_canbus = new SPIClass(VSPI);
-
-  //vspi_canbus->begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, CANBUS_CS);
-
-  MCP2515 mcp2515(CANBUS_CS);
-
-  SPI.begin(VSPI_SCLK, VSPI_MISO, VSPI_MOSI, CANBUS_CS);
   
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
@@ -1307,6 +1293,24 @@ static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t * event)
 {
     delay(1000);
     ESP.restart();
+}
+
+static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t * event)
+{ 
+    connected = false;
+    bleRequestDisconnect = true;
+    
+    size_t numClients = NimBLEDevice::getClientListSize();
+    if (numClients > 0) {
+        std::list<NimBLEClient*> *clientList = NimBLEDevice::getClientList();
+        for (auto it = clientList->begin(); it != clientList->end(); it++) {
+            if ((*it)->isConnected()) {
+                (*it)->disconnect();
+            }
+        }
+    }
+    NimBLEDevice::deinit();
+   
 }
 
 // Do not use loop to perform any functions
