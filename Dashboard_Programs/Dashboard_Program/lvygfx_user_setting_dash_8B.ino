@@ -922,7 +922,7 @@ void display_task(void *pvParameters) {
   //LED brightness
   lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderLEDBrightness, ui_event_SettingScreen_Slider_SliderLEDBrightness, LV_EVENT_VALUE_CHANGED, NULL);
   //Disp brightness
-  lv_obj_add_event_cb(ui_SettingScreen_Label_LabelDisplayBrightness, ui_event_SettingScreen_Label_LabelDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
+  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderDisplayBrightness, ui_event_SettingScreen_Slider_SliderDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
   
   // Main LVGL loop
   while (1) {
@@ -1282,10 +1282,10 @@ static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t * event
   FastLED.show();
 }
 
-static void ui_event_SettingScreen_Label_LabelDisplayBrightness(lv_event_t * event)
+static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t * event)
 {
   lv_obj_t * slider = lv_event_get_target(event);
-  tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
+  tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 5, 255));
 }
 
 
