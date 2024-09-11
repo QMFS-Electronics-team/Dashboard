@@ -8,10 +8,10 @@ This repoistory is for a Formula Student Dashboard project. The intent of the da
 ├── Dashboard Programs\
 ├── Documentation\
 ├── images\
-├── Libraries\   (Directory for libraries needed for Arduino code)\
+├── Libraries   (Directory for libraries needed for Arduino code)\
 ├── Release Hex\
 ├── Testing Programs\
-└── README.md   (This document)\
+└── README.md   (This document)
 
 ## Images
 
