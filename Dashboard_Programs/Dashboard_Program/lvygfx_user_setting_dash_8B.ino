@@ -663,6 +663,18 @@ void setup(void)
 
   FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
   FastLED.setBrightness(20);
+
+   //SPI pins check
+  
+  Serial.println("SPI pins:");
+  Serial.println("MOSI:");
+  Serial.println(MOSI);
+  Serial.println("MISO");
+  Serial.println(MISO);
+  Serial.println("SCK");
+  Serial.println(SCK);
+
+  
   //reset 
   leds[0] = CRGB::Black;
   leds[1] = CRGB::Black;
@@ -675,19 +687,6 @@ void setup(void)
   leds[8] = CRGB::Black;
   leds[9] = CRGB::Black;
   FastLED.show();
-  
-//  leds[0] = CRGB::Green;
-//  leds[1] = CRGB::Yellow;
-//  leds[2] = CRGB::Red;
-//  leds[3] = CRGB::Green;
-//  leds[4] = CRGB::Yellow;
-//  leds[5] = CRGB::Red;
-//  leds[6] = CRGB::Green;
-//  leds[7] = CRGB::Yellow;
-//  leds[8] = CRGB::Red;
-//  leds[9] = CRGB::Green;
-//  delay(500);
-//  FastLED.show();
 
   delay(250);
   leds[0] = CRGB::Green;
@@ -698,8 +697,8 @@ void setup(void)
   leds[8] = CRGB::Green;
   FastLED.show();
   delay(250);
-  leds[2] = CRGB::Yellow;
-  leds[7] = CRGB::Yellow;
+  leds[2] = CRGB::Orange;
+  leds[7] = CRGB::Orange;
   FastLED.show();
   delay(250);
   leds[3] = CRGB::Red;
@@ -770,12 +769,12 @@ void setup(void)
 
   leds[0] = CRGB::Green;
   leds[1] = CRGB::Green;
-  leds[2] = CRGB::Yellow;
+  leds[2] = CRGB::Orange;
   leds[3] = CRGB::Red;
   leds[4] = CRGB::Red;
   leds[5] = CRGB::Red;
   leds[6] = CRGB::Red;
-  leds[7] = CRGB::Yellow;
+  leds[7] = CRGB::Orange;
   leds[8] = CRGB::Green;
   leds[9] = CRGB::Green;
   FastLED.show();
@@ -783,10 +782,14 @@ void setup(void)
 
   //buzzer
   pinMode(5, OUTPUT);
-  digitalWrite(5, HIGH);   // turn the LED on (HIGH is the voltage level)
-  delay(200);                       // wait for a second
-  digitalWrite(5, LOW);    // turn the LED off by making the voltage LOW          
-  delay(200);  
+  digitalWrite(5, HIGH);
+  delay(200);
+  digitalWrite(5, LOW);       
+  delay(200);
+  digitalWrite(5, HIGH);
+  delay(200);                       
+  digitalWrite(5, LOW);         
+  delay(200);   
 
   
   
@@ -840,7 +843,8 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
-  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Awaiting BLE");
+  lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
+  lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
 
 }
 
@@ -911,7 +915,7 @@ void display_task(void *pvParameters) {
   lv_indev_drv_register(&indev_drv);
 
   ui_init();
-  //ui_reset();
+  ui_reset();
 
   //assign callback functions
 
@@ -971,15 +975,6 @@ void display_update_task(void *pvParameters) {
   double gY = 0.0;
   double gZ = 0.0;
   double g_mag = 0.0;
-  
-  for(int i=0;i<100;i++){
-    delay(30);
-
-    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(count_value, 0, 12000, 0, 100), LV_ANIM_OFF);
-    lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(count_value).c_str());
-    count_value+=100;
-    
-  }
 
   while (1) {
     // if racebox connected
@@ -1058,7 +1053,7 @@ void ble_task(void *pvParameters) {
       //add your code here
       interpret_serial_input(); //this function listens to serial console inputs from your computer (when a RaceBox is connected, due to the check 'if (connected)'. Sending 1, 2 or 3 will start functions (currently only empty function prototypes are implemented to give a starting point)
       if(updated_RaceBox_Data_Message==true){ //if we have received updated values from a RaceBox data message
-        print_RaceBox_Data_message_payload_to_serial();
+        //print_RaceBox_Data_message_payload_to_serial();
         updated_RaceBox_Data_Message=false; //reset bool
       }
     }
@@ -1070,28 +1065,153 @@ void ble_task(void *pvParameters) {
   }
 }
 
+#define CANBUS_DATA_COUNT 6
+#define PID_ECU_RESPONSE 0x7E8
+#define PID_ENGINE_RPM  0x0C
+#define PID_THROTTLE 0x11
+#define PID_COOLANT_TEMP 0x05
+#define PID_ENGINE_OIL_TEMP 0x5C
+#define PID_TRANSMISSION_ACTUAL_GEAR 0xA4
+#define PID_CONTROL_MODULE_VOLTAGE 0x42 // Battery voltage
+//#define PID_INTAKE_TEMP 0x0F
+
+struct can_frame canReqMsg;
+
 void sensor_task(void *pvParameters) {
-  
+
+  const unsigned char canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM , PID_THROTTLE , PID_COOLANT_TEMP , PID_ENGINE_OIL_TEMP, PID_CONTROL_MODULE_VOLTAGE, PID_TRANSMISSION_ACTUAL_GEAR};
+  unsigned long currentMillis = millis();
+  unsigned long startMillis = 0;
+  const unsigned long canbus_timeout_period = 10;  //the value is a number of milliseconds
+  uint8_t send_rq = 0;
+  uint8_t send_rq_timeout = 0;
+  uint16_t rpm_byte = 0;
+  uint16_t rpm_decoded = 0;
+
+  canReqMsg.can_id  = 0x7E0;
+  canReqMsg.can_dlc = 8;   // Data len
+  canReqMsg.data[0] = 0x02; // No. of additional data byte
+  canReqMsg.data[1] = 0x01; // Service
+  canReqMsg.data[2] = 0x0C; // PID CODE
+  canReqMsg.data[3] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[4] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[5] = 0xCC; // ISO 15765-2 suggests CCh 
+  canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
+
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
   mcp2515.setNormalMode();                   // Set CAN at normal mode
 
   while (1) {
 
+    if(!send_rq || send_rq_timeout)
+    {
+        mcp2515.sendMessage(&canReqMsg);
+        send_rq_timeout = 0; // reset
+        send_rq = 1; //await recieved data before resend
+    }
+
+
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+
+    if(canMsg.can_id == PID_ECU_RESPONSE)
+    {
+        switch(canMsg.data[2])
+        {
+            case PID_ENGINE_RPM:
+                rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+                rpm_decoded = (rpm_byte / 4);
+                lv_bar_set_value(ui_MainScreen_Bar_BarRPM, rpm_decoded, LV_ANIM_OFF); // update rpm bar
+                lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str()); // update rpm label
+                send_rq = 0;
+                break;
+             case PID_ENGINE_RPM:
+                rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+                rpm_decoded = (rpm_byte / 4);
+                
+                send_rq = 0;
+                break;
+            default:
+                break;
+        }          
+    }else{
+     
+    //timeout resend request
+      
+    currentMillis = millis();  //get the current "time" (actually the number of milliseconds since the program started)
+    if (currentMillis - startMillis >= canbus_timeout_period)  //test whether the period has elapsed
+    {
+      send_rq_timeout = 1;
+      startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
+    }
+   }
+    
+
+
+//    if(canMsg.can_id == PID_ENGINE_RPM || canMsg.can_id == PID_THROTTLE || canMsg.can_id == PID_COOLANT_TEMP || canMsg.can_id == PID_ENGINE_OIL_TEMP || canMsg.can_id == PID_TRANSMISSION_ACTUAL_GEAR || canMsg.can_id == PID_CONTROL_MODULE_VOLTAGE){
+//      
+//    if(canMsg.can_id == PID_ENGINE_RPM){
+//      
+//      lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(((256*canMsg.data[0]+canMsg.data[1])/4), 1).c_str()); 
+//      
+//    }
+//
+//     if(canMsg.can_id == PID_THROTTLE){
+//     
+//       lv_bar_set_value(ui_MainScreen_Bar_BarTPS, (100/255) * canMsg.data[0], LV_ANIM_OFF);
+//       
+//     }
+//
+//     if(canMsg.can_id == PID_COOLANT_TEMP){
+//
+//       lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, String(canMsg.data[0] - 40).c_str()); 
+//       
+//     }
+//
+//     if(canMsg.can_id == PID_ENGINE_OIL_TEMP){
+//
+//       lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, String(canMsg.data[0] - 40).c_str()); 
+//       
+//     }
+//
+//     if(canMsg.can_id == PID_CONTROL_MODULE_VOLTAGE){
+//
+//       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "Batt: %.1f", (256*canMsg.data[0]+canMsg.data[1])/1000);
+//       
+//     }
+//
+//   
+//    
+//    Serial.print(canMsg.can_id, HEX); // print ID
+//    Serial.print(" "); 
+//    Serial.print(canMsg.can_dlc, HEX); // print DLC
+//    Serial.print(" ");
+//    
+//    for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+//      Serial.print(canMsg.data[i],HEX);
+//      Serial.print(" ");
+//    }
+//
+//    Serial.println();
+//    }      
+
+      Serial.print("CAN Message ID: ");
     Serial.print(canMsg.can_id, HEX); // print ID
-    Serial.print(" "); 
+    Serial.print(" ");
+    Serial.print("Message Length: ");
     Serial.print(canMsg.can_dlc, HEX); // print DLC
     Serial.print(" ");
-    
+    Serial.print("Data: ");
     for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
       Serial.print(canMsg.data[i],HEX);
       Serial.print(" ");
     }
 
-    Serial.println();      
-     }
-  
+    Serial.println(); 
+
+
+    }
 
   }
 
