@@ -5,12 +5,13 @@ This repoistory is for a Formula Student Dashboard project. The intent of the da
 
 ## Repository Structure
 .\
+├── Dashboard Programs\
 ├── Documentation\
-├── Libraries   (Directory for libraries needed for Arduino code)\
-├── README.md   (This document)\
-├── Release Hex\
 ├── images\
-└── lvygfx_user_setting_dash_plex
+├── Libraries\   (Directory for libraries needed for Arduino code)\
+├── Release Hex\
+├── Testing Programs\
+└── README.md   (This document)\
 
 ## Images
 
