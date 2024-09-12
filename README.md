@@ -9,6 +9,14 @@ Housed in a lightweight enclosure, the dashboard features an sunlight readable (
 
 The display comes with a capacitive touch screen to provide the driver with additional configurability, and with custom UI created using LVGL (Light & Versatile Embedded Graphics Library).
 
+## Main Features
+
+!["Display Module"](/Images/img_features.PNG)
+
+
+## Images
+
+!["Display Module"](/Images/img_screens.PNG)
 
 ## Repository Structure
 .\
@@ -19,10 +27,6 @@ The display comes with a capacitive touch screen to provide the driver with addi
 ├── Release Hex\
 ├── Testing Programs\
 └── README.md   (This document)
-
-## Images
-
-!["Display Module"](/Images/img_screens.PNG)
 
 ### Project Contributors
 Bhargav Maniar\
