@@ -783,11 +783,11 @@ void setup(void)
   //buzzer
   pinMode(5, OUTPUT);
   digitalWrite(5, HIGH);
-  delay(200);
+  delay(100);
   digitalWrite(5, LOW);       
-  delay(200);
+  delay(100);
   digitalWrite(5, HIGH);
-  delay(200);                       
+  delay(100);                       
   digitalWrite(5, LOW);         
   delay(200);   
 
@@ -842,7 +842,10 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
+  lv_label_set_text(ui_MainScreen_Label_LabelBattV, "Batt: USB");
   lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
+  lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
+  lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
 
@@ -985,7 +988,7 @@ void display_update_task(void *pvParameters) {
       gZ = gForceZ / 1000.0;
       g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
      
-      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String((speed / 1000.0)*2.23694, 1).c_str()); // conversion to m/s to mph
+      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String((speed / 1000.0)*2.23694, 0).c_str()); // conversion to m/s to mph
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs); // no. of connected satelites
       lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 2).c_str()); // G force resultant
 
@@ -1078,15 +1081,21 @@ void ble_task(void *pvParameters) {
 struct can_frame canReqMsg;
 
 void sensor_task(void *pvParameters) {
-
-  const unsigned char canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM , PID_THROTTLE , PID_COOLANT_TEMP , PID_ENGINE_OIL_TEMP, PID_CONTROL_MODULE_VOLTAGE, PID_TRANSMISSION_ACTUAL_GEAR};
+  
+  const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM , PID_THROTTLE , PID_COOLANT_TEMP , PID_ENGINE_OIL_TEMP, PID_CONTROL_MODULE_VOLTAGE, PID_TRANSMISSION_ACTUAL_GEAR};
   unsigned long currentMillis = millis();
   unsigned long startMillis = 0;
   const unsigned long canbus_timeout_period = 10;  //the value is a number of milliseconds
+  uint8_t canbus_data_counter = 0; // counter to cycle through canbus data 
   uint8_t send_rq = 0;
   uint8_t send_rq_timeout = 0;
   uint16_t rpm_byte = 0;
   uint16_t rpm_decoded = 0;
+  uint8_t throttle_decoded = 0;
+  int coolant_temp_decoded = 0;
+  int oil_temp_decoded = 0;
+  uint16_t battery_byte = 0;
+  float battery_decoded = 0;
 
   canReqMsg.can_id  = 0x7E0;
   canReqMsg.can_dlc = 8;   // Data len
@@ -1099,6 +1108,8 @@ void sensor_task(void *pvParameters) {
   canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
   canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
 
+  delay(1000); //wait for display init
+
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
   mcp2515.setNormalMode();                   // Set CAN at normal mode
@@ -1106,8 +1117,16 @@ void sensor_task(void *pvParameters) {
   while (1) {
 
     if(!send_rq || send_rq_timeout)
-    {
+    { 
+        if(canbus_data_counter  > (CANBUS_DATA_COUNT - 1)){
+          canbus_data_counter = 0;
+        }
+
+        // set required PID in CAN message
+        canReqMsg.data[2] = canbus_data[canbus_data_counter];
+        
         mcp2515.sendMessage(&canReqMsg);
+        
         send_rq_timeout = 0; // reset
         send_rq = 1; //await recieved data before resend
     }
@@ -1122,19 +1141,61 @@ void sensor_task(void *pvParameters) {
             case PID_ENGINE_RPM:
                 rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
                 rpm_decoded = (rpm_byte / 4);
-                lv_bar_set_value(ui_MainScreen_Bar_BarRPM, rpm_decoded, LV_ANIM_OFF); // update rpm bar
+                lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
                 lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str()); // update rpm label
-                send_rq = 0;
                 break;
-             case PID_ENGINE_RPM:
-                rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-                rpm_decoded = (rpm_byte / 4);
-                
-                send_rq = 0;
+             case PID_THROTTLE:
+                 throttle_decoded = map(canMsg.data[3], 0, 255, 0, 100);
+                 lv_bar_set_value(ui_MainScreen_Bar_BarTPS, throttle_decoded, LV_ANIM_OFF);
+                break;
+             case PID_COOLANT_TEMP:
+                coolant_temp_decoded = canMsg.data[3] - 40;
+                 lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
+                break;
+             case PID_ENGINE_OIL_TEMP:
+                oil_temp_decoded = canMsg.data[3] - 40;
+                lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
+                break;
+              case PID_CONTROL_MODULE_VOLTAGE:
+                battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+                battery_decoded = (rpm_byte / 1000.0);
+                lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded); // no. of connected satelites
+                break;
+             case PID_TRANSMISSION_ACTUAL_GEAR:
+//                Serial.print("CAN Message ID: ");
+//                Serial.print(canMsg.can_id, HEX); // print ID
+//                Serial.print(" ");
+//                Serial.print("Message Length: ");
+//                Serial.print(canMsg.can_dlc, HEX); // print DLC
+//                Serial.print(" ");
+//                Serial.print("Data: ");
+//                for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+//                  Serial.print(canMsg.data[i],HEX);
+//                  Serial.print(" ");
+//                }
+//                Serial.println(); 
                 break;
             default:
                 break;
-        }          
+            }
+
+            Serial.print("CAN Message ID: ");
+            Serial.print(canMsg.can_id, HEX); // print ID
+            Serial.print(" ");
+            Serial.print("Message Length: ");
+            Serial.print(canMsg.can_dlc, HEX); // print DLC
+            Serial.print(" ");
+            Serial.print("Data: ");
+            for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
+              Serial.print(canMsg.data[i],HEX);
+              Serial.print(" ");
+            }
+            Serial.println();
+            Serial.print("canbus_data_counter: "); 
+            Serial.println(canbus_data_counter); 
+            canbus_data_counter++;
+            send_rq = 0; // reset request
+                 
     }else{
      
     //timeout resend request
@@ -1143,7 +1204,7 @@ void sensor_task(void *pvParameters) {
     if (currentMillis - startMillis >= canbus_timeout_period)  //test whether the period has elapsed
     {
       send_rq_timeout = 1;
-      startMillis = currentMillis;  //IMPORTANT to save the start time of the current LED state.
+      startMillis = currentMillis; 
     }
    }
     
@@ -1151,11 +1212,6 @@ void sensor_task(void *pvParameters) {
 
 //    if(canMsg.can_id == PID_ENGINE_RPM || canMsg.can_id == PID_THROTTLE || canMsg.can_id == PID_COOLANT_TEMP || canMsg.can_id == PID_ENGINE_OIL_TEMP || canMsg.can_id == PID_TRANSMISSION_ACTUAL_GEAR || canMsg.can_id == PID_CONTROL_MODULE_VOLTAGE){
 //      
-//    if(canMsg.can_id == PID_ENGINE_RPM){
-//      
-//      lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(((256*canMsg.data[0]+canMsg.data[1])/4), 1).c_str()); 
-//      
-//    }
 //
 //     if(canMsg.can_id == PID_THROTTLE){
 //     
@@ -1174,14 +1230,6 @@ void sensor_task(void *pvParameters) {
 //       lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, String(canMsg.data[0] - 40).c_str()); 
 //       
 //     }
-//
-//     if(canMsg.can_id == PID_CONTROL_MODULE_VOLTAGE){
-//
-//       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "Batt: %.1f", (256*canMsg.data[0]+canMsg.data[1])/1000);
-//       
-//     }
-//
-//   
 //    
 //    Serial.print(canMsg.can_id, HEX); // print ID
 //    Serial.print(" "); 
@@ -1195,21 +1243,6 @@ void sensor_task(void *pvParameters) {
 //
 //    Serial.println();
 //    }      
-
-      Serial.print("CAN Message ID: ");
-    Serial.print(canMsg.can_id, HEX); // print ID
-    Serial.print(" ");
-    Serial.print("Message Length: ");
-    Serial.print(canMsg.can_dlc, HEX); // print DLC
-    Serial.print(" ");
-    Serial.print("Data: ");
-    for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
-      Serial.print(canMsg.data[i],HEX);
-      Serial.print(" ");
-    }
-
-    Serial.println(); 
-
 
     }
 
