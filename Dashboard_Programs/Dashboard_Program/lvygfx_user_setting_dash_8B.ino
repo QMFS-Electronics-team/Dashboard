@@ -9,17 +9,26 @@
 
 #define LGFX_USE_V1
 
-#define NUM_LEDS 10
+//PIN DEFS
+#define RGB_PIN 4
+#define BUZZER_PIN 5
+#define CANBUS_CS_PIN 40
+#define NUM_RPM_LEDS 10
+
+//DEFS
 #define SCREEN_WIDTH 480
 #define SCREEN_HEIGHT 320
-#define CANBUS_CS 40
+#define TFT_DEFAULT_BRIGHTNESS 100
 
 struct can_frame canMsg;
-MCP2515 mcp2515(CANBUS_CS);
+MCP2515 mcp2515(CANBUS_CS_PIN);
 
-CRGBArray<NUM_LEDS> leds;
+CRGBArray<NUM_RPM_LEDS> leds;
 
 SemaphoreHandle_t gui_mutex;
+
+static lv_disp_draw_buf_t draw_buf;
+static lv_color_t buf[ SCREEN_WIDTH * SCREEN_HEIGHT / 10 ];
 
 //################### important setting #########################
 
@@ -200,6 +209,8 @@ public:
     setPanel(&_panel_instance);
   }
 };
+
+static LGFX tft;
 
 static void notifyCallback(
   BLERemoteCharacteristic* pBLERemoteCharacteristic,
@@ -460,15 +471,9 @@ void parsePayload(uint8_t* data) {  //handle incoming data. This function is tri
       Serial.println("Ignoring packet. This is not a known/implemented data packet. Interpreting the payload for this kind of packet is not yet implemented.");
       return;
     }
-
-    
-
 }
 
-
 //functions to interpret payload of different messages:
-
-
 void parse_RaceBox_Data_Message_payload(uint8_t* data){ //function to handle payload of a RaceBox Data Message
     //writing updated values (from payload) to the variables:
     iTOW = *(reinterpret_cast<uint32_t*>(data + 6));                //e.g 0xA0 0xE7 0x0C 0x07
@@ -507,53 +512,6 @@ void parse_RaceBox_Data_Message_payload(uint8_t* data){ //function to handle pay
     updated_RaceBox_Data_Message = true; //bool is used to determine if updated data for variables in RaceBox Data Message is available (e.g. to print or display them in void loop() )
 }
 
-
-////function to connect to RaceBox via BLE
-//bool connectToRaceBox() {
-//  NimBLEClient* pClient = nullptr;
-//
-//  if (NimBLEDevice::getClientListSize()) {
-//    pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
-//    if (pClient) {
-//      if (!pClient->connect(myRaceBox)) {
-//        Serial.println("Failed to reconnect. Retrying...");
-//        Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-//        return false;
-//      }
-//    } else {
-//      pClient = NimBLEDevice::createClient();
-//      pClient->setClientCallbacks(new ClientCallbacks(), false);
-//      if (!pClient->connect(myRaceBox)) {
-//        Serial.println("Failed to connect.");
-//        NimBLEDevice::deleteClient(pClient);
-//        //Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-//        return false;
-//      }
-//    }
-//  } else {
-//    pClient = NimBLEDevice::createClient();
-//    pClient->setClientCallbacks(new ClientCallbacks(), false);
-//    if (!pClient->connect(myRaceBox)) {
-//      Serial.println("Failed to connect.");
-//      NimBLEDevice::deleteClient(pClient);
-//      Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-//      return false;
-//    }
-//  }
-//
-//  //obtain the service and characteristic
-//  BLERemoteService* pService = pClient->getService(UART_service_UUID);
-//  if (pService != nullptr) {
-//    pRemoteCharacteristic = pService->getCharacteristic(TX_characteristic_UUID);
-//    if (pRemoteCharacteristic != nullptr) {
-//      pRemoteCharacteristic->registerForNotify(notifyCallback);
-//      Serial.println("DEBUG: connectToRaceBox() will now return true and exit.");
-//      return true;
-//    }
-//  }
-//  Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-//  return false;
-//}
 
 // Function to connect to RaceBox via BLE
 bool connectToRaceBox() {
@@ -606,12 +564,6 @@ bool connectToRaceBox() {
   return false;
 }
 
-
-static LGFX tft;
-
-static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ SCREEN_WIDTH * SCREEN_HEIGHT / 10 ];
-
 #if LV_USE_LOG != 0
 /* Serial debugging */
 void my_print(const char * buf)
@@ -661,11 +613,12 @@ void setup(void)
     return;
   }
 
-  FastLED.addLeds<NEOPIXEL, 4>(leds, NUM_LEDS); 
+  pinMode(BUZZER_PIN, OUTPUT);
+  
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS); 
   FastLED.setBrightness(20);
 
-   //SPI pins check
-  
+  //SPI pins check
   Serial.println("SPI pins:");
   Serial.println("MOSI:");
   Serial.println(MOSI);
@@ -673,124 +626,6 @@ void setup(void)
   Serial.println(MISO);
   Serial.println("SCK");
   Serial.println(SCK);
-
-  
-  //reset 
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
-  delay(250);
-  leds[0] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[1] = CRGB::Green;
-  leds[8] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[2] = CRGB::Orange;
-  leds[7] = CRGB::Orange;
-  FastLED.show();
-  delay(250);
-  leds[3] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  FastLED.show();
-  delay(250);
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-
-
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-
-
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-  delay(200);
-
-
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-
-
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-  delay(200);
-
-
-  leds[0] = CRGB::Green;
-  leds[1] = CRGB::Green;
-  leds[2] = CRGB::Orange;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Orange;
-  leds[8] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-
-
-  //buzzer
-  pinMode(5, OUTPUT);
-  digitalWrite(5, HIGH);
-  delay(100);
-  digitalWrite(5, LOW);       
-  delay(100);
-  digitalWrite(5, HIGH);
-  delay(100);                       
-  digitalWrite(5, LOW);         
-  delay(200);   
-
   
   
   xTaskCreatePinnedToCore(display_task,
@@ -825,16 +660,6 @@ void setup(void)
                           NULL,
                           1);
 
-
-//  xTaskCreatePinnedToCore(simulation_task,
-//                          "simulation_task",
-//                          4000,
-//                          NULL,
-//                          0,
-//                          NULL,
-//                          1);
-
-  
 }
 
 void ui_reset() {
@@ -878,6 +703,80 @@ void upshifting_blink(){
   delay(200);
 }
 
+void RGB_startup_animation(){
+  
+  //reset 
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+
+  delay(250);
+  leds[0] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[1] = CRGB::Green;
+  leds[8] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[2] = CRGB::Orange;
+  leds[7] = CRGB::Orange;
+  FastLED.show();
+  delay(250);
+  leds[3] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  FastLED.show();
+  delay(250);
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+  upshifting_blink();
+  upshifting_blink();
+
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Green;
+  leds[2] = CRGB::Orange;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Orange;
+  leds[8] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+  
+}
+
+void buzz_double(){
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);       
+  delay(100);
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);                       
+  digitalWrite(BUZZER_PIN, LOW);         
+  delay(200);   
+}
+
+void buzz(){
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);       
+  delay(100); 
+}
+
+  
+
 void display_task(void *pvParameters) {
 
   String LVGL_Arduino = "LVGL Arduino ";
@@ -887,9 +786,7 @@ void display_task(void *pvParameters) {
   
   tft.init();
   tft.setRotation(1);
-
-  //max brightness at 255
-  tft.setBrightness(100);
+  tft.setBrightness(TFT_DEFAULT_BRIGHTNESS);
 
   lv_init();
 
@@ -952,14 +849,17 @@ void display_task(void *pvParameters) {
 
 void display_update_task(void *pvParameters) {
 
-  delay(1000); //wait for display init
+  
+  delay(500); //wait for display init
   
    //loading screen is first initiated screen
   
   lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
 
-  delay(2000);
+  RGB_startup_animation();
 
+  buzz_double();
+  
   int count_value = 0;
 
   for(int i=0;i<100;i++){
@@ -990,7 +890,7 @@ void display_update_task(void *pvParameters) {
      
       lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String((speed / 1000.0)*2.23694, 0).c_str()); // conversion to m/s to mph
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs); // no. of connected satelites
-      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 2).c_str()); // G force resultant
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str()); // G force resultant
 
       
     }else{
@@ -1003,7 +903,6 @@ void display_update_task(void *pvParameters) {
       
       }
     vTaskDelay(10);
-
   }
 
 }
@@ -1250,183 +1149,6 @@ void sensor_task(void *pvParameters) {
 
 }
 
-void simulation_task(void *pvParameters) {
-
-  lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
-
-  delay(2000);
-
-  int count_value = 0;
-
-  for(int i=0;i<100;i++){
-    delay(50);
-    lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  lv_scr_load(ui_MainScreen);
-
-  //lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_FADE_ON, 250, 0, true);
-
-  //LED RPM simulation
-  
-  leds[0] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[1] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[2] = CRGB::Green;
-  delay(500);
-  FastLED.show();
-  leds[3] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[4] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[5] = CRGB::Yellow;
-  delay(500);
-  FastLED.show();
-  leds[6] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[7] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[8] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  leds[9] = CRGB::Red;
-  delay(500);
-  FastLED.show();
-  
-  for(int i = 0; i<10; i++){
-    upshifting_blink();
-  }
-
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
-  leds[0] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[1] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[2] = CRGB::Green;
-  delay(250);
-  FastLED.show();
-  leds[3] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[4] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[5] = CRGB::Yellow;
-  delay(250);
-  FastLED.show();
-  leds[6] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[7] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[8] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-  leds[9] = CRGB::Red;
-  delay(250);
-  FastLED.show();
-
-  for(int i = 0; i<10; i++){
-    upshifting_blink();
-  }
-
-int rpm = 0;
-int speed_value = 0;
-int gear = 1;
-int tps = 0; 
-int bps = 0;
-int g_force = 0;
-
-//init all values from main screen with data to erase artifacts
-
-  // Elements on Display 
-
-  for(int i =0; i<20; i++){
-    
-  // RPM
-  rpm += 100; 
-  if (rpm > 3000) {
-    // Increase Gear
-    rpm = 1500;
-
-    // Gear
-    gear += 1;
-    if (gear > 5){
-      gear = 1;
-    }
-  }
-
-  
-  // Speed 
-  speed_value += 5;
-  if(speed_value > 30) {
-    speed_value = 0;
-  }
-  
-
-  // TODO: Add these later
-  // TPS
-  // BPS
-  
-  // G-Force 
-  g_force += 1;
-  if (g_force > 5) {
-    g_force = 0;
-  }
-
-
-  // Set Labels 
-  // RPM
-  lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm).c_str());
-  
-  // Gear
-  lv_label_set_text(ui_MainScreen_Label_LabelGear, String(gear).c_str());
-  
-  // Speed
-  lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String(speed_value).c_str());
-
- // G-Force
-  lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(g_force).c_str());
-
-  delay(500);
-
-  }
-
-  //delay(30000);
-
-
-
-  //ESP.restart();
-
-
-  while (1) {
-
-    vTaskDelay(10);
-
-  }
-}
 
 static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t * event)
 {
