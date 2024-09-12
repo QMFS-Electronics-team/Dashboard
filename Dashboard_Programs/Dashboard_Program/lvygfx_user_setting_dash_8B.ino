@@ -945,10 +945,10 @@ void display_update_task(void *pvParameters)
 
   count_value = 0;
 
-  double gX = 0.0;
-  double gY = 0.0;
-  double gZ = 0.0;
-  double g_mag = 0.0;
+  float gX = 0.0;
+  float gY = 0.0;
+  float gZ = 0.0;
+  float g_mag = 0.0;
 
   while (1)
   {
@@ -961,9 +961,9 @@ void display_update_task(void *pvParameters)
       gZ = gForceZ / 1000.0;
       g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
 
-      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String((speed / 1000.0) * 2.23694, 0).c_str()); // conversion to m/s to mph
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);                  // no. of connected satelites
-      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                        // G force resultant
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
     }
     else
     {
@@ -1130,7 +1130,7 @@ void sensor_task(void *pvParameters)
           break;
         case PID_CONTROL_MODULE_VOLTAGE:
           battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-          battery_decoded = (rpm_byte / 1000.0);
+          battery_decoded = (battery_byte / 1000.0);
           lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded); // no. of connected satelites
           break;
         case PID_TRANSMISSION_ACTUAL_GEAR:
