@@ -961,9 +961,9 @@ void display_update_task(void *pvParameters)
       gZ = gForceZ / 1000.0;
       g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
 
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
-      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
+      lv_label_set_text(ui_MainScreen_Label_LabelSpeed, String((speed / 1000.0) * 2.23694, 0).c_str()); // conversion to m/s to mph
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);                  // no. of connected satelites
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                        // G force resultant
     }
     else
     {
@@ -1052,7 +1052,7 @@ void ble_task(void *pvParameters)
 void sensor_task(void *pvParameters)
 {
 
-  const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_CONTROL_MODULE_VOLTAGE, PID_TRANSMISSION_ACTUAL_GEAR};
+  const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_TRANSMISSION_ACTUAL_GEAR, PID_CONTROL_MODULE_VOLTAGE};
   unsigned long currentMillis = millis();
   unsigned long startMillis = 0;
   const unsigned long canbus_timeout_period = 10; // the value is a number of milliseconds
@@ -1066,6 +1066,8 @@ void sensor_task(void *pvParameters)
   int oil_temp_decoded = 0;
   uint16_t battery_byte = 0;
   float battery_decoded = 0;
+  uint16_t transmission_actual_gear_byte = 0;
+  float transmission_actual_gear_decoded = 0;
 
   canReqMsg.can_id = 0x7E0;
   canReqMsg.can_dlc = 8;    // Data len
@@ -1089,7 +1091,7 @@ void sensor_task(void *pvParameters)
 
     if (!send_rq || send_rq_timeout)
     {
-      if (canbus_data_counter > (CANBUS_DATA_COUNT - 1))
+      if (canbus_data_counter > CANBUS_DATA_COUNT - 1)
       {
         canbus_data_counter = 0;
       }
@@ -1125,27 +1127,18 @@ void sensor_task(void *pvParameters)
           lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
           break;
         case PID_ENGINE_OIL_TEMP:
-          oil_temp_decoded = canMsg.data[3] - 40;
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
+          // oil_temp_decoded = canMsg.data[3] - 40;
+          // lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
+          break;
+        case PID_TRANSMISSION_ACTUAL_GEAR:
+          transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
+          transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Gear: %.2f", transmission_actual_gear_decoded);
           break;
         case PID_CONTROL_MODULE_VOLTAGE:
           battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
           battery_decoded = (battery_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded); // no. of connected satelites
-          break;
-        case PID_TRANSMISSION_ACTUAL_GEAR:
-          //                Serial.print("CAN Message ID: ");
-          //                Serial.print(canMsg.can_id, HEX); // print ID
-          //                Serial.print(" ");
-          //                Serial.print("Message Length: ");
-          //                Serial.print(canMsg.can_dlc, HEX); // print DLC
-          //                Serial.print(" ");
-          //                Serial.print("Data: ");
-          //                for (int i = 0; i<canMsg.can_dlc; i++)  {  // print the data
-          //                  Serial.print(canMsg.data[i],HEX);
-          //                  Serial.print(" ");
-          //                }
-          //                Serial.println();
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded);
           break;
         default:
           break;
