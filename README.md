@@ -30,5 +30,5 @@ The display comes with a capacitive touch screen to provide the driver with addi
 
 ### Project Contributors
 Bhargav Maniar\
-Raymond Zhen
+Raymond Zhen\
 Ahmed Marzouk
