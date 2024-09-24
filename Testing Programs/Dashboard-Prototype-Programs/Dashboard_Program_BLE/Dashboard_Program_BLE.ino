@@ -1,7 +1,7 @@
 #define LGFX_USE_V1
 
 #include <Arduino_GFX_Library.h>
-#include <Definitions.h>
+#include <TestingDefinitions.h>
 #include <FS.h>
 #include <FastLED.h>
 #include <NimBLEDevice.h>
