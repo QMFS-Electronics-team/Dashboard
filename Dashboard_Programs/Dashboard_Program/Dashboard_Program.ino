@@ -1,36 +1,13 @@
-#include "NimBLEDevice.h"
-#include <SPI.h>
-#include <math.h>
-#include <mcp2515.h>
 #include <FastLED.h>
 #include <LovyanGFX.hpp>
+#include <NimBLEDevice.h>
+#include <ProductionDefinitions.h>
+#include <SPI.h>
 #include <lvgl.h>
+#include <math.h>
+#include <mcp2515.h>
 #include "ui.h"
 
-#define LGFX_USE_V1
-
-// PIN DEFS
-#define RGB_PIN 4
-#define BUZZER_PIN 5
-#define CANBUS_CS_PIN 40
-
-// DEFS
-#define NUM_RPM_LEDS 10
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 320
-#define TFT_DEFAULT_BRIGHTNESS 100
-#define LED_DEFAULT_BRIGHTNESS 20
-
-// CAN DEFS
-#define CANBUS_DATA_COUNT 6
-#define PID_ECU_RESPONSE 0x7E8
-#define PID_ENGINE_RPM 0x0C
-#define PID_THROTTLE 0x11
-#define PID_COOLANT_TEMP 0x05
-#define PID_ENGINE_OIL_TEMP 0x5C
-#define PID_TRANSMISSION_ACTUAL_GEAR 0xA4
-#define PID_CONTROL_MODULE_VOLTAGE 0x42 // Battery voltage
-// #define PID_INTAKE_TEMP 0x0F
 
 struct can_frame canMsg;
 struct can_frame canReqMsg;
@@ -43,43 +20,23 @@ SemaphoreHandle_t gui_mutex;
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / 10];
 
-// ################### important setting #########################
-
-// example how to define a certain address so that we only connect to a distinguished RaceBox that matches this address:   #define TARGET_DEVICE_ADDRESS "aa:bb:cc:dd:ee:ff"
-// replace the actual address below with the one that matches your device (you will see the address printed in the serial output of this code while it is scanning for bluetooth devices on start)
-
-// #define TARGET_DEVICE_ADDRESS "aa:bb:cc:dd:ee:ff"
-
-// alternatively, you may comment the line above like this: //#define TARGET_DEVICE_ADDRESS "aa:bb:cc:dd:ee:ff".
-//--> In that case the code will connect to any RaceBox (or to be clear: to any device that advertises a name beginning with 'RaceBox'), as long as the advertised service UUID also matches the requirement.
-
-// ##############################################################
-
-// device type, will be set automatically:  0: RaceBox Mini/Mini S, 1: RaceBox Micro - used to handle different battery status decoding between racebox mini/mini s and micro.
-int deviceType = -1; //-1: unknown device type as default, the statement 'if (deviceName.rfind("RaceBox Micro", 0) == 0) {' and the following lines in class AdvertisedDeviceCallbacks automatically determines the device type.
-
 NimBLEClient *pClient = nullptr;
 
 // BLE UUIDs
 static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-static BLEUUID RX_characteristic_UUID("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"); // currently not used in this code example
 static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-static BLEUUID NMEA_UART_service_UUID("00001101-0000-1000-8000-00805F9B34FB");      // currently not used in this code example
-static BLEUUID NMEA_RX_characteristic_UUID("00001102-0000-1000-8000-00805F9B34FB"); // currently not used in this code example
-static BLEUUID NMEA_TX_characteristic_UUID("00001103-0000-1000-8000-00805F9B34FB"); // currently not used in this code example
-// static BLEUUID Serial_Number_Characteristic_UUID ("00002a25-0000-1000-8000-00805f9b34fb"); //individual serial number UUID - currently not used in this code example
 
 // Configuration
-const int outputFrequencyHzSerial = 1; // in Hz
+const int outputFrequencyHzSerial = 8; // Hz
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial;
 
 static bool doConnect = false;
 static bool bleRequestDisconnect = false;
 static bool connected = false;
 static bool doScan = false;
-static bool updated_RaceBox_Data_Message = false; // used to determine if we have new live data to print
-static BLERemoteCharacteristic *pRemoteCharacteristic;
-static BLEAdvertisedDevice *myRaceBox;
+static bool updated_RaceBox_Data_Message = false;
+static BLERemoteCharacteristic* pRemoteCharacteristic;
+static BLEAdvertisedDevice* myRaceBox;
 
 unsigned long lastOutputTimeSerial = 0;
 unsigned long lastOutputTimeOLED = 0;
@@ -131,8 +88,8 @@ class LGFX : public lgfx::LGFX_Device
 
   lgfx::Panel_ILI9488 _panel_instance;
   lgfx::Bus_Parallel8 _bus_instance;
-  lgfx::Light_PWM _light_instance;
-  lgfx::Touch_FT5x06 _touch_instance;
+  lgfx::Light_PWM     _light_instance;
+  lgfx::Touch_FT5x06  _touch_instance;
 
 public:
   LGFX(void)
@@ -168,8 +125,6 @@ public:
 
       cfg.panel_width = 320;
       cfg.panel_height = 480;
-      // cfg.offset_x         =   0;
-      // cfg.offset_y         =   0;
       cfg.offset_x = 0;
       cfg.offset_y = 0;
       cfg.offset_rotation = 0;
@@ -223,106 +178,743 @@ public:
 
 static LGFX tft;
 
-static void notifyCallback(
-    BLERemoteCharacteristic *pBLERemoteCharacteristic,
-    uint8_t *pData,
-    size_t length,
-    bool isNotify)
+#if LV_USE_LOG != 0
+/* Serial debugging */
+void my_print(const char *buf)
 {
-  if (length >= 80)
+  Serial.printf(buf);
+  Serial.flush();
+}
+#endif
+
+/* Display flushing */
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
+{
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
+
+  tft.startWrite();
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
+  tft.endWrite();
+
+  lv_disp_flush_ready(disp_drv);
+}
+
+/*Read the touchpad*/
+void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
+{
+
+  uint16_t x, y;
+  if (tft.getTouch(&x, &y))
   {
-    parsePayload(pData);
+    data->state = LV_INDEV_STATE_PR;
+    data->point.x = x;
+    data->point.y = y;
   }
   else
   {
-    Serial.println("payload length is less than 80 bytes. 80 bytes would be expected for a RaceBox data message.");
-    Serial.println("For other messages, the payload can be shorter.");
-    // to allow that, we still send the data to parsePayload(pData):
-    parsePayload(pData);
+    data->state = LV_INDEV_STATE_REL;
   }
 }
 
-// Callback for when a connection is established
-class ClientCallbacks : public NimBLEClientCallbacks
-{
-  void onConnect(NimBLEClient *pClient)
-  {
-    connected = true;
-    Serial.println("RaceBox Connected!");
-  }
-
-  void onDisconnect(NimBLEClient *pClient)
-  {
-    connected = false;
-    Serial.println("Disconnected from RaceBox!");
-    Serial.println("HINT: disconnects can happen if excessive serial output (especially in void parsePayload and functions like void parse_RaceBox_Data_Message_payload etc. delay the code execution.");
-    Serial.println("Trying to reconnect...");
-    doConnect = true;
-  }
-};
-
-// Scan callback function
-class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks
+void setup(void)
 {
 
-  void onResult(NimBLEAdvertisedDevice *advertisedDevice)
-  { // check preconditions for connection to found Bluetooth devices (does it advertise to be Named RaceBox? If set, does it have the correct TARGET_DEVICE_ADDRESS?
-    Serial.print("Advertised BLE Device found: ");
-    Serial.println(advertisedDevice->toString().c_str());
+  Serial.begin(115200); /* prepare for possible serial debug */
 
-    // We have found a device with the correct service UUID, set doConnect to true
-    if (advertisedDevice->isAdvertisingService(UART_service_UUID))
-    {
-      // Check if the device name starts with "RaceBox"
-      std::string deviceName = advertisedDevice->getName();
-      if (deviceName.rfind("RaceBox", 0) == 0)
-      { // rfind returns 0 if we find "RaceBox" at the beginning of advertised device name. If you have problems here double check case (other RaceBoxes *could* be named "Racebox" or "racebox")
+  gui_mutex = xSemaphoreCreateMutex();
+  if (gui_mutex == NULL)
+  {
+    // Handle semaphore creation failure
+    Serial.println("semaphore creation failure");
+    return;
+  }
 
-        // setting of device type:  0: RaceBox Mini/Mini S, 1: RaceBox Micro - used to handle different battery status decoding between racebox mini/mini s and micro.
-        if (deviceName.rfind("RaceBox Micro", 0) == 0)
-        {
-          deviceType = 1;
-        }
-        else if (deviceName.rfind("RaceBox Mini", 0) == 0)
-        { // setting of device type:  0: RaceBox Mini/Mini S, 1: RaceBox Micro - used to handle different battery status decoding between racebox mini/mini s and micro.
-          deviceType = 0;
-        }
-        else
-        {
-          deviceType = -1;
-        }
+  pinMode(BUZZER_PIN, OUTPUT);
 
-// If TARGET_DEVICE_ADDRESS is defined, check for a specific address - that is something YOU may or may not define in the beginning of the code - if defined, we will only connect to a specific address. if not set, we'll connect to an RaceBox.
-#ifdef TARGET_DEVICE_ADDRESS
-        std::string deviceAddress = advertisedDevice->getAddress().toString();
-        if (deviceAddress == TARGET_DEVICE_ADDRESS)
-        {
-          Serial.printf("RaceBox found with address %s - matching TARGET_DEVICE_ADDRESS as set in code. Trying to connect...\n", deviceAddress.c_str());
-          NimBLEDevice::getScan()->stop(); // Stop scanning
-          myRaceBox = advertisedDevice;
-          doConnect = true;
-        }
-        else
-        {
-          Serial.printf("Device name starts with RaceBox but address %s does not match the TARGET_DEVICE_ADDRESS set in code.\n", deviceAddress.c_str());
-          Serial.printf("Comment out the definition of TARGET_DEVICE_ADDRESS in code (to connect to any device named RaceBox) or set TARGET_DEVICE_ADDRESS to an address that matches your device.\n\n");
-          Serial.printf("##### We are therefore NOT connecting to the device %s although it seems to be a RaceBox #####\n", deviceAddress.c_str());
-        }
-#else
-        // If no specific address is defined, connect to any device whose name starts with "RaceBox"
-        Serial.println("RaceBox found. TARGET_DEVICE_ADDRESS is not set in code (or commented out ), so we connect to any RaceBox that we find.");
-        NimBLEDevice::getScan()->stop(); // Stop scanning
-        Serial.println("stopped bluetooth scanning.");
-        Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
-        myRaceBox = advertisedDevice;
-        doConnect = true;
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
+
+  // SPI pins check
+  Serial.println("SPI pins:");
+  Serial.println("MOSI:");
+  Serial.println(MOSI);
+  Serial.println("MISO");
+  Serial.println(MISO);
+  Serial.println("SCK");
+  Serial.println(SCK);
+
+  xTaskCreatePinnedToCore(display_task,
+                          "loading_task",
+                          1024 * 10, // The size of the task stack specified as the number of bytes
+                          NULL,
+                          3, // The priority at which the task should run.
+                          NULL,
+                          1); // The core to which the task is pinned to, or tskNO_AFFINITY if the task has no core affinity.
+
+  xTaskCreatePinnedToCore(display_update_task,
+                          "loading_task",
+                          1024 * 3,
+                          NULL,
+                          2,
+                          NULL,
+                          1);
+
+  xTaskCreatePinnedToCore(ble_task,
+                          "ble_task",
+                          1024 * 10,
+                          NULL,
+                          1,
+                          NULL,
+                          1);
+
+  xTaskCreatePinnedToCore(sensor_task,
+                          "sensor_task",
+                          1024 * 5,
+                          NULL,
+                          1,
+                          NULL,
+                          1);
+}
+
+
+
+//-----------------------------
+// RGB LEDS
+//-----------------------------
+void upshifting_blink()
+{
+  leds[0] = CRGB::Red;
+  leds[1] = CRGB::Red;
+  leds[2] = CRGB::Red;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Red;
+  leds[8] = CRGB::Red;
+  leds[9] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+  delay(200);
+}
+
+void RGB_startup_animation()
+{
+
+  // reset
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+
+  delay(250);
+  leds[0] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[1] = CRGB::Green;
+  leds[8] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[2] = CRGB::Orange;
+  leds[7] = CRGB::Orange;
+  FastLED.show();
+  delay(250);
+  leds[3] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  FastLED.show();
+  delay(250);
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+  upshifting_blink();
+  upshifting_blink();
+
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Green;
+  leds[2] = CRGB::Orange;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Orange;
+  leds[8] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+}
+
+
+//-----------------------------
+// Buzzer
+//-----------------------------
+void buzz_double()
+{
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);
+  delay(100);
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);
+  delay(200);
+}
+
+void buzz()
+{
+  digitalWrite(BUZZER_PIN, HIGH);
+  delay(100);
+  digitalWrite(BUZZER_PIN, LOW);
+  delay(100);
+}
+
+
+//-----------------------------
+// Dispay
+//-----------------------------
+void display_task(void *pvParameters)
+{
+
+  String LVGL_Arduino = "LVGL Arduino ";
+  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+
+  Serial.println(LVGL_Arduino);
+
+  tft.init();
+  tft.setRotation(1);
+  tft.setBrightness(TFT_DEFAULT_BRIGHTNESS);
+
+  lv_init();
+
+#if LV_USE_LOG != 0
+  lv_log_register_print_cb(my_print); /* register print function for debugging */
 #endif
+
+  lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCREEN_WIDTH * 10);
+
+  /*Initialize the display*/
+  static lv_disp_drv_t disp_drv;
+  lv_disp_drv_init(&disp_drv);
+
+  /*Change the following line to your display resolution*/
+  disp_drv.hor_res = SCREEN_WIDTH;
+  disp_drv.ver_res = SCREEN_HEIGHT;
+  disp_drv.flush_cb = my_disp_flush;
+  disp_drv.draw_buf = &draw_buf;
+  lv_disp_drv_register(&disp_drv);
+
+  /*Initialize the (dummy) input device driver*/
+  static lv_indev_drv_t indev_drv;
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = my_touchpad_read;
+  lv_indev_drv_register(&indev_drv);
+
+  ui_init();
+  ui_reset();
+
+  // assign callback functions
+
+  // restart button
+  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart, LV_EVENT_PRESSED, NULL);
+  // BLE disconnect button
+  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonBLEDisconnect, ui_event_SettingScreen_Button_ButtonBLEDisconnect, LV_EVENT_PRESSED, NULL);
+  // LED brightness
+  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderLEDBrightness, ui_event_SettingScreen_Slider_SliderLEDBrightness, LV_EVENT_VALUE_CHANGED, NULL);
+  // Disp brightness
+  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderDisplayBrightness, ui_event_SettingScreen_Slider_SliderDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
+
+  // Main LVGL loop
+  while (1)
+  {
+
+    // Take the semaphore to access LVGL resources
+    if (xSemaphoreTake(gui_mutex, portMAX_DELAY) == pdTRUE)
+    {
+      // Call LVGL's main task handler
+      lv_timer_handler();
+
+      // Release the semaphore after LVGL operations
+      xSemaphoreGive(gui_mutex);
+    }
+
+    // Delay to control LVGL's refresh rate
+    vTaskDelay(pdMS_TO_TICKS(1)); // Adjust as needed
+  }
+}
+
+void display_update_task(void *pvParameters)
+{
+
+  delay(500); // wait for display init
+
+  // loading screen is first initiated screen
+
+  lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
+
+  RGB_startup_animation();
+
+  buzz_double();
+
+  int count_value = 0;
+
+  for (int i = 0; i < 100; i++)
+  {
+    delay(30);
+    lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
+    count_value++;
+  }
+
+  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
+
+  lv_scr_load(ui_MainScreen);
+
+  count_value = 0;
+
+  float gX = 0.0;
+  float gY = 0.0;
+  float gZ = 0.0;
+  float g_mag = 0.0;
+
+  while (1)
+  {
+    // if racebox connected
+    if (connected)
+    {
+
+      gX = gForceX / 1000.0;
+      gY = gForceY / 1000.0;
+      gZ = gForceZ / 1000.0;
+      g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
+
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
+    }
+    else
+    {
+
+      if (bleRequestDisconnect)
+      {
+        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
+      }
+      else
+      {
+        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
+      }
+    }
+    vTaskDelay(10);
+  }
+}
+
+
+//-----------------------------
+// CAN BUS
+//-----------------------------
+void sensor_task(void *pvParameters)
+{
+
+  const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_TRANSMISSION_ACTUAL_GEAR, PID_CONTROL_MODULE_VOLTAGE};
+  unsigned long currentMillis = millis();
+  unsigned long startMillis = 0;
+  const unsigned long canbus_timeout_period = 10; // the value is a number of milliseconds
+  uint8_t canbus_data_counter = 0;                // counter to cycle through canbus data
+  uint8_t send_rq = 0;
+  uint8_t send_rq_timeout = 0;
+  uint16_t rpm_byte = 0;
+  uint16_t rpm_decoded = 0;
+  uint8_t throttle_decoded = 0;
+  int coolant_temp_decoded = 0;
+  int oil_temp_decoded = 0;
+  uint16_t battery_byte = 0;
+  float battery_decoded = 0;
+  uint16_t transmission_actual_gear_byte = 0;
+  float transmission_actual_gear_decoded = 0;
+
+  canReqMsg.can_id = 0x7E0;
+  canReqMsg.can_dlc = 8;    // Data len
+  canReqMsg.data[0] = 0x02; // No. of additional data byte
+  canReqMsg.data[1] = 0x01; // Service
+  canReqMsg.data[2] = 0x0C; // PID CODE
+  canReqMsg.data[3] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[4] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[5] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
+  canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
+
+  delay(1000); // wait for display init
+
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();                   // Set CAN at normal mode
+
+  while (1)
+  {
+
+    if (!send_rq || send_rq_timeout)
+    {
+      if (canbus_data_counter > CANBUS_DATA_COUNT - 1)
+      {
+        canbus_data_counter = 0;
+      }
+
+      // set required PID in CAN message
+      canReqMsg.data[2] = canbus_data[canbus_data_counter];
+
+      mcp2515.sendMessage(&canReqMsg);
+
+      send_rq_timeout = 0; // reset
+      send_rq = 1;         // await recieved data before resend
+    }
+
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
+    {
+
+      if (canMsg.can_id == PID_ECU_RESPONSE)
+      {
+        switch (canMsg.data[2])
+        {
+        case PID_ENGINE_RPM:
+          rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+          rpm_decoded = (rpm_byte / 4);
+          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
+          break;
+        case PID_THROTTLE:
+          throttle_decoded = map(canMsg.data[3], 0, 255, 0, 100);
+          lv_bar_set_value(ui_MainScreen_Bar_BarTPS, throttle_decoded, LV_ANIM_OFF);
+          break;
+        case PID_COOLANT_TEMP:
+          coolant_temp_decoded = canMsg.data[3] - 40;
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
+          break;
+        case PID_ENGINE_OIL_TEMP:
+          // oil_temp_decoded = canMsg.data[3] - 40;
+          // lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
+          break;
+        case PID_TRANSMISSION_ACTUAL_GEAR:
+          transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
+          transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Gear: %.2f", transmission_actual_gear_decoded);
+          break;
+        case PID_CONTROL_MODULE_VOLTAGE:
+          battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+          battery_decoded = (battery_byte / 1000.0);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded);
+          break;
+        default:
+          break;
+        }
+
+        Serial.print("CAN Message ID: ");
+        Serial.print(canMsg.can_id, HEX); // print ID
+        Serial.print(" ");
+        Serial.print("Message Length: ");
+        Serial.print(canMsg.can_dlc, HEX); // print DLC
+        Serial.print(" ");
+        Serial.print("Data: ");
+        for (int i = 0; i < canMsg.can_dlc; i++)
+        { // print the data
+          Serial.print(canMsg.data[i], HEX);
+          Serial.print(" ");
+        }
+        Serial.println();
+        Serial.print("canbus_data_counter: ");
+        Serial.println(canbus_data_counter);
+        canbus_data_counter++;
+        send_rq = 0; // reset request
+      }
+      else
+      {
+
+        // timeout resend request
+
+        currentMillis = millis();                                 // get the current "time" (actually the number of milliseconds since the program started)
+        if (currentMillis - startMillis >= canbus_timeout_period) // test whether the period has elapsed
+        {
+          send_rq_timeout = 1;
+          startMillis = currentMillis;
+        }
       }
     }
   }
+}
+
+
+//-----------------------------
+// UI Functions
+//-----------------------------
+static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event)
+{
+  lv_obj_t *slider = lv_event_get_target(event);
+  FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
+  FastLED.show();
+}
+
+static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *event)
+{
+  lv_obj_t *slider = lv_event_get_target(event);
+  tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 5, 255));
+}
+
+static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event)
+{
+  delay(1000);
+  ESP.restart();
+}
+
+static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
+{
+  connected = false;
+  bleRequestDisconnect = true;
+
+  size_t numClients = NimBLEDevice::getClientListSize();
+  if (numClients > 0)
+  {
+    std::list<NimBLEClient *> *clientList = NimBLEDevice::getClientList();
+    for (auto it = clientList->begin(); it != clientList->end(); it++)
+    {
+      if ((*it)->isConnected())
+      {
+        (*it)->disconnect();
+      }
+    }
+  }
+  NimBLEDevice::deinit();
+}
+
+void ui_reset()
+{
+  lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
+  lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
+  lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
+  lv_label_set_text(ui_MainScreen_Label_LabelBattV, "Batt: USB");
+  lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
+  lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
+  lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
+  lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
+  lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
+}
+
+
+//-----------------------------
+// BLE GPS Functions
+//-----------------------------
+
+class ClientCallbacks : public NimBLEClientCallbacks {
+    void onConnect(NimBLEClient* pClient) {
+      connected = true;
+      Serial.println(F("RaceBox Connected!"));
+    }
+
+    void onDisconnect(NimBLEClient* pClient) {
+      connected = false;
+      Serial.println(F("Disconnected from RaceBox!"));
+      Serial.println(F("HINT: disconnects can happen if excessive serial output (especially in void parsePayload and functions like void parse_RaceBox_Data_Message_payload etc. delay the code execution."));
+      Serial.println(F("Trying to reconnect..."));
+      doConnect = true;
+    }
 };
 
-// Function to get compass direction from heading
+class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
+
+    void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
+      Serial.print(F("Advertised BLE Device found: "));
+      // Serial.println(advertisedDevice->toString().c_str());
+
+      if (advertisedDevice->isAdvertisingService(UART_service_UUID)) {
+        // Check if the device name starts with "RaceBox"
+        std::string deviceName = advertisedDevice->getName();
+        if (deviceName.rfind("RaceBox", 0) == 0) { //rfind returns 0 if we find "RaceBox" at the beginning of advertised device name. If you have problems here double check case (other RaceBoxes *could* be named "Racebox" or "racebox")
+
+          // If no specific address is defined, connect to any device whose name starts with "RaceBox"
+          Serial.println(F("RaceBox found. TARGET_DEVICE_ADDRESS is not set in code (or commented out ), so we connect to any RaceBox that we find."));
+          NimBLEDevice::getScan()->stop();  // Stop scanning
+          Serial.println(F("stopped bluetooth scanning."));
+          Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
+          myRaceBox = advertisedDevice;
+          doConnect = true;
+        }
+      }
+    }
+
+};
+
+bool connectToRaceBox()
+{
+
+  // Check if there's an existing client that matches the address
+  if (NimBLEDevice::getClientListSize())
+  {
+    pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
+    if (pClient)
+    {
+      if (!pClient->connect(myRaceBox))
+      {
+        Serial.println("Failed to reconnect. Retrying...");
+        // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
+        return false;
+      }
+    }
+    else
+    {
+      // Create a new client if none matches
+      pClient = NimBLEDevice::createClient();
+      pClient->setClientCallbacks(new ClientCallbacks(), false);
+      if (!pClient->connect(myRaceBox))
+      {
+        Serial.println("Failed to connect.");
+        NimBLEDevice::deleteClient(pClient);
+        // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
+        return false;
+      }
+    }
+  }
+  else
+  {
+    // Create a new client if there are no existing clients
+    pClient = NimBLEDevice::createClient();
+    pClient->setClientCallbacks(new ClientCallbacks(), false);
+    if (!pClient->connect(myRaceBox))
+    {
+      Serial.println("Failed to connect.");
+      NimBLEDevice::deleteClient(pClient);
+      // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
+      return false;
+    }
+  }
+
+  // obtain the service and characteristic
+  BLERemoteService *pService = pClient->getService(UART_service_UUID);
+  if (pService != nullptr)
+  {
+    pRemoteCharacteristic = pService->getCharacteristic(TX_characteristic_UUID);
+    if (pRemoteCharacteristic != nullptr)
+    {
+      pRemoteCharacteristic->registerForNotify(notifyCallback);
+      Serial.println("DEBUG: connectToRaceBox() will now return true and exit.");
+      return true;
+    }
+  }
+
+  // if service or characteristic is not found, return false
+  // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
+  return false;
+}
+
+// TODO: Update function
+void print_RaceBox_Data_message_payload_to_serial()
+{
+  // serial print the received data:
+  unsigned long currentTime = millis();
+  if (currentTime - lastOutputTimeSerial >= outputIntervalMs_serial)
+  { // limits the amount how often we print current values to serial
+
+    // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
+    Serial.println();
+    Serial.println("--- updated values from RaceBox Data Message available: ---");
+    Serial.println("--------------------------------------------------------------------------------------------------");
+    Serial.println("iTOW: " + String(iTOW) + " ms");
+    Serial.println("Year: " + String(year));
+    Serial.println("Month: " + String(month));
+    Serial.println("Day: " + String(day));
+
+    // Serial.println("Time (UTC): " + String(hour) + ":" + String(minute) + ":" + String(second));
+    char timeString[9];                                          // Buffer to store the formatted time string
+    sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
+    Serial.println("Time (UTC): " + String(timeString));
+
+    // output fix status with interpretation
+    String fixStatusText;
+    if (fixStatus == 0)
+    {
+      fixStatusText = "No Fix";
+    }
+    else if (fixStatus == 2)
+    {
+      fixStatusText = "2D Fix";
+    }
+    else if (fixStatus == 3)
+    {
+      fixStatusText = "3D Fix";
+    }
+    else
+    {
+      fixStatusText = "Unknown";
+    }
+    Serial.println("GPS: " + fixStatusText);
+
+    Serial.println("Satellites: " + String(numSVs));
+    Serial.println("Latitude: " + String(latitude / 1e7, 7) + " deg"); // we need to divide the latitude by 10^7 because the datasheet states that it is transmitted with a factor of 10^7
+    Serial.println("Longitude: " + String(longitude / 1e7, 7) + " deg");
+    Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + " m");
+    Serial.println("MSL Altitude: " + String(mslAltitude / 1000.0, 2) + " m");
+    Serial.println("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + " m");
+    Serial.println("Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + " m");
+    Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + " m/s");
+    Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
+    Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + " km/h");
+    Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + " deg");
+    Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
+    // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
+    Serial.print("Heading: ");
+    Serial.print(headingDegrees, 1); // heading (one decimal)
+    Serial.print(" deg, compass direction: ");
+    Serial.println(compass_direction); // magnetic compass direction (e.g., "N", "NO")
+    Serial.println("PDOP: " + String(pdop / 100.0, 2));
+    Serial.println("G-Force X: " + String(gForceX / 1000.0, 3) + " G");
+    Serial.println("G-Force Y: " + String(gForceY / 1000.0, 3) + " G");
+    Serial.println("G-Force Z: " + String(gForceZ / 1000.0, 3) + " G");
+    Serial.println("Rot Rate X: " + String(rotRateX / 100.0, 2) + " deg/s");
+    Serial.println("Rot Rate Y: " + String(rotRateY / 100.0, 2) + " deg/s");
+    Serial.println("Rot Rate Z: " + String(rotRateZ / 100.0, 2) + " deg/s");
+
+    // print fix status flags
+    //        Serial.println("Fix Status Flags (Hex): " + String(fixStatusFlags, HEX));
+    //        Serial.println("Fix Status Flags (Binary): " + String(fixStatusFlags, BIN));
+
+    // print fix status flags with interpretation
+    Serial.println("Fix Status Flags Interpretation:");
+    Serial.println("  Bit 0: Valid Fix: " + String((fixStatusFlags & 0x01) ? "Yes" : "No"));
+    Serial.println("  Bit 1: Differential Corrections Applied: " + String((fixStatusFlags & 0x02) ? "Yes" : "No"));
+    Serial.println("  Bits 4..2: Power State: " + String((fixStatusFlags >> 2) & 0x07));
+    Serial.println("  Bit 5: Valid Heading: " + String((fixStatusFlags & 0x20) ? "Yes" : "No"));
+    Serial.println("  Bits 7..6: Carrier Phase Range Solution: " + String((fixStatusFlags >> 6) & 0x03));
+    Serial.println();
+
+    // Serial.println("Battery Status: " + String(batteryStatus)); //needs a function for interpretation, which is depending on device type:
+    decodeBatteryStatus(batteryStatus); // a separate decoding funtion is a better solution, as there are differences in interpretation depending if it is a racebox mini, mini s oder micro
+    Serial.println();
+  }
+  else
+  {
+    Serial.println("skipping serial output due to set serial update limitation");
+  }
+  Serial.println("--------------------------------------------------------------------------------------------------");
+  Serial.println();
+}
+
 String getCompassDirection(float headingDegrees)
 {
   if (headingDegrees >= 337.5 || headingDegrees < 22.5)
@@ -344,32 +936,14 @@ String getCompassDirection(float headingDegrees)
   return ""; // Default case, shouldn't be reached
 }
 
-// decode battery status
 void decodeBatteryStatus(uint8_t batteryStatus)
 {
-  if (deviceType == 0)
-  {                                                // RaceBox Mini or RaceBox Mini S
-    bool isCharging = (batteryStatus & 0x80) != 0; // check if the MSB is set (charging status)
-    uint8_t batteryLevel = batteryStatus & 0x7F;   // battery level (remaining 7 bits)
-    Serial.print("RaceBox Mini/Mini S - ");        // interpreting battery status according to datasheet
-    Serial.print("Charging Status: ");
-    Serial.println(isCharging ? "Charging" : "Not Charging");
-    Serial.print("Battery Level: ");
-    Serial.print(batteryLevel);
-    Serial.println("%");
-  }
-  else if (deviceType == 1)
-  {                                            // RaceBox Micro
-    Serial.print("RaceBox Micro - ");          // interpreting battery status as input voltage (according to datasheet)
-    float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
-    Serial.print("Input Voltage: ");
-    Serial.print(inputVoltage, 1); // print with one decimal
-    Serial.println(" V");
-  }
-  else
-  {
-    Serial.println("Battery status: Unknown device type");
-  }
+  // RaceBox Micro
+  Serial.print("RaceBox Micro - ");          // interpreting battery status as input voltage (according to datasheet)
+  float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
+  Serial.print("Input Voltage: ");
+  Serial.print(inputVoltage, 1); // print with one decimal
+  Serial.println(" V");
 }
 
 void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B)
@@ -527,7 +1101,6 @@ void parsePayload(uint8_t *data)
   }
 }
 
-// functions to interpret payload of different messages:
 void parse_RaceBox_Data_Message_payload(uint8_t *data)
 { // function to handle payload of a RaceBox Data Message
   // writing updated values (from payload) to the variables:
@@ -567,833 +1140,68 @@ void parse_RaceBox_Data_Message_payload(uint8_t *data)
   updated_RaceBox_Data_Message = true;                     // bool is used to determine if updated data for variables in RaceBox Data Message is available (e.g. to print or display them in void loop() )
 }
 
-// Function to connect to RaceBox via BLE
-bool connectToRaceBox()
-{
-
-  // Check if there's an existing client that matches the address
-  if (NimBLEDevice::getClientListSize())
-  {
-    pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
-    if (pClient)
-    {
-      if (!pClient->connect(myRaceBox))
-      {
-        Serial.println("Failed to reconnect. Retrying...");
-        // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-        return false;
-      }
-    }
-    else
-    {
-      // Create a new client if none matches
-      pClient = NimBLEDevice::createClient();
-      pClient->setClientCallbacks(new ClientCallbacks(), false);
-      if (!pClient->connect(myRaceBox))
-      {
-        Serial.println("Failed to connect.");
-        NimBLEDevice::deleteClient(pClient);
-        // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-        return false;
-      }
-    }
-  }
-  else
-  {
-    // Create a new client if there are no existing clients
-    pClient = NimBLEDevice::createClient();
-    pClient->setClientCallbacks(new ClientCallbacks(), false);
-    if (!pClient->connect(myRaceBox))
-    {
-      Serial.println("Failed to connect.");
-      NimBLEDevice::deleteClient(pClient);
-      // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-      return false;
-    }
-  }
-
-  // obtain the service and characteristic
-  BLERemoteService *pService = pClient->getService(UART_service_UUID);
-  if (pService != nullptr)
-  {
-    pRemoteCharacteristic = pService->getCharacteristic(TX_characteristic_UUID);
-    if (pRemoteCharacteristic != nullptr)
-    {
-      pRemoteCharacteristic->registerForNotify(notifyCallback);
-      Serial.println("DEBUG: connectToRaceBox() will now return true and exit.");
-      return true;
-    }
-  }
-
-  // if service or characteristic is not found, return false
-  // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
-  return false;
-}
-
-#if LV_USE_LOG != 0
-/* Serial debugging */
-void my_print(const char *buf)
-{
-  Serial.printf(buf);
-  Serial.flush();
-}
-#endif
-
-/* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
-{
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-
-  tft.startWrite();
-  tft.setAddrWindow(area->x1, area->y1, w, h);
-  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
-  tft.endWrite();
-
-  lv_disp_flush_ready(disp_drv);
-}
-
-/*Read the touchpad*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
-
-  uint16_t x, y;
-  if (tft.getTouch(&x, &y))
-  {
-    data->state = LV_INDEV_STATE_PR;
-    data->point.x = x;
-    data->point.y = y;
-  }
-  else
-  {
-    data->state = LV_INDEV_STATE_REL;
-  }
-}
-
-void setup(void)
-{
-
-  Serial.begin(115200); /* prepare for possible serial debug */
-
-  gui_mutex = xSemaphoreCreateMutex();
-  if (gui_mutex == NULL)
-  {
-    // Handle semaphore creation failure
-    Serial.println("semaphore creation failure");
-    return;
-  }
-
-  pinMode(BUZZER_PIN, OUTPUT);
-
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
-  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
-
-  // SPI pins check
-  Serial.println("SPI pins:");
-  Serial.println("MOSI:");
-  Serial.println(MOSI);
-  Serial.println("MISO");
-  Serial.println(MISO);
-  Serial.println("SCK");
-  Serial.println(SCK);
-
-  xTaskCreatePinnedToCore(display_task,
-                          "loading_task",
-                          1024 * 10, // The size of the task stack specified as the number of bytes
-                          NULL,
-                          3, // The priority at which the task should run.
-                          NULL,
-                          1); // The core to which the task is pinned to, or tskNO_AFFINITY if the task has no core affinity.
-
-  xTaskCreatePinnedToCore(display_update_task,
-                          "loading_task",
-                          1024 * 3,
-                          NULL,
-                          2,
-                          NULL,
-                          1);
-
-  xTaskCreatePinnedToCore(ble_task,
-                          "ble_task",
-                          1024 * 10,
-                          NULL,
-                          1,
-                          NULL,
-                          1);
-
-  xTaskCreatePinnedToCore(sensor_task,
-                          "sensor_task",
-                          1024 * 5,
-                          NULL,
-                          1,
-                          NULL,
-                          1);
-}
-
-void ui_reset()
-{
-
-  lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
-  lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
-  lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
-  lv_label_set_text(ui_MainScreen_Label_LabelBattV, "Batt: USB");
-  lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
-  lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
-  lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
-  lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
-  lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
-}
-
-void upshifting_blink()
-{
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-  delay(200);
-}
-
-void RGB_startup_animation()
-{
-
-  // reset
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
-  delay(250);
-  leds[0] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[1] = CRGB::Green;
-  leds[8] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[2] = CRGB::Orange;
-  leds[7] = CRGB::Orange;
-  FastLED.show();
-  delay(250);
-  leds[3] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  FastLED.show();
-  delay(250);
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-
-  upshifting_blink();
-  upshifting_blink();
-
-  leds[0] = CRGB::Green;
-  leds[1] = CRGB::Green;
-  leds[2] = CRGB::Orange;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Orange;
-  leds[8] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-}
-
-void buzz_double()
-{
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(100);
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(200);
-}
-
-void buzz()
-{
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(100);
-}
-
-void display_task(void *pvParameters)
-{
-
-  String LVGL_Arduino = "LVGL Arduino ";
-  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-
-  Serial.println(LVGL_Arduino);
-
-  tft.init();
-  tft.setRotation(1);
-  tft.setBrightness(TFT_DEFAULT_BRIGHTNESS);
-
-  lv_init();
-
-#if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print); /* register print function for debugging */
-#endif
-
-  lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCREEN_WIDTH * 10);
-
-  /*Initialize the display*/
-  static lv_disp_drv_t disp_drv;
-  lv_disp_drv_init(&disp_drv);
-
-  /*Change the following line to your display resolution*/
-  disp_drv.hor_res = SCREEN_WIDTH;
-  disp_drv.ver_res = SCREEN_HEIGHT;
-  disp_drv.flush_cb = my_disp_flush;
-  disp_drv.draw_buf = &draw_buf;
-  lv_disp_drv_register(&disp_drv);
-
-  /*Initialize the (dummy) input device driver*/
-  static lv_indev_drv_t indev_drv;
-  lv_indev_drv_init(&indev_drv);
-  indev_drv.type = LV_INDEV_TYPE_POINTER;
-  indev_drv.read_cb = my_touchpad_read;
-  lv_indev_drv_register(&indev_drv);
-
-  ui_init();
-  ui_reset();
-
-  // assign callback functions
-
-  // restart button
-  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart, LV_EVENT_PRESSED, NULL);
-  // BLE disconnect button
-  lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonBLEDisconnect, ui_event_SettingScreen_Button_ButtonBLEDisconnect, LV_EVENT_PRESSED, NULL);
-  // LED brightness
-  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderLEDBrightness, ui_event_SettingScreen_Slider_SliderLEDBrightness, LV_EVENT_VALUE_CHANGED, NULL);
-  // Disp brightness
-  lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderDisplayBrightness, ui_event_SettingScreen_Slider_SliderDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
-
-  // Main LVGL loop
-  while (1)
-  {
-
-    // Take the semaphore to access LVGL resources
-    if (xSemaphoreTake(gui_mutex, portMAX_DELAY) == pdTRUE)
-    {
-      // Call LVGL's main task handler
-      lv_timer_handler();
-
-      // Release the semaphore after LVGL operations
-      xSemaphoreGive(gui_mutex);
-    }
-
-    // Delay to control LVGL's refresh rate
-    vTaskDelay(pdMS_TO_TICKS(1)); // Adjust as needed
-  }
-}
-
-void display_update_task(void *pvParameters)
-{
-
-  delay(500); // wait for display init
-
-  // loading screen is first initiated screen
-
-  lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
-
-  RGB_startup_animation();
-
-  buzz_double();
-
-  int count_value = 0;
-
-  for (int i = 0; i < 100; i++)
-  {
-    delay(30);
-    lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
-  }
-
-  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
-
-  lv_scr_load(ui_MainScreen);
-
-  count_value = 0;
-
-  float gX = 0.0;
-  float gY = 0.0;
-  float gZ = 0.0;
-  float g_mag = 0.0;
-
-  while (1)
-  {
-    // if racebox connected
-    if (connected)
-    {
-
-      gX = gForceX / 1000.0;
-      gY = gForceY / 1000.0;
-      gZ = gForceZ / 1000.0;
-      g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
-
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
-      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
-    }
-    else
-    {
-
-      if (bleRequestDisconnect)
-      {
-        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
-      }
-      else
-      {
-        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
-      }
-    }
-    vTaskDelay(10);
+static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
+  if (length >= 80) {
+    parsePayload(pData);
+  } else {
+    Serial.println(F("payload length is less than 80 bytes. 80 bytes would be expected for a RaceBox data message."));
+    Serial.println(F("For other messages, the payload can be shorter."));
+    parsePayload(pData);
   }
 }
 
 void ble_task(void *pvParameters)
 {
 
-  Serial.println("starting scanning for advertisements of Bluetooth devices.");
-
-#ifdef TARGET_DEVICE_ADDRESS
-  Serial.printf("Waiting for a specific RaceBox with TARGET_DEVICE_ADDRESS %s to appear (as set in code)...\n", TARGET_DEVICE_ADDRESS); // notice the Serial.printf to be able to print TARGET_DEVICE_ADDRESS to serial.
-#else
-  Serial.println("Waiting for any RaceBox to appear (no specific TARGET_DEVICE_ADDRESS is set)...");
-#endif
-
+  Serial.println(F("Scanning for Bluetooth devices."));
   Serial.println();
-  Serial.println("---------------------------------------------  scan results  --------------------------------------------------------");
+  Serial.println(F("Scan Results:"));
   Serial.println();
 
   NimBLEDevice::init("ESP32_RaceBox_Client");
-  NimBLEScan *pScan = NimBLEDevice::getScan();
+  NimBLEScan* pScan = NimBLEDevice::getScan();
+
   pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
   pScan->setInterval(45);
   pScan->setWindow(15);
   pScan->setActiveScan(true);
   pScan->start(0, false); // scan indefinitely until we stop it manually
 
-  while (1)
-  {
-
-    if (doConnect)
-    { // if we have requested to connect to a RaceBox
-      // Serial.println("DEBUG: doConnect = true (in void loop) - trying to (re)connect...");
-      if (connectToRaceBox())
-      {
-        Serial.println("successfully connected to RaceBox.");
+  // Main code to run once a connection is established.
+  while (1) {
+    if (doConnect) {
+      if (connectToRaceBox()) {
+        Serial.println(F("successfully connected to RaceBox."));
         Serial.println();
-        // stop scanning for Bluetooth devices, now that we're connected to our RaceBox
         NimBLEDevice::getScan()->stop();
-      }
-      else
-      {
-        Serial.println("Failed to connect to RaceBox. Reattempting BLE connection...");
-        // NimBLEDevice::getScan()->start(0, false); //scan indefinitely (0) until we stop it manually  //-->this is a simple restart with known scanning parameters
-        // better approch: make sure scanning setup is correct, although slightly more complex:
-        NimBLEScan *pScan = NimBLEDevice::getScan();
+      } else {
+        Serial.println(F("Failed to connect to RaceBox. Reattempting BLE connection..."));
+        NimBLEScan* pScan = NimBLEDevice::getScan();
         pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
         pScan->setInterval(45);
         pScan->setWindow(15);
         pScan->setActiveScan(true);
-        pScan->start(0, false); // scan indefinitely until we stop it manually
+        pScan->start(0, false); //scan indefinitely until we stop it manually
       }
       doConnect = false;
     }
-    if (connected)
-    { // if we are connected to RaceBox
-      // add your code here
-      interpret_serial_input(); // this function listens to serial console inputs from your computer (when a RaceBox is connected, due to the check 'if (connected)'. Sending 1, 2 or 3 will start functions (currently only empty function prototypes are implemented to give a starting point)
-      if (updated_RaceBox_Data_Message == true)
-      { // if we have received updated values from a RaceBox data message
-        // print_RaceBox_Data_message_payload_to_serial();
-        updated_RaceBox_Data_Message = false; // reset bool
-      }
-    }
-    else
-    {
-      // do something else if not connected to RaceBox
-      interpret_serial_input(); // just for debugging purposes, we also interpret serial input here. Can be removed if we only want to start functions that e.g. send data to RaceBox, but can be useful for development so that the functions are called even if no racebox is connected.
-    }
-  }
-}
 
-void sensor_task(void *pvParameters)
-{
-
-  const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_TRANSMISSION_ACTUAL_GEAR, PID_CONTROL_MODULE_VOLTAGE};
-  unsigned long currentMillis = millis();
-  unsigned long startMillis = 0;
-  const unsigned long canbus_timeout_period = 10; // the value is a number of milliseconds
-  uint8_t canbus_data_counter = 0;                // counter to cycle through canbus data
-  uint8_t send_rq = 0;
-  uint8_t send_rq_timeout = 0;
-  uint16_t rpm_byte = 0;
-  uint16_t rpm_decoded = 0;
-  uint8_t throttle_decoded = 0;
-  int coolant_temp_decoded = 0;
-  int oil_temp_decoded = 0;
-  uint16_t battery_byte = 0;
-  float battery_decoded = 0;
-  uint16_t transmission_actual_gear_byte = 0;
-  float transmission_actual_gear_decoded = 0;
-
-  canReqMsg.can_id = 0x7E0;
-  canReqMsg.can_dlc = 8;    // Data len
-  canReqMsg.data[0] = 0x02; // No. of additional data byte
-  canReqMsg.data[1] = 0x01; // Service
-  canReqMsg.data[2] = 0x0C; // PID CODE
-  canReqMsg.data[3] = 0xCC; // ISO 15765-2 suggests CCh
-  canReqMsg.data[4] = 0xCC; // ISO 15765-2 suggests CCh
-  canReqMsg.data[5] = 0xCC; // ISO 15765-2 suggests CCh
-  canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
-  canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
-
-  delay(1000); // wait for display init
-
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
-  mcp2515.setNormalMode();                   // Set CAN at normal mode
-
-  while (1)
-  {
-
-    if (!send_rq || send_rq_timeout)
-    {
-      if (canbus_data_counter > CANBUS_DATA_COUNT - 1)
-      {
-        canbus_data_counter = 0;
-      }
-
-      // set required PID in CAN message
-      canReqMsg.data[2] = canbus_data[canbus_data_counter];
-
-      mcp2515.sendMessage(&canReqMsg);
-
-      send_rq_timeout = 0; // reset
-      send_rq = 1;         // await recieved data before resend
-    }
-
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-    {
-
-      if (canMsg.can_id == PID_ECU_RESPONSE)
-      {
-        switch (canMsg.data[2])
-        {
-        case PID_ENGINE_RPM:
-          rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-          rpm_decoded = (rpm_byte / 4);
-          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
-          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
-          break;
-        case PID_THROTTLE:
-          throttle_decoded = map(canMsg.data[3], 0, 255, 0, 100);
-          lv_bar_set_value(ui_MainScreen_Bar_BarTPS, throttle_decoded, LV_ANIM_OFF);
-          break;
-        case PID_COOLANT_TEMP:
-          coolant_temp_decoded = canMsg.data[3] - 40;
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
-          break;
-        case PID_ENGINE_OIL_TEMP:
-          // oil_temp_decoded = canMsg.data[3] - 40;
-          // lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
-          break;
-        case PID_TRANSMISSION_ACTUAL_GEAR:
-          transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
-          transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Gear: %.2f", transmission_actual_gear_decoded);
-          break;
-        case PID_CONTROL_MODULE_VOLTAGE:
-          battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-          battery_decoded = (battery_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded);
-          break;
-        default:
-          break;
-        }
-
-        Serial.print("CAN Message ID: ");
-        Serial.print(canMsg.can_id, HEX); // print ID
-        Serial.print(" ");
-        Serial.print("Message Length: ");
-        Serial.print(canMsg.can_dlc, HEX); // print DLC
-        Serial.print(" ");
-        Serial.print("Data: ");
-        for (int i = 0; i < canMsg.can_dlc; i++)
-        { // print the data
-          Serial.print(canMsg.data[i], HEX);
-          Serial.print(" ");
-        }
-        Serial.println();
-        Serial.print("canbus_data_counter: ");
-        Serial.println(canbus_data_counter);
-        canbus_data_counter++;
-        send_rq = 0; // reset request
-      }
-      else
-      {
-
-        // timeout resend request
-
-        currentMillis = millis();                                 // get the current "time" (actually the number of milliseconds since the program started)
-        if (currentMillis - startMillis >= canbus_timeout_period) // test whether the period has elapsed
-        {
-          send_rq_timeout = 1;
-          startMillis = currentMillis;
-        }
+    if (connected) {
+      if (updated_RaceBox_Data_Message == true) {
+        print_RaceBox_Data_message_payload_to_serial();
+        updated_RaceBox_Data_Message = false;
       }
     }
   }
 }
 
-static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event)
-{
-  lv_obj_t *slider = lv_event_get_target(event);
-  FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
-  FastLED.show();
-}
-
-static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *event)
-{
-  lv_obj_t *slider = lv_event_get_target(event);
-  tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 5, 255));
-}
-
-static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event)
-{
-  delay(1000);
-  ESP.restart();
-}
-
-static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
-{
-  connected = false;
-  bleRequestDisconnect = true;
-
-  size_t numClients = NimBLEDevice::getClientListSize();
-  if (numClients > 0)
-  {
-    std::list<NimBLEClient *> *clientList = NimBLEDevice::getClientList();
-    for (auto it = clientList->begin(); it != clientList->end(); it++)
-    {
-      if ((*it)->isConnected())
-      {
-        (*it)->disconnect();
-      }
-    }
-  }
-  NimBLEDevice::deinit();
-}
-
-// Do not use loop to perform any functions
-void loop(void)
-{
+//-----------------------------
+// Main Loop - DO NOT USE!
+//-----------------------------
+void loop(void) {
 
   /*
    * WARNING:
    * DO NOT POPULATE FUNCTION
    */
-}
-
-void print_RaceBox_Data_message_payload_to_serial()
-{
-  // serial print the received data:
-  unsigned long currentTime = millis();
-  if (currentTime - lastOutputTimeSerial >= outputIntervalMs_serial)
-  { // limits the amount how often we print current values to serial
-
-    // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
-    Serial.println();
-    Serial.println("--- updated values from RaceBox Data Message available: ---");
-    Serial.println("--------------------------------------------------------------------------------------------------");
-    Serial.println("iTOW: " + String(iTOW) + " ms");
-    Serial.println("Year: " + String(year));
-    Serial.println("Month: " + String(month));
-    Serial.println("Day: " + String(day));
-
-    // Serial.println("Time (UTC): " + String(hour) + ":" + String(minute) + ":" + String(second));
-    char timeString[9];                                          // Buffer to store the formatted time string
-    sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
-    Serial.println("Time (UTC): " + String(timeString));
-
-    // output fix status with interpretation
-    String fixStatusText;
-    if (fixStatus == 0)
-    {
-      fixStatusText = "No Fix";
-    }
-    else if (fixStatus == 2)
-    {
-      fixStatusText = "2D Fix";
-    }
-    else if (fixStatus == 3)
-    {
-      fixStatusText = "3D Fix";
-    }
-    else
-    {
-      fixStatusText = "Unknown";
-    }
-    Serial.println("GPS: " + fixStatusText);
-
-    Serial.println("Satellites: " + String(numSVs));
-    Serial.println("Latitude: " + String(latitude / 1e7, 7) + " deg"); // we need to divide the latitude by 10^7 because the datasheet states that it is transmitted with a factor of 10^7
-    Serial.println("Longitude: " + String(longitude / 1e7, 7) + " deg");
-    Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + " m");
-    Serial.println("MSL Altitude: " + String(mslAltitude / 1000.0, 2) + " m");
-    Serial.println("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + " m");
-    Serial.println("Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + " m");
-    Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + " m/s");
-    Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
-    Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + " km/h");
-    Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + " deg");
-    Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
-    // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
-    Serial.print("Heading: ");
-    Serial.print(headingDegrees, 1); // heading (one decimal)
-    Serial.print(" deg, compass direction: ");
-    Serial.println(compass_direction); // magnetic compass direction (e.g., "N", "NO")
-    Serial.println("PDOP: " + String(pdop / 100.0, 2));
-    Serial.println("G-Force X: " + String(gForceX / 1000.0, 3) + " G");
-    Serial.println("G-Force Y: " + String(gForceY / 1000.0, 3) + " G");
-    Serial.println("G-Force Z: " + String(gForceZ / 1000.0, 3) + " G");
-    Serial.println("Rot Rate X: " + String(rotRateX / 100.0, 2) + " deg/s");
-    Serial.println("Rot Rate Y: " + String(rotRateY / 100.0, 2) + " deg/s");
-    Serial.println("Rot Rate Z: " + String(rotRateZ / 100.0, 2) + " deg/s");
-
-    // print fix status flags
-    //        Serial.println("Fix Status Flags (Hex): " + String(fixStatusFlags, HEX));
-    //        Serial.println("Fix Status Flags (Binary): " + String(fixStatusFlags, BIN));
-
-    // print fix status flags with interpretation
-    Serial.println("Fix Status Flags Interpretation:");
-    Serial.println("  Bit 0: Valid Fix: " + String((fixStatusFlags & 0x01) ? "Yes" : "No"));
-    Serial.println("  Bit 1: Differential Corrections Applied: " + String((fixStatusFlags & 0x02) ? "Yes" : "No"));
-    Serial.println("  Bits 4..2: Power State: " + String((fixStatusFlags >> 2) & 0x07));
-    Serial.println("  Bit 5: Valid Heading: " + String((fixStatusFlags & 0x20) ? "Yes" : "No"));
-    Serial.println("  Bits 7..6: Carrier Phase Range Solution: " + String((fixStatusFlags >> 6) & 0x03));
-    Serial.println();
-
-    // Serial.println("Battery Status: " + String(batteryStatus)); //needs a function for interpretation, which is depending on device type:
-    decodeBatteryStatus(batteryStatus); // a separate decoding funtion is a better solution, as there are differences in interpretation depending if it is a racebox mini, mini s oder micro
-    Serial.println();
-  }
-  else
-  {
-    Serial.println("skipping serial output due to set serial update limitation");
-  }
-  Serial.println("--------------------------------------------------------------------------------------------------");
-  Serial.println();
-}
-
-void interpret_serial_input()
-{ // read from serial console input to control starting of functions
-  // Check if data is available in the Serial buffer
-  // Serial.println("ready to receive serial messages from console");
-  if (Serial.available() > 0)
-  {
-    // Read the incoming byte
-    char incomingByte = Serial.read();
-
-    // Respond based on the received byte
-    switch (incomingByte)
-    {
-    case '1':
-      Serial.println("received the message '1'. Starting function1...");
-      function1();
-      break;
-    case '2':
-      Serial.println("received the message '2'. Starting function2...");
-      function2();
-      break;
-    case '3':
-      Serial.println("received the message '3'. Starting function3...");
-      function3();
-      break;
-    default:
-      Serial.println("Invalid input. Please enter '1', '2', or '3'.");
-      break;
-    }
-  }
-}
-
-// Function prototypes that can be started with serial console input (see above) - e.g. functions to start recording, stop recording or request data
-void function1()
-{
-  Serial.println("### Function1 started by input '1' on serial console. Function1 not yet implemented. ###");
-  Serial.println("delaying delaying a second for readability of this message in serial console...");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  delay(1000);
-}
-// Function declarations that can be started with serial console input
-void function2()
-{
-  Serial.println("### Function2 started by input '2' on serial console. Function2 not yet implemented. ###");
-  Serial.println("delaying delaying a second for readability of this message in serial console...");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  delay(1000);
-}
-// Function declarations that can be started with serial console input
-void function3()
-{
-  Serial.println("### Function3 started by input '3' on serial console. Function3 not yet implemented. ###");
-  Serial.println("delaying a second for readability of this message in serial console...");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  Serial.println("***********************************************************************");
-  delay(1000);
 }
