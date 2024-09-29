@@ -1,13 +1,19 @@
 #include <FastLED.h>
+#include <FS.h>
 #include <LovyanGFX.hpp>
 #include <NimBLEDevice.h>
 #include <ProductionDefinitions.h>
+#include <SD.h>
 #include <SPI.h>
 #include <lvgl.h>
 #include <math.h>
 #include <mcp2515.h>
 #include "ui.h"
 
+#define NUM_LEDS 10
+
+int LEDBrightness = 20;
+int rpmLightInterval = 3000 / NUM_LEDS;
 
 struct can_frame canMsg;
 struct can_frame canReqMsg;
@@ -83,8 +89,7 @@ int16_t rotRateZ;
 float headingDegrees;
 String compass_direction;
 
-class LGFX : public lgfx::LGFX_Device
-{
+class LGFX : public lgfx::LGFX_Device {
 
   lgfx::Panel_ILI9488 _panel_instance;
   lgfx::Bus_Parallel8 _bus_instance;
@@ -188,8 +193,7 @@ void my_print(const char *buf)
 #endif
 
 /* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p)
-{
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
 
@@ -202,89 +206,24 @@ void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *c
 }
 
 /*Read the touchpad*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data)
-{
+void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
 
   uint16_t x, y;
-  if (tft.getTouch(&x, &y))
-  {
+  if (tft.getTouch(&x, &y))   {
     data->state = LV_INDEV_STATE_PR;
     data->point.x = x;
     data->point.y = y;
-  }
-  else
-  {
+  } else {
     data->state = LV_INDEV_STATE_REL;
   }
 }
-
-void setup(void)
-{
-
-  Serial.begin(115200); /* prepare for possible serial debug */
-
-  gui_mutex = xSemaphoreCreateMutex();
-  if (gui_mutex == NULL)
-  {
-    // Handle semaphore creation failure
-    Serial.println("semaphore creation failure");
-    return;
-  }
-
-  pinMode(BUZZER_PIN, OUTPUT);
-
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
-  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
-
-  // SPI pins check
-  Serial.println("SPI pins:");
-  Serial.println("MOSI:");
-  Serial.println(MOSI);
-  Serial.println("MISO");
-  Serial.println(MISO);
-  Serial.println("SCK");
-  Serial.println(SCK);
-
-  xTaskCreatePinnedToCore(display_task,
-                          "loading_task",
-                          1024 * 10, // The size of the task stack specified as the number of bytes
-                          NULL,
-                          3, // The priority at which the task should run.
-                          NULL,
-                          1); // The core to which the task is pinned to, or tskNO_AFFINITY if the task has no core affinity.
-
-  xTaskCreatePinnedToCore(display_update_task,
-                          "loading_task",
-                          1024 * 3,
-                          NULL,
-                          2,
-                          NULL,
-                          1);
-
-  xTaskCreatePinnedToCore(ble_task,
-                          "ble_task",
-                          1024 * 10,
-                          NULL,
-                          1,
-                          NULL,
-                          1);
-
-  xTaskCreatePinnedToCore(sensor_task,
-                          "sensor_task",
-                          1024 * 5,
-                          NULL,
-                          1,
-                          NULL,
-                          1);
-}
-
 
 
 //-----------------------------
 // RGB LEDS
 //-----------------------------
-void upshifting_blink()
-{
+
+void upshifting_blink() {
   leds[0] = CRGB::Red;
   leds[1] = CRGB::Red;
   leds[2] = CRGB::Red;
@@ -311,8 +250,7 @@ void upshifting_blink()
   delay(200);
 }
 
-void RGB_startup_animation()
-{
+void RGB_startup_animation() {
 
   // reset
   leds[0] = CRGB::Black;
@@ -369,8 +307,8 @@ void RGB_startup_animation()
 //-----------------------------
 // Buzzer
 //-----------------------------
-void buzz_double()
-{
+
+void buzz_double() {
   digitalWrite(BUZZER_PIN, HIGH);
   delay(100);
   digitalWrite(BUZZER_PIN, LOW);
@@ -381,8 +319,7 @@ void buzz_double()
   delay(200);
 }
 
-void buzz()
-{
+void buzz() {
   digitalWrite(BUZZER_PIN, HIGH);
   delay(100);
   digitalWrite(BUZZER_PIN, LOW);
@@ -393,8 +330,8 @@ void buzz()
 //-----------------------------
 // Dispay
 //-----------------------------
-void display_task(void *pvParameters)
-{
+
+void display_task(void *pvParameters) {
 
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
@@ -446,12 +383,10 @@ void display_task(void *pvParameters)
   lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderDisplayBrightness, ui_event_SettingScreen_Slider_SliderDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
 
   // Main LVGL loop
-  while (1)
-  {
+  while (1) {
 
     // Take the semaphore to access LVGL resources
-    if (xSemaphoreTake(gui_mutex, portMAX_DELAY) == pdTRUE)
-    {
+    if (xSemaphoreTake(gui_mutex, portMAX_DELAY) == pdTRUE) {
       // Call LVGL's main task handler
       lv_timer_handler();
 
@@ -464,8 +399,7 @@ void display_task(void *pvParameters)
   }
 }
 
-void display_update_task(void *pvParameters)
-{
+void display_update_task(void *pvParameters) {
 
   delay(500); // wait for display init
 
@@ -479,8 +413,7 @@ void display_update_task(void *pvParameters)
 
   int count_value = 0;
 
-  for (int i = 0; i < 100; i++)
-  {
+  for (int i = 0; i < 100; i++) {
     delay(30);
     lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
     count_value++;
@@ -497,11 +430,9 @@ void display_update_task(void *pvParameters)
   float gZ = 0.0;
   float g_mag = 0.0;
 
-  while (1)
-  {
+  while (1) {
     // if racebox connected
-    if (connected)
-    {
+    if (connected) {
 
       gX = gForceX / 1000.0;
       gY = gForceY / 1000.0;
@@ -511,16 +442,11 @@ void display_update_task(void *pvParameters)
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
       lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
-    }
-    else
-    {
+    } else {
 
-      if (bleRequestDisconnect)
-      {
+      if (bleRequestDisconnect) {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
-      }
-      else
-      {
+      } else {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
       }
     }
@@ -532,8 +458,8 @@ void display_update_task(void *pvParameters)
 //-----------------------------
 // CAN BUS
 //-----------------------------
-void sensor_task(void *pvParameters)
-{
+
+void sensor_task(void *pvParameters) {
 
   const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_TRANSMISSION_ACTUAL_GEAR, PID_CONTROL_MODULE_VOLTAGE};
   unsigned long currentMillis = millis();
@@ -665,9 +591,11 @@ void sensor_task(void *pvParameters)
 //-----------------------------
 // UI Functions
 //-----------------------------
+
 static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event)
 {
   lv_obj_t *slider = lv_event_get_target(event);
+  LEDBrightness = (int)lv_slider_get_value(slider);
   FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
   FastLED.show();
 }
@@ -684,8 +612,7 @@ static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event)
   ESP.restart();
 }
 
-static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
-{
+static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event) {
   connected = false;
   bleRequestDisconnect = true;
 
@@ -715,6 +642,102 @@ void ui_reset()
   lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
+}
+
+//----------------
+// RGB LEDs
+//----------------
+
+void setRPMLights(int rpmValue) {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    if (rpmValue >= (i + 1)*rpmLightInterval) {
+      if (i < 10) {               // LEDs should be Green
+        leds[i].setRGB(0, LEDBrightness, 0);
+      } else if (i < 20) {        // LEDs should be Red
+        leds[i].setRGB(LEDBrightness, 0, 0);
+      } else if (i < 30) {        // LEDs should be Blue
+        leds[i].setRGB(0, 0, LEDBrightness);
+      }
+      FastLED.show();
+    } else {
+      leds[i].setRGB(0, 0, 0);
+      FastLED.show();
+    }
+  }
+}
+
+//-----------------------------
+// Directory and File Functions
+//-----------------------------
+
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels) {
+  Serial.printf("Listing directory: %s\n", dirname);
+
+  File root = fs.open(dirname);
+  if (!root) {
+    Serial.println(F("Failed to open directory"));
+    return;
+  }
+  if (!root.isDirectory()) {
+    Serial.println(F("Not a directory"));
+    return;
+  }
+
+  File file = root.openNextFile();
+  while (file) {
+    if (file.isDirectory()) {
+      Serial.print(F("  DIR : "));
+      Serial.println(file.name());
+      if (levels) {
+        listDir(fs, file.path(), levels - 1);
+      }
+    } else {
+      Serial.print(F("  FILE: "));
+      Serial.print(file.name());
+      Serial.print(F("  SIZE: "));
+      Serial.println(file.size());
+    }
+    file = root.openNextFile();
+  }
+}
+
+void createDir(fs::FS &fs, const char * path) {
+  Serial.printf("Creating Dir: %s\n", path);
+  if (fs.mkdir(path)) {
+    Serial.println(F("Dir created"));
+  } else {
+    Serial.println(F("mkdir failed"));
+  }
+}
+
+void writeFile(fs::FS &fs, const char * path, const char * message) {
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file) {
+    Serial.println(F("Failed to open file for writing"));
+    return;
+  }
+  if (file.print(message)) {
+    Serial.println(F("File written"));
+  } else {
+    Serial.println(F("Write failed"));
+  }
+  file.close();
+}
+
+void appendFile(fs::FS &fs, const char * path, const char * message) {
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    Serial.println(F("Failed to open file for appending"));
+    return;
+  }
+  if (file.print(message)) {
+  } else {
+    Serial.println(F("Append failed"));
+  }
+  file.close();
 }
 
 
@@ -761,43 +784,33 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 
 };
 
-bool connectToRaceBox()
-{
+bool connectToRaceBox() {
 
   // Check if there's an existing client that matches the address
-  if (NimBLEDevice::getClientListSize())
-  {
+  if (NimBLEDevice::getClientListSize()) {
     pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
-    if (pClient)
-    {
-      if (!pClient->connect(myRaceBox))
-      {
+    if (pClient) {
+      if (!pClient->connect(myRaceBox)) {
         Serial.println("Failed to reconnect. Retrying...");
         // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
         return false;
       }
-    }
-    else
-    {
+    } else {
       // Create a new client if none matches
       pClient = NimBLEDevice::createClient();
       pClient->setClientCallbacks(new ClientCallbacks(), false);
-      if (!pClient->connect(myRaceBox))
-      {
+      if (!pClient->connect(myRaceBox)) {
         Serial.println("Failed to connect.");
         NimBLEDevice::deleteClient(pClient);
         // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
         return false;
       }
     }
-  }
-  else
-  {
+  } else {
     // Create a new client if there are no existing clients
     pClient = NimBLEDevice::createClient();
     pClient->setClientCallbacks(new ClientCallbacks(), false);
-    if (!pClient->connect(myRaceBox))
-    {
+    if (!pClient->connect(myRaceBox)) {
       Serial.println("Failed to connect.");
       NimBLEDevice::deleteClient(pClient);
       // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
@@ -824,12 +837,11 @@ bool connectToRaceBox()
 }
 
 // TODO: Update function
-void print_RaceBox_Data_message_payload_to_serial()
-{
+void print_RaceBox_Data_message_payload_to_serial() {
   // serial print the received data:
   unsigned long currentTime = millis();
-  if (currentTime - lastOutputTimeSerial >= outputIntervalMs_serial)
-  { // limits the amount how often we print current values to serial
+  if (currentTime - lastOutputTimeSerial >= outputIntervalMs_serial) { 
+    // limits the amount how often we print current values to serial
 
     // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
     Serial.println();
@@ -847,20 +859,13 @@ void print_RaceBox_Data_message_payload_to_serial()
 
     // output fix status with interpretation
     String fixStatusText;
-    if (fixStatus == 0)
-    {
+    if (fixStatus == 0) {
       fixStatusText = "No Fix";
-    }
-    else if (fixStatus == 2)
-    {
+    } else if (fixStatus == 2) {
       fixStatusText = "2D Fix";
-    }
-    else if (fixStatus == 3)
-    {
+    } else if (fixStatus == 3) {
       fixStatusText = "3D Fix";
-    }
-    else
-    {
+    } else {
       fixStatusText = "Unknown";
     }
     Serial.println("GPS: " + fixStatusText);
@@ -907,16 +912,14 @@ void print_RaceBox_Data_message_payload_to_serial()
     decodeBatteryStatus(batteryStatus); // a separate decoding funtion is a better solution, as there are differences in interpretation depending if it is a racebox mini, mini s oder micro
     Serial.println();
   }
-  else
-  {
+  else {
     Serial.println("skipping serial output due to set serial update limitation");
   }
   Serial.println("--------------------------------------------------------------------------------------------------");
   Serial.println();
 }
 
-String getCompassDirection(float headingDegrees)
-{
+String getCompassDirection(float headingDegrees) {
   if (headingDegrees >= 337.5 || headingDegrees < 22.5)
     return "N";
   if (headingDegrees >= 22.5 && headingDegrees < 67.5)
@@ -936,8 +939,7 @@ String getCompassDirection(float headingDegrees)
   return ""; // Default case, shouldn't be reached
 }
 
-void decodeBatteryStatus(uint8_t batteryStatus)
-{
+void decodeBatteryStatus(uint8_t batteryStatus) {
   // RaceBox Micro
   Serial.print("RaceBox Micro - ");          // interpreting battery status as input voltage (according to datasheet)
   float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
@@ -946,8 +948,7 @@ void decodeBatteryStatus(uint8_t batteryStatus)
   Serial.println(" V");
 }
 
-void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B)
-{
+void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B) {
   CK_A = 0;
   CK_B = 0;
   for (int i = 2; i < length - 2; i++)
@@ -957,51 +958,8 @@ void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &C
   }
 }
 
-void parsePayload(uint8_t *data)
-{ // handle incoming data. This function is triggered with each incoming packet. Note that any serial output here will directly be sent when the function runs and can interfere with output from void loop, as this function runs when data packets come in.
-  // Serial.println("++++++++++++++ received data packet ++++++++++++++"); //any excessive serial output in the parsing functions can lead to disconnects. remember that when experiencing unexplainable disconnects!
-  /* Explanation of how we interpret the data that we got from racebox:
-   * The data buffer (named 'data' here) is a pointer (indicated by the *) to the beginning of a data payload in memory. generally spoken,
-   * uint8_t* data is a pointer to a byte array (buffer) that holds the raw data received from our RaceBox via bluetooth low energy (BLE).
-   * This buffer contains a sequence of bytes that contain the different values, in case of the live data it contains values like GPS coordinates, speed, accelerations and so on.
-   * The datasheet (provided by the developers) has a detailed description which byte represents which value.
-   * each time we receive such a data packet, we need do go through it and basically disassemble it to cut out the pieces of information that we need.
-   * we do not necessarily need to use all information, we also could pick out just one value that is of interest for us.
-   * But for convenience, i added all of them, at least for the data packet that contains live sensor data.
-   * Interpreting Bytes:
-   * we need to extract values from the data buffer by interpreting different byte sequences as different data types (e.g., uint16_t, uint32_t). This is done by using pointer arithmetic and type casting.
-   * Pointer Arithmetic:
-   * You use pointer arithmetic to "jump" to the correct position in the buffer. For example, if a data field starts at a certain offset from the beginning of the buffer, you add that offset to
-   * the base pointer (data). That's what we find in the racebox datasheet.
-   * Type Casting:
-   * The reinterpret_cast is used to cast the pointer to the appropriate type (uint16_t, uint32_t, etc.) to interpret the bytes at that position correctly.
-   * because I already defined the variables globally, we now just assign the new values to them.
-   *
-   * Example using words: *data contains:  Header2bMessageClassId2bPayloadlenght2biTOW4bYear2bMonth1bDay1b...... etc etc
-   * which we want to divide like this:    Header2b MessageClassId2b Payloadlenght2b  iTOW4b   Year2b   Month1b   Day1b  ......etc etc
-   *                                       2 bytes      2 bytes         2 bytes       4 bytes  2 bytes  2 bytes   1 byte ...... etc etc
-   *
-   * if we were interested in iTOW, that data content would begin at the seventh byte, but as we start counting at 0, it is offset 6:
-   * some examples picked from datasheet:
-   * Offset    Contents         Field                           Decoded
-   * ------------------------------------------------------------------------
-   * 6         A0 E7 0C 07      iTOW                            118286240
-   * 29        0B               Number of SpaceVehicles (SVs)   11 satellites
-   * 78        CE 03            GForceZ                         0.974 G
-   *
-   * lets assume we are interested in the number of satellites that racebox sees.
-   * that means that in our 80 byte long message, the number of satellites that racebox "sees" is at byte position 29 (see example excerpt from datasheet above).
-   * they call it 'number of space vehicles' so we also name the variable similarly 'numSVs'. We now "pick" out the byte at position 29 and assign it to a variable of appropiate type:
-   * numSVs = *(reinterpret_cast<uint8_t*>(data + 29));
-   * As counting starts at 0, the last byte containing live data is at position 79 (gForceZ).
-   *
-   * generally, this function 'void parsePayload' is called each time we receive new data from our RaceBox,
-   * So if the data comes in 25 times per second, we update the variables just as often (if that kind of data message is implemented).
-   */
-
-  // check for correct frame start - may need to be removed or changed for other data than RaceBox Data Message!
-  if (data[0] != 0xB5 || data[1] != 0x62)
-  {
+void parsePayload(uint8_t *data) {
+  if (data[0] != 0xB5 || data[1] != 0x62) {
     Serial.println("Invalid frame start of payload data - check may need to be removed or changed for other data than RaceBox Data Message!");
     return;
   }
@@ -1101,8 +1059,8 @@ void parsePayload(uint8_t *data)
   }
 }
 
-void parse_RaceBox_Data_Message_payload(uint8_t *data)
-{ // function to handle payload of a RaceBox Data Message
+void parse_RaceBox_Data_Message_payload(uint8_t *data) { 
+  // function to handle payload of a RaceBox Data Message
   // writing updated values (from payload) to the variables:
   iTOW = *(reinterpret_cast<uint32_t *>(data + 6));                // e.g 0xA0 0xE7 0x0C 0x07
   year = *(reinterpret_cast<uint16_t *>(data + 10));               // e.g 0xE6 0x07 (2022) or 0xE8 0x07 (2024)
@@ -1150,8 +1108,7 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, ui
   }
 }
 
-void ble_task(void *pvParameters)
-{
+void ble_task(void *pvParameters) {
 
   Serial.println(F("Scanning for Bluetooth devices."));
   Serial.println();
@@ -1195,11 +1152,49 @@ void ble_task(void *pvParameters)
   }
 }
 
+
+//-----------------------------
+// Setup
+//-----------------------------
+
+void setup(void) {
+
+  Serial.begin(115200);
+
+  gui_mutex = xSemaphoreCreateMutex();
+  if (gui_mutex == NULL) {
+    // Handle semaphore creation failure
+    Serial.println("semaphore creation failure");
+    return;
+  }
+
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
+
+  // SPI pins check
+  Serial.println("SPI pins:");
+  Serial.println("MOSI:");
+  Serial.println(MOSI);
+  Serial.println("MISO");
+  Serial.println(MISO);
+  Serial.println("SCK");
+  Serial.println(SCK);
+
+  // Args: function, name of task, stack size (bytes)k, priority, core to pin to
+  xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
+  xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
+}
+
+
 //-----------------------------
 // Main Loop - DO NOT USE!
 //-----------------------------
-void loop(void) {
 
+void loop(void) {
   /*
    * WARNING:
    * DO NOT POPULATE FUNCTION
