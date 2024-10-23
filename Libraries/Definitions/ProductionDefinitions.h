@@ -4,6 +4,8 @@
 #define RGB_PIN 4
 #define BUZZER_PIN 5
 #define CANBUS_CS_PIN 40
+#define SDCS 41
+#define SD_DETECT 46
 
 // DEFS
 #define NUM_RPM_LEDS 10

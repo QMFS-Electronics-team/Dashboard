@@ -10,10 +10,9 @@
 #include <mcp2515.h>
 #include "ui.h"
 
-#define NUM_LEDS 10
 
 int LEDBrightness = 20;
-int rpmLightInterval = 3000 / NUM_LEDS;
+int rpmLightInterval = 3000 / NUM_RPM_LEDS;
 
 struct can_frame canMsg;
 struct can_frame canReqMsg;
@@ -524,6 +523,7 @@ void sensor_task(void *pvParameters) {
         case PID_ENGINE_RPM:
           rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
           rpm_decoded = (rpm_byte / 4);
+          setRPMLights(rpm_decoded);
           lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
           lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
           break;
@@ -649,7 +649,7 @@ void ui_reset()
 //----------------
 
 void setRPMLights(int rpmValue) {
-  for (int i = 0; i < NUM_LEDS; i++) {
+  for (int i = 0; i < NUM_RPM_LEDS; i++) {
     if (rpmValue >= (i + 1)*rpmLightInterval) {
       if (i < 10) {               // LEDs should be Green
         leds[i].setRGB(0, LEDBrightness, 0);
@@ -740,6 +740,16 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   file.close();
 }
 
+void check_and_create_directory(String directory, String module) {
+  if (!SD.exists(("/" + directory + "/" + directory + ".txt").c_str())) {
+    createDir(SD, ("/" + directory).c_str());
+    Serial.println(("Creating " + module + " File").c_str());
+    writeFile(SD, ("/" + directory + "/" + directory + ".txt").c_str(), ("Start of " + module + "\n").c_str());
+  } else {
+    Serial.println((module + " File Exists").c_str());
+    appendFile(SD, ("/" + directory + "/" + directory + ".txt").c_str(), ("Start of New " + module + " Data\n").c_str());
+  }
+}
 
 //-----------------------------
 // BLE GPS Functions
@@ -1157,6 +1167,22 @@ void ble_task(void *pvParameters) {
 // Setup
 //-----------------------------
 
+void setup_sd_card() {
+  Serial.println(F("Setting up SD Reader"));
+  if (!SD.begin(SDCS)) {
+    Serial.println(F("Card Mount Failed"));
+    return;
+  }
+  uint8_t cardType = SD.cardType();
+
+  if (cardType == CARD_NONE) {
+    Serial.println(F("No SD card attached"));
+    return;
+  }
+
+  check_and_create_directory("gps-data", "GPS");
+}
+
 void setup(void) {
 
   Serial.begin(115200);
@@ -1173,6 +1199,10 @@ void setup(void) {
   FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
   FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
 
+  int sd_detected = digitalRead(SD_DETECT);
+  Serial.print("SD CARD Detected: ");
+  Serial.println(sd_detected);
+
   // SPI pins check
   Serial.println("SPI pins:");
   Serial.println("MOSI:");
@@ -1181,6 +1211,11 @@ void setup(void) {
   Serial.println(MISO);
   Serial.println("SCK");
   Serial.println(SCK);
+  Serial.println("SDCS");
+  Serial.println(SDCS);
+
+  // Setup SD Card
+  setup_sd_card();
 
   // Args: function, name of task, stack size (bytes)k, priority, core to pin to
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
