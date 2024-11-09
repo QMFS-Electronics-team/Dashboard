@@ -773,7 +773,7 @@ class ClientCallbacks : public NimBLEClientCallbacks {
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
-      Serial.print(F("Advertised BLE Device found: "));
+      Serial.println(F("Advertised BLE Device found: "));
       // Serial.println(advertisedDevice->toString().c_str());
 
       if (advertisedDevice->isAdvertisingService(UART_service_UUID)) {
@@ -1187,41 +1187,39 @@ void setup(void) {
 
   Serial.begin(115200);
 
-  gui_mutex = xSemaphoreCreateMutex();
-  if (gui_mutex == NULL) {
-    // Handle semaphore creation failure
-    Serial.println("semaphore creation failure");
-    return;
-  }
+  // gui_mutex = xSemaphoreCreateMutex();
+  // if (gui_mutex == NULL) {
+  //   // Handle semaphore creation failure
+  //   Serial.println("semaphore creation failure");
+  //   return;
+  // }
 
-  pinMode(BUZZER_PIN, OUTPUT);
+  // pinMode(BUZZER_PIN, OUTPUT);
 
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
-  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
+  // FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  // FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
 
+  gpio_set_direction(SD_DETECT, GPIO_MODE_INPUT);
+    
+     /* Set the GPIO pull */
+  gpio_set_pull_mode(SD_DETECT, GPIO_PULLUP_ONLY);
+  
+  // pinMode(SD_DETECT, INPUT);
   int sd_detected = digitalRead(SD_DETECT);
   Serial.print("SD CARD Detected: ");
   Serial.println(sd_detected);
 
-  // SPI pins check
-  Serial.println("SPI pins:");
-  Serial.println("MOSI:");
-  Serial.println(MOSI);
-  Serial.println("MISO");
-  Serial.println(MISO);
-  Serial.println("SCK");
-  Serial.println(SCK);
   Serial.println("SDCS");
   Serial.println(SDCS);
 
   // Setup SD Card
   setup_sd_card();
 
-  // Args: function, name of task, stack size (bytes)k, priority, core to pin to
-  xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
-  xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
+  // Args: function, name of task, stack size (bytes), priority, core to pin to
+  // xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
+  // xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
+  // xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
 }
 
 
@@ -1230,8 +1228,5 @@ void setup(void) {
 //-----------------------------
 
 void loop(void) {
-  /*
-   * WARNING:
-   * DO NOT POPULATE FUNCTION
-   */
+  // WARNING: DO NOT POPULATE FUNCTION
 }
