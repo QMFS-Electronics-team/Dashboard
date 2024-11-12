@@ -27,6 +27,9 @@ static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / 10];
 
 NimBLEClient *pClient = nullptr;
 
+// SPI
+SPIClass spi = SPIClass(HSPI);
+
 // BLE UUIDs
 static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
 static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -890,6 +893,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + " m/s");
     Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
     Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + " km/h");
+    appendFile(SD, "/gsp-data/gps-data.txt", String(speed / 1000.0, 2).c_str());
     Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + " deg");
     Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
     // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
@@ -1168,58 +1172,65 @@ void ble_task(void *pvParameters) {
 //-----------------------------
 
 void setup_sd_card() {
-  Serial.println(F("Setting up SD Reader"));
-  if (!SD.begin(SDCS)) {
-    Serial.println(F("Card Mount Failed"));
-    return;
-  }
-  uint8_t cardType = SD.cardType();
+  gpio_set_direction(GPIO_NUM_46, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(GPIO_NUM_46, GPIO_PULLUP_ONLY);
+  
+  int sd_detected = digitalRead(SD_DETECT); // 0 When SD card is present
+  
+  if(sd_detected == 0) {
+    Serial.println(F("SD Card Detected"));
+    
 
-  if (cardType == CARD_NONE) {
-    Serial.println(F("No SD card attached"));
-    return;
+    if (!SD.begin(SDCS, spi)) {
+        Serial.println("Card Mount Failed");
+        return;
+    }
+    uint8_t cardType = SD.cardType();
+
+    if (cardType == CARD_NONE) {
+      Serial.println(F("No SD card attached"));
+      return;
+    }
+    
+    Serial.println(F("SD Card Mounted Successfully"));
+    
+    // Check and create directories for data capture
+    check_and_create_directory("gps-data", "GPS");
+    check_and_create_directory("can-bus-data", "CAN BUS");
+
+  } else {
+    Serial.println(F("SD Card Not Detected"));
   }
 
-  check_and_create_directory("gps-data", "GPS");
 }
 
 void setup(void) {
 
   Serial.begin(115200);
 
-  // gui_mutex = xSemaphoreCreateMutex();
-  // if (gui_mutex == NULL) {
-  //   // Handle semaphore creation failure
-  //   Serial.println("semaphore creation failure");
-  //   return;
-  // }
+  gui_mutex = xSemaphoreCreateMutex();
+  if (gui_mutex == NULL) {
+    // Handle semaphore creation failure
+    Serial.println("semaphore creation failure");
+    return;
+  }
 
-  // pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 
-  // FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
-  // FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
 
-  gpio_set_direction(SD_DETECT, GPIO_MODE_INPUT);
-    
-     /* Set the GPIO pull */
-  gpio_set_pull_mode(SD_DETECT, GPIO_PULLUP_ONLY);
+  // Setup SPI
+  spi.begin(16, 7, 15, 41);
   
-  // pinMode(SD_DETECT, INPUT);
-  int sd_detected = digitalRead(SD_DETECT);
-  Serial.print("SD CARD Detected: ");
-  Serial.println(sd_detected);
-
-  Serial.println("SDCS");
-  Serial.println(SDCS);
-
   // Setup SD Card
   setup_sd_card();
 
   // Args: function, name of task, stack size (bytes), priority, core to pin to
-  // xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
-  // xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
-  // xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
+  xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
 }
 
 
