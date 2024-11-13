@@ -893,7 +893,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + " m/s");
     Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
     Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + " km/h");
-    appendFile(SD, "/gsp-data/gps-data.txt", String(speed / 1000.0, 2).c_str());
+    appendFile(SD, "/gps-data/gps-data.txt", (String(speed / 1000.0, 2) + "\n").c_str());
     Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + " deg");
     Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
     // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
