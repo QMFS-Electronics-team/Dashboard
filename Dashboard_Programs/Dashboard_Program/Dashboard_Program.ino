@@ -12,7 +12,7 @@
 
 
 int LEDBrightness = 20;
-int rpmLightInterval = 3000 / NUM_RPM_LEDS;
+int rpmLightInterval = 9000 / NUM_RPM_LEDS;
 
 struct can_frame canMsg;
 struct can_frame canReqMsg;
@@ -87,6 +87,8 @@ int16_t gForceZ;
 int16_t rotRateX;
 int16_t rotRateY;
 int16_t rotRateZ;
+
+int rpm;
 
 float headingDegrees;
 String compass_direction;
@@ -311,21 +313,22 @@ void RGB_startup_animation() {
 //-----------------------------
 
 void buzz_double() {
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(100);
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(200);
+  for(int i = 0; i < 2; i++) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(100);
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(100);
+  }
 }
 
-void buzz() {
-  digitalWrite(BUZZER_PIN, HIGH);
-  delay(100);
-  digitalWrite(BUZZER_PIN, LOW);
-  delay(100);
+void demo_rpm_lights(void *pvParameters) {
+  while(1) {
+    for(int i = 0; i < 13; i++) {
+      rpm = i * 1000;
+      setRPMLights(rpm);
+      delay(250);
+    }
+  }
 }
 
 
@@ -405,32 +408,27 @@ void display_update_task(void *pvParameters) {
 
   delay(500); // wait for display init
 
-  // loading screen is first initiated screen
+  // Screen is initiated with the loading screen first
 
   lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
 
-  RGB_startup_animation();
-
-  buzz_double();
-
-  int count_value = 0;
+  
 
   for (int i = 0; i < 100; i++) {
     delay(30);
-    lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, count_value, LV_ANIM_OFF);
-    count_value++;
+    lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, i, LV_ANIM_OFF);
   }
 
   lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
 
   lv_scr_load(ui_MainScreen);
 
-  count_value = 0;
-
   float gX = 0.0;
   float gY = 0.0;
   float gZ = 0.0;
   float g_mag = 0.0;
+
+  setRPMLights(0);
 
   while (1) {
     // if racebox connected
@@ -452,6 +450,8 @@ void display_update_task(void *pvParameters) {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
       }
     }
+
+    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
     vTaskDelay(10);
   }
 }
@@ -654,12 +654,12 @@ void ui_reset()
 void setRPMLights(int rpmValue) {
   for (int i = 0; i < NUM_RPM_LEDS; i++) {
     if (rpmValue >= (i + 1)*rpmLightInterval) {
-      if (i < 10) {               // LEDs should be Green
-        leds[i].setRGB(0, LEDBrightness, 0);
-      } else if (i < 20) {        // LEDs should be Red
-        leds[i].setRGB(LEDBrightness, 0, 0);
-      } else if (i < 30) {        // LEDs should be Blue
-        leds[i].setRGB(0, 0, LEDBrightness);
+      if (i < 3) {
+        leds[i] = CRGB::Green;
+      } else if (i < 7) {
+        leds[i] = CRGB:: Red;
+      } else if (i < 10) {
+        leds[i] = CRGB:: Blue;
       }
       FastLED.show();
     } else {
@@ -1172,8 +1172,8 @@ void ble_task(void *pvParameters) {
 //-----------------------------
 
 void setup_sd_card() {
-  gpio_set_direction(GPIO_NUM_46, GPIO_MODE_INPUT);
-  gpio_set_pull_mode(GPIO_NUM_46, GPIO_PULLUP_ONLY);
+  gpio_set_direction(SD_DETECT_GPIO, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(SD_DETECT_GPIO, GPIO_PULLUP_ONLY);
   
   int sd_detected = digitalRead(SD_DETECT); // 0 When SD card is present
   
@@ -1204,33 +1204,43 @@ void setup_sd_card() {
 
 }
 
-void setup(void) {
+void setup_leds() {
+  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
+  RGB_startup_animation();
+}
 
-  Serial.begin(115200);
+void setup_spi() {
+  spi.begin(SCLK, MISO, MOSI, SDCS);
+}
+
+void setup_buzzer() {
+  pinMode(BUZZER_PIN, OUTPUT);
+  buzz_double();
+}
+
+void setup(void) {
+  Serial.begin(SERIAL_BAUDRATE);
+  setup_buzzer();
+  setup_leds();
+  setup_spi();
+  setup_sd_card();
 
   gui_mutex = xSemaphoreCreateMutex();
   if (gui_mutex == NULL) {
-    // Handle semaphore creation failure
-    Serial.println("semaphore creation failure");
+    Serial.println(F("Semaphore creation failure"));
     return;
   }
-
-  pinMode(BUZZER_PIN, OUTPUT);
-
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
-  FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
-
-  // Setup SPI
-  spi.begin(16, 7, 15, 41);
-  
-  // Setup SD Card
-  setup_sd_card();
 
   // Args: function, name of task, stack size (bytes), priority, core to pin to
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(sensor_task, "sensor_task", 1024 * 5, NULL, 1, NULL, 1);
+
+  // RPM Lights Demo
+  // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);
+  
 }
 
 
