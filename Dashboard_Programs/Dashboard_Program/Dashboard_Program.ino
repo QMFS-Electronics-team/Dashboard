@@ -428,7 +428,7 @@ void can_bus_task(void *pvParameters) {
         case PID_TRANSMISSION_ACTUAL_GEAR:
           transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
           transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Gear: %.2f", transmission_actual_gear_decoded);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "Gear: %.2f", transmission_actual_gear_decoded);
           break;
         case PID_CONTROL_MODULE_VOLTAGE:
           battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
@@ -438,6 +438,13 @@ void can_bus_task(void *pvParameters) {
         default:
           break;
         }
+
+        // Write data to SD card
+        String output = ""; 
+        output = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
+        output += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
+        appendFile(SD, "/can-bus-data/can-bus-data.csv", output.c_str());
+
 
         Serial.print("CAN Message ID: ");
         Serial.print(canMsg.can_id, HEX); // print ID
@@ -701,11 +708,11 @@ void check_and_create_directory(String directory, String module) {
   if (!SD.exists(("/" + directory + "/" + directory + ".csv").c_str())) {
     createDir(SD, ("/" + directory).c_str());
     Serial.println(("Creating " + module + " File").c_str());
-        // TODO: Create header
+
     if(module == "GPS") {
       appendFile(SD, ("/" + directory + "/" + directory + ".csv").c_str(), ("Date,Time-UTC,GPS-Fix,Satellites,Latitude,Longitude,WGS-Altitude,MSL-Altitude,Speed-KPH,Heading,Compass-Direction,G-Force-X,G-Force-Y,G-Force-Z,Rotation-X,Rotation-Y,Rotation-Z\n"));
     } else if(module == "CAN BUS") {
-      appendFile(SD, ("/" + directory + "/" + directory + ".csv").c_str(), ("RPM, Gear\n"));
+      appendFile(SD, ("/" + directory + "/" + directory + ".csv").c_str(), ("RPM,Throttle,Coolant,Gear,Battery\n"));
     }
   } else {
     Serial.println((module + " File Exists").c_str());
