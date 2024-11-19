@@ -938,15 +938,6 @@ String getCompassDirection(float headingDegrees) {
   return ""; // Default case, shouldn't be reached
 }
 
-void decodeBatteryStatus(uint8_t batteryStatus) {
-  // RaceBox Micro
-  Serial.print("RaceBox Micro - ");          // interpreting battery status as input voltage (according to datasheet)
-  float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
-  Serial.print("Input Voltage: ");
-  Serial.print(inputVoltage, 1); // print with one decimal
-  Serial.println(" V");
-}
-
 void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B) {
   CK_A = 0;
   CK_B = 0;
@@ -1087,7 +1078,7 @@ void parse_RaceBox_Data_Message_payload(uint8_t *data) {
   headingAccuracy = *(reinterpret_cast<uint32_t *>(data + 66));    // 0x88A9DD00 (145.26856 degrees)
   pdop = *(reinterpret_cast<uint16_t *>(data + 70));               // 0x2C01 (3)
   latLonFlags = *(reinterpret_cast<uint8_t *>(data + 72));         // 0x00 (Coordinates valid)
-  batteryStatus = *(reinterpret_cast<uint8_t *>(data + 73));       // has to be interpreted depending on if it is a RaceBox micro or mini, see my function void decodeBatteryStatus
+  batteryStatus = *(reinterpret_cast<uint8_t *>(data + 73));       // has to be interpreted depending on if it is a RaceBox micro or mini
   gForceX = *(reinterpret_cast<int16_t *>(data + 74));             // 0xFDFF (-0.003 g)
   gForceY = *(reinterpret_cast<int16_t *>(data + 76));             // 0x7100 (0.113 g)
   gForceZ = *(reinterpret_cast<int16_t *>(data + 78));             // 0xCE03 (0.974 g)
