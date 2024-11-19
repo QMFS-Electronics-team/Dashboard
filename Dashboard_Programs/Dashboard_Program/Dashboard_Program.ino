@@ -497,13 +497,10 @@ void sensor_task(void *pvParameters) {
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
   mcp2515.setNormalMode();                   // Set CAN at normal mode
 
-  while (1)
-  {
+  while (1) {
 
-    if (!send_rq || send_rq_timeout)
-    {
-      if (canbus_data_counter > CANBUS_DATA_COUNT - 1)
-      {
+    if (!send_rq || send_rq_timeout) {
+      if (canbus_data_counter > CANBUS_DATA_COUNT - 1) {
         canbus_data_counter = 0;
       }
 
@@ -516,13 +513,10 @@ void sensor_task(void *pvParameters) {
       send_rq = 1;         // await recieved data before resend
     }
 
-    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK)
-    {
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
 
-      if (canMsg.can_id == PID_ECU_RESPONSE)
-      {
-        switch (canMsg.data[2])
-        {
+      if (canMsg.can_id == PID_ECU_RESPONSE) {
+        switch (canMsg.data[2]) {
         case PID_ENGINE_RPM:
           rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
           rpm_decoded = (rpm_byte / 4);
@@ -573,12 +567,10 @@ void sensor_task(void *pvParameters) {
         canbus_data_counter++;
         send_rq = 0; // reset request
       }
-      else
-      {
+      else {
         // timeout resend request
-        currentMillis = millis();                                 // get the current "time" (actually the number of milliseconds since the program started)
-        if (currentMillis - startMillis >= canbus_timeout_period) // test whether the period has elapsed
-        {
+        currentMillis = millis();                                   // get the current "time" (actually the number of milliseconds since the program started)
+        if (currentMillis - startMillis >= canbus_timeout_period) { // test whether the period has elapsed
           send_rq_timeout = 1;
           startMillis = currentMillis;
         }
