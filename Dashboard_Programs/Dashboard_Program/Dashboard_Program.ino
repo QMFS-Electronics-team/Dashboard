@@ -205,7 +205,8 @@ void display_task(void *pvParameters) {
 
   String LVGL_Arduino = "LVGL Arduino ";
   LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-
+  
+  Serial.println();
   Serial.println(LVGL_Arduino);
 
   tft.init();
@@ -697,7 +698,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
     return;
   }
   if (file.print(message)) {
-    Serial.println(F("Data Appneded to File"));
+    Serial.println(F("Data Appended to File"));
   } else {
     Serial.println(F("Append failed"));
   }
@@ -823,23 +824,22 @@ void print_RaceBox_Data_message_payload_to_serial() {
 
     // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
     Serial.println();
-    Serial.println("--- updated values from RaceBox Data Message available: ---");
-    Serial.println("--------------------------------------------------------------------------------------------------");
+    Serial.println(F("--- Updated Data From RaceBox: ---"));
+    Serial.println(F("----------------------------------------------------------------------"));
     
     String output = "";
 
-    // Date
+    // Date and Time
     // Serial.println("iTOW: " + String(iTOW) + " ms");
-    Serial.println("Date: " + String(day) + "/" + String(month) + "/" + String(year));
     output += String(day) + "/" + String(month) + "/" + String(year);
 
     // Time
     char timeString[9];                                          // Buffer to store the formatted time string
     sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
-    Serial.println("Time (UTC): " + String(timeString));
+    Serial.println("Date: " + String(day) + "/" + String(month) + "/" + String(year) + " Time (UTC): " + String(timeString) + "\n");
     output += ","+String(timeString);
 
-    // GPS Fix
+    // GPS Fix and Number of Satellites
     String fixStatusText;
     if (fixStatus == 0) {
       fixStatusText = "No Fix";
@@ -850,41 +850,49 @@ void print_RaceBox_Data_message_payload_to_serial() {
     } else {
       fixStatusText = "Unknown";
     }
-    Serial.println("GPS: " + fixStatusText);
-    output += "," + fixStatusText;
+    Serial.println("GPS: " + fixStatusText + ", Satellites: " + String(numSVs) + "\n");
+    output += "," + fixStatusText + "," + String(numSVs);
 
-    // Number of satellites
-    Serial.println("Satellites: " + String(numSVs));
-    output += "," + String(numSVs);
+    // print fix status flags
+    // Serial.println("Fix Status Flags (Hex): " + String(fixStatusFlags, HEX));
+    // Serial.println("Fix Status Flags (Binary): " + String(fixStatusFlags, BIN));
+
+    // print fix status flags with interpretation
+    // Serial.println("Fix Status Flags Interpretation:");
+    // Serial.println("  Bit 0: Valid Fix: " + String((fixStatusFlags & 0x01) ? "Yes" : "No"));
+    // Serial.println("  Bit 1: Differential Corrections Applied: " + String((fixStatusFlags & 0x02) ? "Yes" : "No"));
+    // Serial.println("  Bits 4..2: Power State: " + String((fixStatusFlags >> 2) & 0x07));
+    // Serial.println("  Bit 5: Valid Heading: " + String((fixStatusFlags & 0x20) ? "Yes" : "No"));
+    // Serial.println("  Bits 7..6: Carrier Phase Range Solution: " + String((fixStatusFlags >> 6) & 0x03));
+    // Serial.println();
 
     // Lattitude and longitude
     // we need to divide the latitude by 10^7 because the datasheet states that it is transmitted with a factor of 10^7
-    Serial.println("Latitude: " + String(latitude / 1e7, 7) + " deg, " + "Longitude: " + String(longitude / 1e7, 7) + " deg"); 
+    Serial.println("Latitude: " + String(latitude / 1e7, 7) + "deg, " + "Longitude: " + String(longitude / 1e7, 7) + "deg"); 
     output += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7);
     
     // WGS and MSL Altitude 
-    Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + " m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + " m");
+    Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + "m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + "m");
     output += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); 
 
     // Horizontal and vertical accuracy (not logged to SD card)
-    Serial.println("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + " m, " +"Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + " m");
+    Serial.println("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + "m, " + "Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + "m" + "\n");
     
-    // Speed accuracy (not logged to SD card)
-    Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + " m/s");
     
     // Speed
     // Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
-    Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + " km/h");
+    Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + "km/h");
+    Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + "m/s" + "\n");
     output += "," + String(speed * 3.6 / 1000.0, 2);
     
     // Heading and compass direction
-    Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + " deg");
+    Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + "deg");
     Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
     // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
     Serial.print("Heading: ");
     Serial.print(headingDegrees, 1); // heading (one decimal)
-    Serial.print(" deg, compass direction: ");
-    Serial.println(compass_direction); // magnetic compass direction (e.g., "N", "NO")
+    Serial.print("deg, Compass Direction: ");
+    Serial.println(compass_direction + "\n"); // magnetic compass direction (e.g., "N", "NO")
     output += "," + String(headingDegrees, 1) + "," + String(compass_direction);
 
     // G Force
@@ -892,34 +900,21 @@ void print_RaceBox_Data_message_payload_to_serial() {
     Serial.println("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3));
     output += "," + String(gForceX / 1000.0, 3) + "," + String(gForceY / 1000.0, 3) + "," + String(gForceZ / 1000.0, 3);
 
-    Serial.println("Rot Rate X: " + String(rotRateX / 100.0, 2) + " deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + " deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + " deg/s");
+    Serial.println("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n");
     output += "," + String(rotRateX / 100.0, 2) + "," + String(rotRateY / 100.0, 2) + "," + String(rotRateZ / 100.0, 2);
 
-    // print fix status flags
-    //        Serial.println("Fix Status Flags (Hex): " + String(fixStatusFlags, HEX));
-    //        Serial.println("Fix Status Flags (Binary): " + String(fixStatusFlags, BIN));
-
-    // print fix status flags with interpretation
-    Serial.println("Fix Status Flags Interpretation:");
-    Serial.println("  Bit 0: Valid Fix: " + String((fixStatusFlags & 0x01) ? "Yes" : "No"));
-    Serial.println("  Bit 1: Differential Corrections Applied: " + String((fixStatusFlags & 0x02) ? "Yes" : "No"));
-    Serial.println("  Bits 4..2: Power State: " + String((fixStatusFlags >> 2) & 0x07));
-    Serial.println("  Bit 5: Valid Heading: " + String((fixStatusFlags & 0x20) ? "Yes" : "No"));
-    Serial.println("  Bits 7..6: Carrier Phase Range Solution: " + String((fixStatusFlags >> 6) & 0x03));
-    Serial.println();
+    // Battery
+    float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
+    Serial.println("RaceBox Input Voltage: " + String(inputVoltage, 1) + "V" + "\n");
 
     // Write data to sd card
     output += "\n";
     appendFile(SD, "/gps-data/gps-data.csv", output.c_str());
-
-    // Serial.println("Battery Status: " + String(batteryStatus)); //needs a function for interpretation, which is depending on device type:
-    decodeBatteryStatus(batteryStatus); // a separate decoding funtion is a better solution, as there are differences in interpretation depending if it is a racebox mini, mini s oder micro
-    Serial.println();
   }
   else {
     Serial.println("skipping serial output due to set serial update limitation");
   }
-  Serial.println("--------------------------------------------------------------------------------------------------");
+  Serial.println(F("----------------------------------------------------------------------"));
   Serial.println();
 }
 
@@ -1113,7 +1108,7 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, ui
 }
 
 void ble_task(void *pvParameters) {
-
+  Serial.println();
   Serial.println(F("Scanning for Bluetooth devices."));
   Serial.println();
   Serial.println(F("Scan Results:"));
@@ -1168,7 +1163,7 @@ void setup_sd_card() {
   int sd_detected = digitalRead(SD_DETECT); // 0 When SD card is present
   
   if(sd_detected == 0) {
-    Serial.println(F("SD Card Detected"));
+    Serial.println(F("\nSD Card Detected"));
 
     if (!SD.begin(SDCS, spi)) {
         Serial.println("Card Mount Failed");
@@ -1181,11 +1176,12 @@ void setup_sd_card() {
       return;
     }
     
-    Serial.println(F("SD Card Mounted Successfully"));
+    Serial.println(F("SD Card Mounted Successfully \n"));
     
     // Check and create directories for data capture
     check_and_create_directory("gps-data", "GPS");
     check_and_create_directory("can-bus-data", "CAN BUS");
+    Serial.println();
 
   } else {
     Serial.println(F("SD Card Not Detected"));
