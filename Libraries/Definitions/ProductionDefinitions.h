@@ -33,3 +33,7 @@
 #define PID_TRANSMISSION_ACTUAL_GEAR 	0xA4
 #define PID_CONTROL_MODULE_VOLTAGE 		0x42 // Battery voltage
 // #define PID_INTAKE_TEMP 0x0F
+
+// Delays
+#define DISPLAY_INIT_DELAY      350
+#define LOADING_SCREEN_DELAY    10

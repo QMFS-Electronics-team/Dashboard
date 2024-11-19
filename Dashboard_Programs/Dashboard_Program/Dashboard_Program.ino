@@ -272,16 +272,13 @@ void display_task(void *pvParameters) {
 
 void display_update_task(void *pvParameters) {
 
-  delay(500); // wait for display init
+  delay(DISPLAY_INIT_DELAY); // wait for display init
 
   // Screen is initiated with the loading screen first
-
   lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, 0, LV_ANIM_OFF);
 
-  
-
   for (int i = 0; i < 100; i++) {
-    delay(15);
+    delay(LOADING_SCREEN_DELAY);
     lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, i, LV_ANIM_OFF);
   }
 
@@ -297,7 +294,6 @@ void display_update_task(void *pvParameters) {
   setRPMLights(0);
 
   while (1) {
-    // if racebox connected
     if (connected) {
 
       gX = gForceX / 1000.0;
@@ -396,7 +392,6 @@ void can_bus_task(void *pvParameters) {
 
       // set required PID in CAN message
       canReqMsg.data[2] = canbus_data[canbus_data_counter];
-
       mcp2515.sendMessage(&canReqMsg);
 
       send_rq_timeout = 0; // reset
@@ -446,20 +441,19 @@ void can_bus_task(void *pvParameters) {
         output += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
         appendFile(SD, "/can-bus-data/can-bus-data.csv", output.c_str());
 
-
-        Serial.print("CAN Message ID: ");
+        Serial.print(F("CAN Message ID: "));
         Serial.print(canMsg.can_id, HEX); // print ID
-        Serial.print(" ");
-        Serial.print("Message Length: ");
+        Serial.print(F(" "));
+        Serial.print(F("Message Length: "));
         Serial.print(canMsg.can_dlc, HEX); // print DLC
-        Serial.print(" ");
+        Serial.print(F(" "));
         Serial.print("Data: ");
         for (int i = 0; i < canMsg.can_dlc; i++) {
           Serial.print(canMsg.data[i], HEX);
-          Serial.print(" ");
+          Serial.print(F(" "));
         }
         Serial.println();
-        Serial.print("canbus_data_counter: ");
+        Serial.print(F("canbus_data_counter: "));
         Serial.println(canbus_data_counter);
         canbus_data_counter++;
         send_rq = 0; // reset request
@@ -481,22 +475,19 @@ void can_bus_task(void *pvParameters) {
 // UI Functions
 //-----------------------------
 
-static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event)
-{
+static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event) {
   lv_obj_t *slider = lv_event_get_target(event);
   LEDBrightness = (int)lv_slider_get_value(slider);
   FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
   FastLED.show();
 }
 
-static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *event)
-{
+static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *event) {
   lv_obj_t *slider = lv_event_get_target(event);
   tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 5, 255));
 }
 
-static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event)
-{
+static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event) {
   delay(1000);
   ESP.restart();
 }
@@ -506,13 +497,10 @@ static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
   bleRequestDisconnect = true;
 
   size_t numClients = NimBLEDevice::getClientListSize();
-  if (numClients > 0)
-  {
+  if (numClients > 0) {
     std::list<NimBLEClient *> *clientList = NimBLEDevice::getClientList();
-    for (auto it = clientList->begin(); it != clientList->end(); it++)
-    {
-      if ((*it)->isConnected())
-      {
+    for (auto it = clientList->begin(); it != clientList->end(); it++) {
+      if ((*it)->isConnected()) {
         (*it)->disconnect();
       }
     }
@@ -520,8 +508,7 @@ static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
   NimBLEDevice::deinit();
 }
 
-void ui_reset()
-{
+void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
@@ -557,28 +544,16 @@ void setRPMLights(int rpmValue) {
 }
 
 void upshifting_blink() {
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
+  // Set all LEDS red
+  for(int i = 0; i < 10; i++) {
+    leds[i] = CRGB::Red;
+  }
   FastLED.show();
   delay(200);
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
+  // Turn off all LEDs
+  for(int i = 0; i < 10; i++) {
+    leds[i] = CRGB::Black;
+  }
   FastLED.show();
   delay(200);
 }
@@ -586,16 +561,9 @@ void upshifting_blink() {
 void RGB_startup_animation() {
 
   // reset
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
+  for(int i = 0; i < 10; i++) {
+    leds[i] = CRGB::Black;
+  }
   FastLED.show();
 
   delay(250);
@@ -636,6 +604,15 @@ void RGB_startup_animation() {
   FastLED.show();
 }
 
+void demo_rpm_lights(void *pvParameters) {
+  while(1) {
+    for(int i = 0; i < 13; i++) {
+      rpm = i * 1000;
+      setRPMLights(rpm);
+      delay(250);
+    }
+  }
+}
 
 //-----------------------------
 // Buzzer
@@ -647,16 +624,6 @@ void buzz_double() {
     delay(100);
     digitalWrite(BUZZER_PIN, LOW);
     delay(100);
-  }
-}
-
-void demo_rpm_lights(void *pvParameters) {
-  while(1) {
-    for(int i = 0; i < 13; i++) {
-      rpm = i * 1000;
-      setRPMLights(rpm);
-      delay(250);
-    }
   }
 }
 
@@ -771,7 +738,7 @@ bool connectToRaceBox() {
     pClient = NimBLEDevice::getClientByPeerAddress(myRaceBox->getAddress());
     if (pClient) {
       if (!pClient->connect(myRaceBox)) {
-        Serial.println("Failed to reconnect. Retrying...");
+        Serial.println(F("Failed to reconnect. Retrying..."));
         // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
         return false;
       }
@@ -780,7 +747,7 @@ bool connectToRaceBox() {
       pClient = NimBLEDevice::createClient();
       pClient->setClientCallbacks(new ClientCallbacks(), false);
       if (!pClient->connect(myRaceBox)) {
-        Serial.println("Failed to connect.");
+        Serial.println(F("Failed to connect."));
         NimBLEDevice::deleteClient(pClient);
         // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
         return false;
@@ -791,7 +758,7 @@ bool connectToRaceBox() {
     pClient = NimBLEDevice::createClient();
     pClient->setClientCallbacks(new ClientCallbacks(), false);
     if (!pClient->connect(myRaceBox)) {
-      Serial.println("Failed to connect.");
+      Serial.println(F("Failed to connect."));
       NimBLEDevice::deleteClient(pClient);
       // Serial.println("DEBUG: connectToRaceBox() will now return false and exit.");
       return false;
@@ -800,13 +767,11 @@ bool connectToRaceBox() {
 
   // obtain the service and characteristic
   BLERemoteService *pService = pClient->getService(UART_service_UUID);
-  if (pService != nullptr)
-  {
+  if (pService != nullptr) {
     pRemoteCharacteristic = pService->getCharacteristic(TX_characteristic_UUID);
-    if (pRemoteCharacteristic != nullptr)
-    {
+    if (pRemoteCharacteristic != nullptr) {
       pRemoteCharacteristic->registerForNotify(notifyCallback);
-      Serial.println("DEBUG: connectToRaceBox() will now return true and exit.");
+      Serial.println(F("DEBUG: connectToRaceBox() will now return true and exit."));
       return true;
     }
   }
@@ -912,7 +877,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     appendFile(SD, "/gps-data/gps-data.csv", output.c_str());
   }
   else {
-    Serial.println("skipping serial output due to set serial update limitation");
+    Serial.println(F("Skipping serial output due to set serial update limitation"));
   }
   Serial.println(F("----------------------------------------------------------------------"));
   Serial.println();
@@ -941,8 +906,7 @@ String getCompassDirection(float headingDegrees) {
 void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B) {
   CK_A = 0;
   CK_B = 0;
-  for (int i = 2; i < length - 2; i++)
-  { // start after header bytes and end before checksum bytes
+  for (int i = 2; i < length - 2; i++) { // start after header bytes and end before checksum bytes
     CK_A += data[i];
     CK_B += CK_A;
   }
@@ -950,7 +914,7 @@ void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &C
 
 void parsePayload(uint8_t *data) {
   if (data[0] != 0xB5 || data[1] != 0x62) {
-    Serial.println("Invalid frame start of payload data - check may need to be removed or changed for other data than RaceBox Data Message!");
+    Serial.println(F("Invalid frame start of payload data - check may need to be removed or changed for other data than RaceBox Data Message!"));
     return;
   }
 
@@ -963,16 +927,15 @@ void parsePayload(uint8_t *data) {
 
   // validate the length of the packet
   uint16_t packetLength = 6 + payloadLength + 2; // header (6 bytes) + payload + checksum (2 bytes)
-  if (packetLength > 512)
-  { // double check if 5
-    Serial.print("Received packet size exceeds maximum allowed size (512 bytes). ");
-    Serial.print("Packet length is ");
+  if (packetLength > 512) { // double check if 5
+    Serial.print(F("Received packet size exceeds maximum allowed size (512 bytes). "));
+    Serial.print(F("Packet length is "));
     Serial.print(packetLength);
-    Serial.println(" bytes.");
+    Serial.println(F(" bytes."));
     return;
   }
-  else
-  { // if packetLength is within allowed limits, print out some info on the data packet:
+  else { 
+    // if packetLength is within allowed limits, print out some info on the data packet:
     // Serial.println("Payload length is " + String(payloadLength) + " bytes");
     // Serial.println("Expected payload length according to datasheet: 0 - 504 bytes. For a RaceBox Data Message payload length is 80 bytes.");
     // Serial.println("Packet length (including checksum) is " + String(packetLength) + " bytes");
@@ -981,13 +944,10 @@ void parsePayload(uint8_t *data) {
   // validate checksum
   uint8_t CK_A, CK_B;
   calculateChecksum(data, packetLength, CK_A, CK_B);
-  if (data[packetLength - 2] != CK_A || data[packetLength - 1] != CK_B)
-  {
-    Serial.println("*** Checksum validation of incoming data package failed. ***");
+  if (data[packetLength - 2] != CK_A || data[packetLength - 1] != CK_B) {
+    Serial.println(F("*** Checksum validation of incoming data package failed. ***"));
     return;
-  }
-  else
-  {
+  } else {
     // Serial.println("Checksum validation successful.");
   }
   // Serial.println();
@@ -999,8 +959,8 @@ void parsePayload(uint8_t *data) {
   //    Serial.println(messageId, HEX);
 
   // check if the message class and ID match the expected values for a live data packet
-  if (messageClass == 0xFF || messageId == 0x01)
-  { // in case we receive live data (standard on start of RaceBox) and interpret it accordingly
+  if (messageClass == 0xFF || messageId == 0x01) { 
+    // in case we receive live data (standard on start of RaceBox) and interpret it accordingly
     // Serial.println("the received message has messageClass 0xFF and messageId 0x01, this is a (valid) RaceBox Data Message. Parsing payload.");
     parse_RaceBox_Data_Message_payload(data); // sending variable data to this function to interpret it
     // outputting received data (this will be triggered each time a payload is parsed, so be aware that it may delay data update rate if e.g. printing a lot of info to serial takes longer than it takes for the next data to arrive.)
@@ -1012,39 +972,33 @@ void parsePayload(uint8_t *data) {
   }
 
   // examples how to handle other received messages;
-  else if (messageClass == 0xFF || messageId == 0x21)
-  { // History Data Message
-    Serial.println("the received message has messageClass 0xFF and messageId 0x21, this is a (valid) History Data Message message. Parsing payload NOT yet implemented.");
+  else if (messageClass == 0xFF || messageId == 0x21) { // History Data Message
+    Serial.println(F("the received message has messageClass 0xFF and messageId 0x21, this is a (valid) History Data Message message. Parsing payload NOT yet implemented."));
     // parse_History_Data_Message_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
-  }
-  else if (messageClass == 0xFF || messageId == 0x22)
-  { // Standalone Recording Status
-    Serial.println("the received message has messageClass 0xFF and messageId 0x22, this is a (valid) Standalone Recording Status message. Parsing payload NOT yet implemented.");
+  } else if (messageClass == 0xFF || messageId == 0x22) { 
+    // Standalone Recording Status
+    Serial.println(F("the received message has messageClass 0xFF and messageId 0x22, this is a (valid) Standalone Recording Status message. Parsing payload NOT yet implemented."));
     // parse_standalone_Recording_Status_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
-  }
-  else if (messageClass == 0xFF || messageId == 0x23)
+  } else if (messageClass == 0xFF || messageId == 0x23)
   { // Recorded Data Download
-    Serial.println("the received message has messageClass 0xFF and messageId 0x23, this is a (valid) Recorded Data Download message. Parsing payload NOT yet implemented.");
+    Serial.println(F("the received message has messageClass 0xFF and messageId 0x23, this is a (valid) Recorded Data Download message. Parsing payload NOT yet implemented."));
+    // parse_Recorded_Data_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
+  } else if (messageClass == 0xFF || messageId == 0x26) { 
+    // Standalone Recording State Change Message
+    Serial.println(F("the received message has messageClass 0xFF and messageId 0x26, this is a (valid) Standalone Recording State Change Message. Parsing payload NOT yet implemented."));
     // parse_Recorded_Data_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
   }
-  else if (messageClass == 0xFF || messageId == 0x26)
-  { // Standalone Recording State Change Message
-    Serial.println("the received message has messageClass 0xFF and messageId 0x26, this is a (valid) Standalone Recording State Change Message. Parsing payload NOT yet implemented.");
-    // parse_Recorded_Data_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
-  }
-
   //    else if (messageClass == 0x_something_else_1 || messageId == 0x_something_else_2){
   //      //handle other message class(es) like this
   //    }
-
-  else
-  { // in case we receive different data (with different message class or message IDs as implemented above, we would need to handle it differently, or even assemble multiple messages that may have ben split.
-    Serial.print("unknown message class and message ID found (it may be other data?): ");
-    Serial.print("Message Class: 0x");
+  else { 
+    // in case we receive different data (with different message class or message IDs as implemented above, we would need to handle it differently, or even assemble multiple messages that may have ben split.
+    Serial.print(F("unknown message class and message ID found (it may be other data?): "));
+    Serial.print(F("Message Class: 0x"));
     Serial.print(messageClass, HEX);
-    Serial.print(", Message ID: 0x");
+    Serial.print(F(", Message ID: 0x"));
     Serial.println(messageId, HEX);
-    Serial.println("Ignoring packet. This is not a known/implemented data packet. Interpreting the payload for this kind of packet is not yet implemented.");
+    Serial.println(F("Ignoring packet. This is not a known/implemented data packet. Interpreting the payload for this kind of packet is not yet implemented."));
     return;
   }
 }
@@ -1157,7 +1111,7 @@ void setup_sd_card() {
     Serial.println(F("\nSD Card Detected"));
 
     if (!SD.begin(SDCS, spi)) {
-        Serial.println("Card Mount Failed");
+        Serial.println(F("Card Mount Failed"));
         return;
     }
     uint8_t cardType = SD.cardType();
