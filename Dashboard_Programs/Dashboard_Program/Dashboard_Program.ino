@@ -196,56 +196,6 @@ void my_print(const char *buf)
 }
 #endif
 
-/* Display flushing */
-void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-
-  tft.startWrite();
-  tft.setAddrWindow(area->x1, area->y1, w, h);
-  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
-  tft.endWrite();
-
-  lv_disp_flush_ready(disp_drv);
-}
-
-/*Read the touchpad*/
-void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
-
-  uint16_t x, y;
-  if (tft.getTouch(&x, &y))   {
-    data->state = LV_INDEV_STATE_PR;
-    data->point.x = x;
-    data->point.y = y;
-  } else {
-    data->state = LV_INDEV_STATE_REL;
-  }
-}
-
-
-//-----------------------------
-// Buzzer
-//-----------------------------
-
-void buzz_double() {
-  for(int i = 0; i < 2; i++) {
-    digitalWrite(BUZZER_PIN, HIGH);
-    delay(100);
-    digitalWrite(BUZZER_PIN, LOW);
-    delay(100);
-  }
-}
-
-void demo_rpm_lights(void *pvParameters) {
-  while(1) {
-    for(int i = 0; i < 13; i++) {
-      rpm = i * 1000;
-      setRPMLights(rpm);
-      delay(250);
-    }
-  }
-}
-
 
 //-----------------------------
 // Dispay
@@ -368,6 +318,30 @@ void display_update_task(void *pvParameters) {
 
     lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
     vTaskDelay(10);
+  }
+}
+
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
+
+  tft.startWrite();
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t *)&color_p->full, w * h, true);
+  tft.endWrite();
+
+  lv_disp_flush_ready(disp_drv);
+}
+
+void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
+
+  uint16_t x, y;
+  if (tft.getTouch(&x, &y))   {
+    data->state = LV_INDEV_STATE_PR;
+    data->point.x = x;
+    data->point.y = y;
+  } else {
+    data->state = LV_INDEV_STATE_REL;
   }
 }
 
@@ -551,6 +525,7 @@ void ui_reset()
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
 }
 
+
 //----------------
 // RGB LEDs
 //----------------
@@ -651,6 +626,30 @@ void RGB_startup_animation() {
   leds[8] = CRGB::Green;
   leds[9] = CRGB::Green;
   FastLED.show();
+}
+
+
+//-----------------------------
+// Buzzer
+//-----------------------------
+
+void buzz_double() {
+  for(int i = 0; i < 2; i++) {
+    digitalWrite(BUZZER_PIN, HIGH);
+    delay(100);
+    digitalWrite(BUZZER_PIN, LOW);
+    delay(100);
+  }
+}
+
+void demo_rpm_lights(void *pvParameters) {
+  while(1) {
+    for(int i = 0; i < 13; i++) {
+      rpm = i * 1000;
+      setRPMLights(rpm);
+      delay(250);
+    }
+  }
 }
 
 
