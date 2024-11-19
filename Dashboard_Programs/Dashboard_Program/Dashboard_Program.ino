@@ -224,91 +224,6 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
 
 
 //-----------------------------
-// RGB LEDS
-//-----------------------------
-
-void upshifting_blink() {
-  leds[0] = CRGB::Red;
-  leds[1] = CRGB::Red;
-  leds[2] = CRGB::Red;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Red;
-  leds[8] = CRGB::Red;
-  leds[9] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-  delay(200);
-}
-
-void RGB_startup_animation() {
-
-  // reset
-  leds[0] = CRGB::Black;
-  leds[1] = CRGB::Black;
-  leds[2] = CRGB::Black;
-  leds[3] = CRGB::Black;
-  leds[4] = CRGB::Black;
-  leds[5] = CRGB::Black;
-  leds[6] = CRGB::Black;
-  leds[7] = CRGB::Black;
-  leds[8] = CRGB::Black;
-  leds[9] = CRGB::Black;
-  FastLED.show();
-
-  delay(250);
-  leds[0] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[1] = CRGB::Green;
-  leds[8] = CRGB::Green;
-  FastLED.show();
-  delay(250);
-  leds[2] = CRGB::Orange;
-  leds[7] = CRGB::Orange;
-  FastLED.show();
-  delay(250);
-  leds[3] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  FastLED.show();
-  delay(250);
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  FastLED.show();
-  delay(200);
-
-  upshifting_blink();
-  upshifting_blink();
-
-  leds[0] = CRGB::Green;
-  leds[1] = CRGB::Green;
-  leds[2] = CRGB::Orange;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Orange;
-  leds[8] = CRGB::Green;
-  leds[9] = CRGB::Green;
-  FastLED.show();
-}
-
-
-//-----------------------------
 // Buzzer
 //-----------------------------
 
@@ -658,6 +573,87 @@ void setRPMLights(int rpmValue) {
   }
 }
 
+void upshifting_blink() {
+  leds[0] = CRGB::Red;
+  leds[1] = CRGB::Red;
+  leds[2] = CRGB::Red;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Red;
+  leds[8] = CRGB::Red;
+  leds[9] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+  delay(200);
+}
+
+void RGB_startup_animation() {
+
+  // reset
+  leds[0] = CRGB::Black;
+  leds[1] = CRGB::Black;
+  leds[2] = CRGB::Black;
+  leds[3] = CRGB::Black;
+  leds[4] = CRGB::Black;
+  leds[5] = CRGB::Black;
+  leds[6] = CRGB::Black;
+  leds[7] = CRGB::Black;
+  leds[8] = CRGB::Black;
+  leds[9] = CRGB::Black;
+  FastLED.show();
+
+  delay(250);
+  leds[0] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[1] = CRGB::Green;
+  leds[8] = CRGB::Green;
+  FastLED.show();
+  delay(250);
+  leds[2] = CRGB::Orange;
+  leds[7] = CRGB::Orange;
+  FastLED.show();
+  delay(250);
+  leds[3] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  FastLED.show();
+  delay(250);
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  FastLED.show();
+  delay(200);
+
+  upshifting_blink();
+  upshifting_blink();
+
+  leds[0] = CRGB::Green;
+  leds[1] = CRGB::Green;
+  leds[2] = CRGB::Orange;
+  leds[3] = CRGB::Red;
+  leds[4] = CRGB::Red;
+  leds[5] = CRGB::Red;
+  leds[6] = CRGB::Red;
+  leds[7] = CRGB::Orange;
+  leds[8] = CRGB::Green;
+  leds[9] = CRGB::Green;
+  FastLED.show();
+}
+
+
 //-----------------------------
 // Directory and File Functions
 //-----------------------------
@@ -747,6 +743,7 @@ void check_and_create_directory(String directory, String module) {
     Serial.println((module + " File Exists").c_str());
   }
 }
+
 
 //-----------------------------
 // BLE GPS Functions
@@ -1257,7 +1254,6 @@ void setup(void) {
 
   // RPM Lights Demo
   // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);
-  
 }
 
 
