@@ -304,6 +304,21 @@ void display_update_task(void *pvParameters) {
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
       lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
+
+      // Time 
+      char timeString[9];                                         
+      sprintf(timeString, "%02d:%02d:%02d", hour, minute, second);
+      String timeOutput = "Time: " + String(timeString);  
+      lv_label_set_text(ui_MainScreen_Label_LabelTime, timeOutput.c_str());
+
+      // SD Card Status
+      if(digitalRead(SD_DETECT) == 0) {
+        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
+      } else {
+        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
+      }
+
+
     } else {
 
       if (bleRequestDisconnect) {

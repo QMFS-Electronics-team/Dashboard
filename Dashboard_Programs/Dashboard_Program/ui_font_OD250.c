@@ -21932,3 +21932,4 @@ lv_font_t ui_font_OD250 = {
 
 
 #endif /*#if UI_FONT_OD250*/
+

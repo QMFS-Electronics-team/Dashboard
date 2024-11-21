@@ -11,96 +11,98 @@
 
 // SCREEN: ui_LoadingScreen
 void ui_LoadingScreen_screen_init(void);
-lv_obj_t * ui_LoadingScreen;
-lv_obj_t * ui_LoadingScreen_Image_Image1;
-lv_obj_t * ui_LoadingScreen_Bar_loadingBar;
-lv_obj_t * ui_LoadingScreen_Label_Label4;
-lv_obj_t * ui_LoadingScreen_Label_Label11;
+lv_obj_t *ui_LoadingScreen;
+lv_obj_t *ui_LoadingScreen_Image_Image1;
+lv_obj_t *ui_LoadingScreen_Bar_loadingBar;
+lv_obj_t *ui_LoadingScreen_Label_Label4;
+lv_obj_t *ui_LoadingScreen_Label_Label11;
 
 
 // SCREEN: ui_MainScreen
 void ui_MainScreen_screen_init(void);
-void ui_event_MainScreen(lv_event_t * e);
-lv_obj_t * ui_MainScreen;
-lv_obj_t * ui_MainScreen_Panel_PanelGear;
-lv_obj_t * ui_MainScreen_Label_LabeltextGear;
-lv_obj_t * ui_MainScreen_Label_LabelGear;
-lv_obj_t * ui_MainScreen_Panel_PanelRPM;
-lv_obj_t * ui_MainScreen_Label_LabeltextRPM;
-lv_obj_t * ui_MainScreen_Label_LabelRPM;
-lv_obj_t * ui_MainScreen_Panel_PanelSpeed;
-lv_obj_t * ui_MainScreen_Label_LabeltextSpeed;
-lv_obj_t * ui_MainScreen_Label_LabelSpeed;
-lv_obj_t * ui_MainScreen_Panel_PanelGForce;
-lv_obj_t * ui_MainScreen_Label_LabeltextGForce;
-lv_obj_t * ui_MainScreen_Label_LabelGForce;
-lv_obj_t * ui_MainScreen_Label_LabelTPS;
-lv_obj_t * ui_MainScreen_Label_LabelBPS;
-lv_obj_t * ui_MainScreen_Bar_BarRPM;
-lv_obj_t * ui_MainScreen_Label_LabelRevPos1;
-lv_obj_t * ui_MainScreen_Label_LabelRevPos2;
-lv_obj_t * ui_MainScreen_Label_LabelRevPos3;
-lv_obj_t * ui_MainScreen_Label_LabelRevPos4;
-lv_obj_t * ui_MainScreen_Bar_BarTPS;
-lv_obj_t * ui_MainScreen_Bar_BarBPS;
-lv_obj_t * ui_MainScreen_Label_LabelBattV;
-lv_obj_t * ui_MainScreen_Label_LabelGPSTrack;
-lv_obj_t * ui_MainScreen_Label_LabelWaterTemp;
-lv_obj_t * ui_MainScreen_Label_LabelOilTemp;
+void ui_event_MainScreen( lv_event_t * e);
+lv_obj_t *ui_MainScreen;
+lv_obj_t *ui_MainScreen_Panel_PanelGear;
+lv_obj_t *ui_MainScreen_Label_LabeltextGear;
+lv_obj_t *ui_MainScreen_Label_LabelGear;
+lv_obj_t *ui_MainScreen_Panel_PanelRPM;
+lv_obj_t *ui_MainScreen_Label_LabeltextRPM;
+lv_obj_t *ui_MainScreen_Label_LabelRPM;
+lv_obj_t *ui_MainScreen_Panel_PanelSpeed;
+lv_obj_t *ui_MainScreen_Label_LabeltextSpeed;
+lv_obj_t *ui_MainScreen_Label_LabelSpeed;
+lv_obj_t *ui_MainScreen_Panel_PanelGForce;
+lv_obj_t *ui_MainScreen_Label_LabeltextGForce;
+lv_obj_t *ui_MainScreen_Label_LabelGForce;
+lv_obj_t *ui_MainScreen_Label_LabelTPS;
+lv_obj_t *ui_MainScreen_Label_LabelBPS;
+lv_obj_t *ui_MainScreen_Bar_BarRPM;
+lv_obj_t *ui_MainScreen_Label_LabelRevPos1;
+lv_obj_t *ui_MainScreen_Label_LabelRevPos2;
+lv_obj_t *ui_MainScreen_Label_LabelRevPos3;
+lv_obj_t *ui_MainScreen_Label_LabelRevPos4;
+lv_obj_t *ui_MainScreen_Bar_BarTPS;
+lv_obj_t *ui_MainScreen_Bar_BarBPS;
+lv_obj_t *ui_MainScreen_Label_LabelBattV;
+lv_obj_t *ui_MainScreen_Label_LabelGPSTrack;
+lv_obj_t *ui_MainScreen_Label_LabelWaterTemp;
+lv_obj_t *ui_MainScreen_Label_LabelOilTemp;
+lv_obj_t *ui_MainScreen_Label_LabelSDCardMounted;
+lv_obj_t *ui_MainScreen_Label_LabelTime;
 
 
 // SCREEN: ui_SettingScreen
 void ui_SettingScreen_screen_init(void);
-lv_obj_t * ui_SettingScreen;
-lv_obj_t * ui_SettingScreen_Slider_SliderDisplayBrightness;
-lv_obj_t * ui_SettingScreen_Label_LabelDisplayBrightness;
-lv_obj_t * ui_SettingScreen_Label_LabelSetting;
-lv_obj_t * ui_SettingScreen_Slider_SliderLEDBrightness;
-lv_obj_t * ui_SettingScreen_Label_LabelLEDBrightness;
-lv_obj_t * ui_SettingScreen_Switch_SwitchDemo;
-lv_obj_t * ui_SettingScreen_Label_LabelDemo;
-lv_obj_t * ui_SettingScreen_Label_LabelRecording;
-void ui_event_SettingScreen_Button_ButtonsSettingReturn(lv_event_t * e);
-lv_obj_t * ui_SettingScreen_Button_ButtonsSettingReturn;
-lv_obj_t * ui_SettingScreen_Switch_SwitchRecord;
-lv_obj_t * ui_SettingScreen_Button_ButtonBLEDisconnect;
-lv_obj_t * ui_SettingScreen_Label_LabelRecordingStorage;
-lv_obj_t * ui_SettingScreen_Button_ButtonRestart;
-lv_obj_t * ui_SettingScreen_Label_LabelBLEDisconnect;
+lv_obj_t *ui_SettingScreen;
+lv_obj_t *ui_SettingScreen_Slider_SliderDisplayBrightness;
+lv_obj_t *ui_SettingScreen_Label_LabelDisplayBrightness;
+lv_obj_t *ui_SettingScreen_Label_LabelSetting;
+lv_obj_t *ui_SettingScreen_Slider_SliderLEDBrightness;
+lv_obj_t *ui_SettingScreen_Label_LabelLEDBrightness;
+lv_obj_t *ui_SettingScreen_Switch_SwitchDemo;
+lv_obj_t *ui_SettingScreen_Label_LabelDemo;
+lv_obj_t *ui_SettingScreen_Label_LabelRecording;
+void ui_event_SettingScreen_Button_ButtonsSettingReturn( lv_event_t * e);
+lv_obj_t *ui_SettingScreen_Button_ButtonsSettingReturn;
+lv_obj_t *ui_SettingScreen_Switch_SwitchRecord;
+lv_obj_t *ui_SettingScreen_Button_ButtonBLEDisconnect;
+lv_obj_t *ui_SettingScreen_Label_LabelRecordingStorage;
+lv_obj_t *ui_SettingScreen_Button_ButtonRestart;
+lv_obj_t *ui_SettingScreen_Label_LabelBLEDisconnect;
 
 
 // SCREEN: ui_TeamScreen
 void ui_TeamScreen_screen_init(void);
-void ui_event_TeamScreen(lv_event_t * e);
-lv_obj_t * ui_TeamScreen;
-lv_obj_t * ui_TeamScreen_Image_Image2;
-lv_obj_t * ui_TeamScreen_Image_Image3;
-lv_obj_t * ui_TeamScreen_Label_LabelScanMe;
-lv_obj_t * ui_TeamScreen_Label_LabelAd;
-lv_obj_t * ui_TeamScreen_Image_ImageLinkedIn;
-lv_obj_t * ui_TeamScreen_Image_ImageInsta;
-lv_obj_t * ui_TeamScreen_Image_ImageTikTok;
-lv_obj_t * ui_TeamScreen_Image_ImageYoutube;
+void ui_event_TeamScreen( lv_event_t * e);
+lv_obj_t *ui_TeamScreen;
+lv_obj_t *ui_TeamScreen_Image_Image2;
+lv_obj_t *ui_TeamScreen_Image_Image3;
+lv_obj_t *ui_TeamScreen_Label_LabelScanMe;
+lv_obj_t *ui_TeamScreen_Label_LabelAd;
+lv_obj_t *ui_TeamScreen_Image_ImageLinkedIn;
+lv_obj_t *ui_TeamScreen_Image_ImageInsta;
+lv_obj_t *ui_TeamScreen_Image_ImageTikTok;
+lv_obj_t *ui_TeamScreen_Image_ImageYoutube;
 
 
 // SCREEN: ui_InfoScreen
 void ui_InfoScreen_screen_init(void);
-lv_obj_t * ui_InfoScreen;
-lv_obj_t * ui_InfoScreen_Label_LabelFirmwareInfo;
-lv_obj_t * ui_InfoScreen_Image_QRcodeGithub;
-lv_obj_t * ui_InfoScreen_Label_LabelElectronicTeam;
-lv_obj_t * ui_InfoScreen_Label_LabelGithub;
-void ui_event_InfoScreen_Button_ButtonsInfoReturn(lv_event_t * e);
-lv_obj_t * ui_InfoScreen_Button_ButtonsInfoReturn;
-lv_obj_t * ui_InfoScreen_Label_LabelGPSInfo;
-lv_obj_t * ui_InfoScreen_Panel_PanelGPSInfo;
-lv_obj_t * ui_InfoScreen_Label_LabelBluetoothRSSI;
-lv_obj_t * ui_InfoScreen_Label_LabelSpeedAcc;
-lv_obj_t * ui_InfoScreen_Label_LabelGPSAcc;
-lv_obj_t * ui_InfoScreen_Label_LabelDataRate;
-lv_obj_t * ui_InfoScreen_Label_LabelSetting2;
-lv_obj_t * ui_Startevents____initial_actions0;
-const lv_img_dsc_t * ui_imgset_1360207280[1] = {&ui_img_1525559409};
+lv_obj_t *ui_InfoScreen;
+lv_obj_t *ui_InfoScreen_Label_LabelFirmwareInfo;
+lv_obj_t *ui_InfoScreen_Image_QRcodeGithub;
+lv_obj_t *ui_InfoScreen_Label_LabelElectronicTeam;
+lv_obj_t *ui_InfoScreen_Label_LabelGithub;
+void ui_event_InfoScreen_Button_ButtonsInfoReturn( lv_event_t * e);
+lv_obj_t *ui_InfoScreen_Button_ButtonsInfoReturn;
+lv_obj_t *ui_InfoScreen_Label_LabelGPSInfo;
+lv_obj_t *ui_InfoScreen_Panel_PanelGPSInfo;
+lv_obj_t *ui_InfoScreen_Label_LabelBluetoothRSSI;
+lv_obj_t *ui_InfoScreen_Label_LabelSpeedAcc;
+lv_obj_t *ui_InfoScreen_Label_LabelGPSAcc;
+lv_obj_t *ui_InfoScreen_Label_LabelDataRate;
+lv_obj_t *ui_InfoScreen_Label_LabelSetting2;
+lv_obj_t *ui_Startevents____initial_actions0;
+const lv_img_dsc_t *ui_imgset_1360207280[1] = {&ui_img_1525559409};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -113,61 +115,52 @@ const lv_img_dsc_t * ui_imgset_1360207280[1] = {&ui_img_1525559409};
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
-void ui_event_MainScreen(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_RIGHT) {
-        lv_indev_wait_release(lv_indev_get_act());
-        _ui_screen_change(&ui_TeamScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_TeamScreen_screen_init);
-    }
-    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_BOTTOM) {
-        lv_indev_wait_release(lv_indev_get_act());
-        _ui_screen_change(&ui_SettingScreen, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 500, 0, &ui_SettingScreen_screen_init);
-    }
-    if(event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_TOP) {
-        lv_indev_wait_release(lv_indev_get_act());
-        _ui_screen_change(&ui_InfoScreen, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_InfoScreen_screen_init);
-    }
+void ui_event_MainScreen( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_RIGHT  ) {
+lv_indev_wait_release(lv_indev_get_act());
+      _ui_screen_change( &ui_TeamScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 0, &ui_TeamScreen_screen_init);
 }
-void ui_event_SettingScreen_Button_ButtonsSettingReturn(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_MainScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_MainScreen_screen_init);
-    }
+if ( event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_BOTTOM  ) {
+lv_indev_wait_release(lv_indev_get_act());
+      _ui_screen_change( &ui_SettingScreen, LV_SCR_LOAD_ANIM_MOVE_BOTTOM, 500, 0, &ui_SettingScreen_screen_init);
 }
-void ui_event_TeamScreen(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 0, &ui_MainScreen_screen_init);
-    }
+if ( event_code == LV_EVENT_GESTURE &&  lv_indev_get_gesture_dir(lv_indev_get_act()) == LV_DIR_TOP  ) {
+lv_indev_wait_release(lv_indev_get_act());
+      _ui_screen_change( &ui_InfoScreen, LV_SCR_LOAD_ANIM_MOVE_TOP, 500, 0, &ui_InfoScreen_screen_init);
 }
-void ui_event_InfoScreen_Button_ButtonsInfoReturn(lv_event_t * e)
-{
-    lv_event_code_t event_code = lv_event_get_code(e);
-    lv_obj_t * target = lv_event_get_target(e);
-    if(event_code == LV_EVENT_CLICKED) {
-        _ui_screen_change(&ui_MainScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_MainScreen_screen_init);
-    }
+}
+void ui_event_SettingScreen_Button_ButtonsSettingReturn( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_MainScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_MainScreen_screen_init);
+}
+}
+void ui_event_TeamScreen( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 0, &ui_MainScreen_screen_init);
+}
+}
+void ui_event_InfoScreen_Button_ButtonsInfoReturn( lv_event_t * e) {
+    lv_event_code_t event_code = lv_event_get_code(e);lv_obj_t * target = lv_event_get_target(e);
+if ( event_code == LV_EVENT_CLICKED) {
+      _ui_screen_change( &ui_MainScreen, LV_SCR_LOAD_ANIM_FADE_ON, 500, 0, &ui_MainScreen_screen_init);
+}
 }
 
 ///////////////////// SCREENS ////////////////////
 
-void ui_init(void)
+void ui_init( void )
 {
-    lv_disp_t * dispp = lv_disp_get_default();
-    lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
-                                               false, LV_FONT_DEFAULT);
-    lv_disp_set_theme(dispp, theme);
-    ui_LoadingScreen_screen_init();
-    ui_MainScreen_screen_init();
-    ui_SettingScreen_screen_init();
-    ui_TeamScreen_screen_init();
-    ui_InfoScreen_screen_init();
-    ui_Startevents____initial_actions0 = lv_obj_create(NULL);
-    lv_disp_load_scr(ui_LoadingScreen);
+lv_disp_t *dispp = lv_disp_get_default();
+lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
+lv_disp_set_theme(dispp, theme);
+ui_LoadingScreen_screen_init();
+ui_MainScreen_screen_init();
+ui_SettingScreen_screen_init();
+ui_TeamScreen_screen_init();
+ui_InfoScreen_screen_init();
+ui_Startevents____initial_actions0 = lv_obj_create(NULL);
+lv_disp_load_scr( ui_LoadingScreen);
 }

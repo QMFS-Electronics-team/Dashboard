@@ -645,3 +645,4 @@ lv_font_t ui_font_OD26 = {
 
 
 #endif /*#if UI_FONT_OD26*/
+
