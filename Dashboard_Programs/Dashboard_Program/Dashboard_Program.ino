@@ -88,7 +88,28 @@ int16_t rotRateX;
 int16_t rotRateY;
 int16_t rotRateZ;
 
-int rpm;
+// Packet 2000
+int rpm = 0;             // [0] RPM
+int tps = 0;             // [1] Throttle Position Sensor
+int water_temp = 0;      // [2] Water Temperature
+
+// Packet 2001
+int kph = 0;             // [2] Speed reported by ECU
+
+// Packet 2002
+int oil_temp = 0;        // [1] Oil Temperature
+int battery_voltage = 0; // [2] Battery Voltage
+
+// Packet 2003
+int gear = 0;            // [0] Gear
+
+// Packet 2004
+int bps = 0;             // [0] Brake Position Sensor
+
+// Other data for display
+int g_force = 0;         // G-Force
+int num_satellites = 0;  // Number of Satellites
+int mph = 0;             // Miles per hour
 
 float headingDegrees;
 String compass_direction;
@@ -329,6 +350,10 @@ void display_update_task(void *pvParameters) {
     }
 
     lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+    lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
+    lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
+    
+
     vTaskDelay(10);
   }
 }
@@ -484,6 +509,64 @@ void can_bus_task(void *pvParameters) {
     }
   }
 }
+
+void can_bus_task_qm_car(void *pvParameters) {
+
+  int rpm_recieved = 0;
+  String outputString = "";
+  
+  delay(1000); // wait for display init
+
+  // mcp2515.reset();
+  // mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  // mcp2515.setNormalMode(); 
+  while(1){
+    // for (int start = millis(); millis() - start < 20;){
+      // Serial.println("Attempting CAN BUS Read");
+      if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+        // Serial.println("Reading CAN BUS data");
+
+        outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+
+        if (canMsg.can_id == 0) {
+          Serial.println("RPM Data Received");
+          rpm = canMsg.data[0] * 1000;
+          setRPMLights(rpm);
+          // lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_recieved, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+          // lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_recieved).c_str());  
+
+          tps = canMsg.data[1];
+          water_temp = canMsg.data[2];
+        }
+
+        if (canMsg.can_id == 1) {
+          kph = canMsg.data[2];
+        }
+        
+        if (canMsg.can_id == 2) {
+          oil_temp = canMsg.data[1];
+          battery_voltage = canMsg.data[2];
+        }
+        
+        if (canMsg.can_id == 3) {
+          gear = canMsg.data[0];
+        }
+        
+        if (canMsg.can_id == 4) {
+          bps = canMsg.data[0];
+        }
+
+        for (int i = 0; i < canMsg.can_dlc; i++)  {
+          outputString += String(canMsg.data[i], HEX) + " ";
+        }
+        outputString += "\n";
+
+        Serial.print(outputString);
+      }
+    // }
+  } 
+}
+
 
 
 //-----------------------------
@@ -1161,13 +1244,20 @@ void setup_spi() {
 
 void setup_buzzer() {
   pinMode(BUZZER_PIN, OUTPUT);
-  buzz_double();
+  // buzz_double();
+}
+
+void setup_can_bus() {
+  mcp2515.reset();
+  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  mcp2515.setNormalMode();  
 }
 
 void setup(void) {
   Serial.begin(SERIAL_BAUDRATE);
   setup_buzzer();
   setup_leds();
+  setup_can_bus();
   setup_spi();
   setup_sd_card();
 
@@ -1181,7 +1271,9 @@ void setup(void) {
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+
 
   // RPM Lights Demo
   // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);

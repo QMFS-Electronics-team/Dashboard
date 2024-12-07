@@ -21,7 +21,7 @@ MCP2515 mcp2515(10);
 
 void setup() {
   while (!Serial);
-  Serial.begin(9600);
+  Serial.begin(115200);
   SPI.begin();
 
   mcp2515.reset();
