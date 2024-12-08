@@ -1244,7 +1244,7 @@ void setup_spi() {
 
 void setup_buzzer() {
   pinMode(BUZZER_PIN, OUTPUT);
-  // buzz_double();
+  buzz_double();
 }
 
 void setup_can_bus() {
@@ -1271,8 +1271,8 @@ void setup(void) {
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
 
 
   // RPM Lights Demo
