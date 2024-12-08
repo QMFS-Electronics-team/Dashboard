@@ -41,31 +41,30 @@ void loop() {
   
   if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
     Serial.println("Reading CAN BUS Message");
-    
     outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
     
-    if (canMsg.can_id == 0) {
-      rpm = canMsg.data[0] * 100;
-      Serial.println("RPM Value: " + String(rpm));
-      tps = canMsg.data[1];
-      water_temp = canMsg.data[2];
-    }
-    
-    if (canMsg.can_id == 1) {
-      kph = canMsg.data[2];
-    }
-    
-    if (canMsg.can_id == 2) {
-      oil_temp = canMsg.data[1];
-      battery_voltage = canMsg.data[2];
-    }
-    
-    if (canMsg.can_id == 3) {
-      gear = canMsg.data[0];
-    }
-    
-    if (canMsg.can_id == 4) {
-      bps = canMsg.data[0];
+    switch(canMsg.can_id) {
+      case 0:
+        rpm = canMsg.data[0] * 100;
+        Serial.println(rpm);
+        tps = canMsg.data[1];
+        water_temp = canMsg.data[2];
+        break;
+      case 1:
+        kph = canMsg.data[2];
+        break;
+      case 2:
+        oil_temp = canMsg.data[1];
+        battery_voltage = canMsg.data[2];
+        break;
+      case 3:
+        gear = canMsg.data[0];
+        break;
+      case 4:
+        bps = canMsg.data[0];
+        break;
+      default:
+        break;
     }
     
     for (int i = 0; i < canMsg.can_dlc; i++)  {
@@ -75,8 +74,8 @@ void loop() {
     outputString += "\n";
     
     Serial.print(outputString);
-    
     Serial.println(F(""));
+    
   } else {
     Serial.println("No CAN BUS Data");
   }
