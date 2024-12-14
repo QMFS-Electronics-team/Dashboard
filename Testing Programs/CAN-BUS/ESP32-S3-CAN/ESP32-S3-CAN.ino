@@ -4,7 +4,7 @@
 #include <ProductionDefinitions.h>
 
 struct can_frame canMsg; 
-MCP2515 mcp2515(CANBUS_CS_PIN);
+MCP2515 mcp2515(40);
 String outputString;
 
 // CAN BUS Data
@@ -68,8 +68,7 @@ void loop() {
     }
     
     for (int i = 0; i < canMsg.can_dlc; i++)  {
-      outputString += String(canMsg.data[i], HEX);
-      outputString += " ";
+      outputString += String(canMsg.data[i], HEX) + " ";
     }
     outputString += "\n";
     
@@ -77,7 +76,7 @@ void loop() {
     Serial.println(F(""));
     
   } else {
-    Serial.println("No CAN BUS Data");
+    Serial.println(F("No CAN BUS Data"));
   }
   
 }
