@@ -11,40 +11,37 @@
 #include "ui.h"
 
 
-int LEDBrightness = 20;
+// LEDs
+CRGBArray<NUM_RPM_LEDS> leds;
+int LEDBrightness = LED_DEFAULT_BRIGHTNESS;
 int rpmLightInterval = 9000 / NUM_RPM_LEDS;
 
-CRGBArray<NUM_RPM_LEDS> leds;
-
+// GUI and Display
 SemaphoreHandle_t gui_mutex;
-
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / 10];
 
+// Bluetooth
 NimBLEClient *pClient = nullptr;
+static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
 
 // SPI
 SPIClass spi = SPIClass(HSPI);
 
 // CAN BUS
 MCP2515 mcp2515(CANBUS_CS_PIN);
-struct can_frame canMsg;
-struct can_frame canReqMsg;
+struct can_frame canMsg, canReqMsg;
 
-// BLE UUIDs
-static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-
-// Configuration
+// Race Box Module
 const int outputFrequencyHzSerial = 8; // Hz
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial;
 
-static bool doConnect, bleRequestDisconnect, connected, doScan, updated_RaceBox_Data_Message = false;
+static bool doConnect, bleRequestDisconnect, connected, updated_RaceBox_Data_Message = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLEAdvertisedDevice* myRaceBox;
 
 unsigned long lastOutputTimeSerial = 0;
-unsigned long lastOutputTimeOLED = 0;
 
 // Global variables for live data from RaceBox (at 25Hz): (examples see function void parsePayload)
 uint16_t header, payloadLength;
@@ -65,18 +62,16 @@ uint16_t pdop;
 uint8_t batteryStatus;
 int16_t gForceX, gForceY, gForceZ;
 int16_t rotRateX, rotRateY, rotRateZ;
-
-int rpm, tps, water_temp = 0;       // S60 ECU Packet 2000 - [0] RPM, [1] Throttle Position Sensor, Water Temperature
-int kph = 0;                        // S60 ECU Packet 2001 - [2] Speed reported by ECU
-int oil_temp, battery_voltage = 0;  // S60 ECU Packet 2002 - [1] Oil Temperature, [2] Battery Voltage
-int gear = 0;                       // S60 ECU Packet 2003 - [0] Gear
-int bps = 0;                        // S60 ECU Packet 2004 - [0] Brake Position Sensor
-
-// Other data for display
-int num_satellites, mph = 0;        // G-Force, Number of Satellites, Miles per hour
-
 float headingDegrees;
 String compass_direction;
+
+// S60 ECU Packet Global Variables
+int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Position Sensor, Water Temperature
+int kph = 0;                        // Packet 2001 - [2] Speed reported by ECU
+int oil_temp, battery_voltage = 0;  // Packet 2002 - [1] Oil Temperature, [2] Battery Voltage
+int gear = 0;                       // Packet 2003 - [0] Gear
+int bps = 0;                        // Packet 2004 - [0] Brake Position Sensor
+
 
 class LGFX : public lgfx::LGFX_Device {
 
@@ -189,35 +184,33 @@ void my_print(const char *buf)
 void display_task(void *pvParameters) {
 
   String LVGL_Arduino = "LVGL Arduino ";
-  LVGL_Arduino += String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  
-  Serial.println();
+  LVGL_Arduino += "\n" + String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
 
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(DISPLAY_ROTATION);
   tft.setBrightness(TFT_DEFAULT_BRIGHTNESS);
 
   lv_init();
 
-#if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print); /* register print function for debugging */
-#endif
+  #if LV_USE_LOG != 0
+    lv_log_register_print_cb(my_print); /* register print function for debugging */
+  #endif
 
   lv_disp_draw_buf_init(&draw_buf, buf, NULL, SCREEN_WIDTH * 10);
 
-  /*Initialize the display*/
+  // Initialize the display
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
 
-  /*Change the following line to your display resolution*/
+  // Change the following line to your display resolution
   disp_drv.hor_res = SCREEN_WIDTH;
   disp_drv.ver_res = SCREEN_HEIGHT;
   disp_drv.flush_cb = my_disp_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register(&disp_drv);
 
-  /*Initialize the (dummy) input device driver*/
+  // Initialize the (dummy) input device driver
   static lv_indev_drv_t indev_drv;
   lv_indev_drv_init(&indev_drv);
   indev_drv.type = LV_INDEV_TYPE_POINTER;
@@ -227,9 +220,9 @@ void display_task(void *pvParameters) {
   ui_init();
   ui_reset();
 
-  // assign callback functions
+  // Assign callback functions
 
-  // restart button
+  // Restart button
   lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonRestart, ui_event_SettingScreen_Button_ButtonRestart, LV_EVENT_PRESSED, NULL);
   // BLE disconnect button
   lv_obj_add_event_cb(ui_SettingScreen_Button_ButtonBLEDisconnect, ui_event_SettingScreen_Button_ButtonBLEDisconnect, LV_EVENT_PRESSED, NULL);
@@ -239,7 +232,7 @@ void display_task(void *pvParameters) {
   lv_obj_add_event_cb(ui_SettingScreen_Slider_SliderDisplayBrightness, ui_event_SettingScreen_Slider_SliderDisplayBrightness, LV_EVENT_VALUE_CHANGED, NULL);
 
   // Main LVGL loop
-  while (1) {
+  while (true) {
 
     // Take the semaphore to access LVGL resources
     if (xSemaphoreTake(gui_mutex, portMAX_DELAY) == pdTRUE) {
@@ -273,9 +266,9 @@ void display_update_task(void *pvParameters) {
 
   float gX, gY, gZ, g_mag = 0.0;
 
-  setRPMLights(0);
+  set_rpm_lights(0);
 
-  while (1) {
+  while (true) {
     if (connected) {
 
       gX = gForceX / 1000.0;
@@ -378,11 +371,7 @@ void can_bus_task(void *pvParameters) {
 
   delay(CANBUS_START_DELAY); // wait for display init
 
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
-  mcp2515.setNormalMode();                   // Set CAN at normal mode
-
-  while (1) {
+  while (true) {
 
     if (!send_rq || send_rq_timeout) {
       if (canbus_data_counter > CANBUS_DATA_COUNT - 1) {
@@ -404,7 +393,7 @@ void can_bus_task(void *pvParameters) {
         case PID_ENGINE_RPM:
           rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
           rpm_decoded = (rpm_byte / 4);
-          setRPMLights(rpm_decoded);
+          set_rpm_lights(rpm_decoded);
           lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
           lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
           break;
@@ -456,8 +445,7 @@ void can_bus_task(void *pvParameters) {
         Serial.println(canbus_data_counter);
         canbus_data_counter++;
         send_rq = 0; // reset request
-      }
-      else {
+      } else {
         // timeout resend request
         currentMillis = millis();                                   // get the current "time" (actually the number of milliseconds since the program started)
         if (currentMillis - startMillis >= canbus_timeout_period) { // test whether the period has elapsed
@@ -471,12 +459,11 @@ void can_bus_task(void *pvParameters) {
 
 void can_bus_task_qm_car(void *pvParameters) {
 
-  int rpm_recieved = 0;
   String outputString = "";
   
   delay(CANBUS_START_DELAY); // wait for display init
 
-  while(1){
+  while (true){
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
       Serial.println(F("Reading CAN BUS data"));
 
@@ -516,7 +503,6 @@ void can_bus_task_qm_car(void *pvParameters) {
 }
 
 
-
 //-----------------------------
 // UI Functions
 //-----------------------------
@@ -534,7 +520,7 @@ static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *ev
 }
 
 static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event) {
-  delay(1000);
+  delay(RESTART_DELAY);
   ESP.restart();
 }
 
@@ -571,7 +557,7 @@ void ui_reset() {
 // RGB LEDs
 //----------------
 
-void setRPMLights(int rpmValue) {
+void set_rpm_lights(int rpmValue) {
   for (int i = 0; i < NUM_RPM_LEDS; i++) {
     if (rpmValue >= (i + 1)*rpmLightInterval) {
       if (i < 3) {
@@ -583,79 +569,63 @@ void setRPMLights(int rpmValue) {
       }
       FastLED.show();
     } else {
-      leds[i].setRGB(0, 0, 0);
+      leds[i] = CRGB::Black;
       FastLED.show();
     }
   }
 }
 
-void upshifting_blink() {
-  // Set all LEDS red
-  for(int i = 0; i < 10; i++) {
-    leds[i] = CRGB::Red;
-  }
-  FastLED.show();
-  delay(200);
-  // Turn off all LEDs
-  for(int i = 0; i < 10; i++) {
-    leds[i] = CRGB::Black;
-  }
-  FastLED.show();
-  delay(200);
+void set_all_leds(struct CRGB colour) {
+  leds.fill_solid(colour);
 }
 
-void RGB_startup_animation() {
+void upshifting_blink() {
+  set_all_leds(CRGB::Red); 
+  FastLED.show();
+  delay(UPSHIFT_BLINK_DELAY);
+  set_all_leds(CRGB::Black); 
+  FastLED.show();
+  delay(UPSHIFT_BLINK_DELAY);
+}
 
-  // reset
-  for(int i = 0; i < 10; i++) {
-    leds[i] = CRGB::Black;
-  }
+void rgb_startup_animation() {
+
+  set_all_leds(CRGB::Black);
   FastLED.show();
 
-  delay(250);
-  leds[0] = CRGB::Green;
-  leds[9] = CRGB::Green;
+  delay(LED_ANIMATION_DELAY);
+  leds[0] = leds[9] = CRGB::Green;
   FastLED.show();
-  delay(250);
-  leds[1] = CRGB::Green;
-  leds[8] = CRGB::Green;
+  delay(LED_ANIMATION_DELAY);
+  leds[1] = leds[8] = CRGB::Green;
   FastLED.show();
-  delay(250);
-  leds[2] = CRGB::Orange;
-  leds[7] = CRGB::Orange;
+  delay(LED_ANIMATION_DELAY);
+  leds[2] = leds[7] = CRGB::Orange;
   FastLED.show();
-  delay(250);
-  leds[3] = CRGB::Red;
-  leds[6] = CRGB::Red;
+  delay(LED_ANIMATION_DELAY);
+  leds[3] = leds[6] = CRGB::Red;
   FastLED.show();
-  delay(250);
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
+  delay(LED_ANIMATION_DELAY);
+  leds[4] = leds[5] = CRGB::Red;
   FastLED.show();
-  delay(200);
+  delay(LED_ANIMATION_DELAY);
 
   upshifting_blink();
   upshifting_blink();
 
-  leds[0] = CRGB::Green;
-  leds[1] = CRGB::Green;
-  leds[2] = CRGB::Orange;
-  leds[3] = CRGB::Red;
-  leds[4] = CRGB::Red;
-  leds[5] = CRGB::Red;
-  leds[6] = CRGB::Red;
-  leds[7] = CRGB::Orange;
-  leds[8] = CRGB::Green;
-  leds[9] = CRGB::Green;
+  leds[0] = leds[1] = leds[8] = leds[9] = CRGB::Green; // First and last two
+  leds[2] = leds[7] = CRGB::Orange;                    // Third from the start and end
+  leds[3] = leds[4] = leds[5] = leds[6] = CRGB::Red;   // Middle four
+   
   FastLED.show();
 }
 
 void demo_rpm_lights(void *pvParameters) {
-  while(1) {
-    for(int i = 0; i < 13; i++) {
+  while (true) {
+    for (int i = 0; i < 13; i++) {
       rpm = i * 1000;
-      setRPMLights(rpm);
-      delay(250);
+      set_rpm_lights(rpm);
+      delay(LED_ANIMATION_DELAY);
     }
   }
 }
@@ -666,11 +636,11 @@ void demo_rpm_lights(void *pvParameters) {
 //-----------------------------
 
 void buzz_double() {
-  for(int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; i++) {
     digitalWrite(BUZZER_PIN, HIGH);
-    delay(100);
+    delay(BUZZER_TONE_DELAY);
     digitalWrite(BUZZER_PIN, LOW);
-    delay(100);
+    delay(BUZZER_TONE_DELAY);
   }
 }
 
@@ -680,11 +650,11 @@ void buzz_double() {
 //-----------------------------
 
 void createDir(fs::FS &fs, const char * path) {
-  Serial.printf("Creating Dir: %s\n", path);
+  Serial.printf("Creating Directory: %s\n", path);
   if (fs.mkdir(path)) {
-    Serial.println(F("Dir created"));
+    Serial.println(F("Directory created"));
   } else {
-    Serial.println(F("mkdir failed"));
+    Serial.println(F("Directory creation failed"));
   }
 }
 
@@ -714,7 +684,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   if (file.print(message)) {
     Serial.println(F("Data Appended to File"));
   } else {
-    Serial.println(F("Append failed"));
+    Serial.println(F("Data Append to File Failed"));
   }
   file.close();
 }
@@ -951,8 +921,7 @@ String getCompassDirection(float headingDegrees) {
 }
 
 void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &CK_B) {
-  CK_A = 0;
-  CK_B = 0;
+  CK_A = CK_B = 0;
   for (int i = 2; i < length - 2; i++) { // start after header bytes and end before checksum bytes
     CK_A += data[i];
     CK_B += CK_A;
@@ -1116,7 +1085,7 @@ void ble_task(void *pvParameters) {
   pScan->start(0, false); // scan indefinitely until we stop it manually
 
   // Main code to run once a connection is established.
-  while (1) {
+  while (true) {
     if (doConnect) {
       if (connectToRaceBox()) {
         Serial.println(F("successfully connected to RaceBox."));
@@ -1157,9 +1126,7 @@ void setup_sd_card() {
   gpio_set_direction(SD_DETECT_GPIO, GPIO_MODE_INPUT);
   gpio_set_pull_mode(SD_DETECT_GPIO, GPIO_PULLUP_ONLY);
   
-  int sd_detected = digitalRead(SD_DETECT); // 0 When SD card is present
-  
-  if(sd_detected == 0) {
+  if(!digitalRead(SD_DETECT)) { // 0 When SD card is present
     Serial.println(F("\nSD Card Detected"));
 
     if (!SD.begin(SDCS, spi)) {
@@ -1189,7 +1156,7 @@ void setup_sd_card() {
 void setup_leds() {
   FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
   FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
-  RGB_startup_animation();
+  rgb_startup_animation();
 }
 
 void setup_spi() {
@@ -1204,10 +1171,8 @@ void setup_buzzer() {
 }
 
 void setup_can_bus() {
-  // MCP2515()
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
-  // mcp2515.startSPI(CANBUS_CS_PIN);
   mcp2515.setNormalMode();  
 }
 
