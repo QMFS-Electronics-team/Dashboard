@@ -37,3 +37,4 @@
 // Delays
 #define DISPLAY_INIT_DELAY      350
 #define LOADING_SCREEN_DELAY    10
+#define CANBUS_START_DELAY      1000
