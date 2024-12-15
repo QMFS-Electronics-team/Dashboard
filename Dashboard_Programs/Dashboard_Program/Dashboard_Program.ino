@@ -14,10 +14,6 @@
 int LEDBrightness = 20;
 int rpmLightInterval = 9000 / NUM_RPM_LEDS;
 
-struct can_frame canMsg;
-struct can_frame canReqMsg;
-MCP2515 mcp2515(CANBUS_CS_PIN);
-
 CRGBArray<NUM_RPM_LEDS> leds;
 
 SemaphoreHandle_t gui_mutex;
@@ -30,6 +26,11 @@ NimBLEClient *pClient = nullptr;
 // SPI
 SPIClass spi = SPIClass(HSPI);
 
+// CAN BUS
+MCP2515 mcp2515(CANBUS_CS_PIN);
+struct can_frame canMsg;
+struct can_frame canReqMsg;
+
 // BLE UUIDs
 static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
 static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
@@ -38,78 +39,41 @@ static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
 const int outputFrequencyHzSerial = 8; // Hz
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial;
 
-static bool doConnect = false;
-static bool bleRequestDisconnect = false;
-static bool connected = false;
-static bool doScan = false;
-static bool updated_RaceBox_Data_Message = false;
+static bool doConnect, bleRequestDisconnect, connected, doScan, updated_RaceBox_Data_Message = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLEAdvertisedDevice* myRaceBox;
 
 unsigned long lastOutputTimeSerial = 0;
 unsigned long lastOutputTimeOLED = 0;
 
-// global variables for live data from RaceBox (at 25Hz): (examples see function void parsePayload)
-uint16_t header;
-uint8_t messageClass;
-uint8_t messageId;
-uint16_t payloadLength;
+// Global variables for live data from RaceBox (at 25Hz): (examples see function void parsePayload)
+uint16_t header, payloadLength;
+uint8_t messageClass, messageId;
 uint32_t iTOW;
 uint16_t year;
-uint8_t month;
-uint8_t day;
-uint8_t hour;
-uint8_t minute;
-uint8_t second;
-uint8_t validityFlags;
+uint8_t month, day, hour, minute, second;
+uint8_t validityFlags, latLonFlags, dateTimeFlags;
 uint32_t timeAccuracy;
 uint32_t nanoseconds;
-uint8_t fixStatus;
-uint8_t fixStatusFlags;
-uint8_t dateTimeFlags;
+uint8_t fixStatus, fixStatusFlags;
 uint8_t numSVs;
-int32_t longitude;
-int32_t latitude;
-int32_t wgsAltitude;
-int32_t mslAltitude;
-uint32_t horizontalAccuracy;
-uint32_t verticalAccuracy;
-uint32_t speed;
-uint32_t heading;
-uint32_t speedAccuracy;
-uint32_t headingAccuracy;
+int32_t longitude, latitude;
+int32_t wgsAltitude, mslAltitude;
+uint32_t horizontalAccuracy, verticalAccuracy;
+uint32_t speed, heading, speedAccuracy, headingAccuracy;
 uint16_t pdop;
-uint8_t latLonFlags;
 uint8_t batteryStatus;
-int16_t gForceX;
-int16_t gForceY;
-int16_t gForceZ;
-int16_t rotRateX;
-int16_t rotRateY;
-int16_t rotRateZ;
+int16_t gForceX, gForceY, gForceZ;
+int16_t rotRateX, rotRateY, rotRateZ;
 
-// Packet 2000
-int rpm = 0;             // [0] RPM
-int tps = 0;             // [1] Throttle Position Sensor
-int water_temp = 0;      // [2] Water Temperature
-
-// Packet 2001
-int kph = 0;             // [2] Speed reported by ECU
-
-// Packet 2002
-int oil_temp = 0;        // [1] Oil Temperature
-int battery_voltage = 0; // [2] Battery Voltage
-
-// Packet 2003
-int gear = 0;            // [0] Gear
-
-// Packet 2004
-int bps = 0;             // [0] Brake Position Sensor
+int rpm, tps, water_temp = 0;       // S60 ECU Packet 2000 - [0] RPM, [1] Throttle Position Sensor, Water Temperature
+int kph = 0;                        // S60 ECU Packet 2001 - [2] Speed reported by ECU
+int oil_temp, battery_voltage = 0;  // S60 ECU Packet 2002 - [1] Oil Temperature, [2] Battery Voltage
+int gear = 0;                       // S60 ECU Packet 2003 - [0] Gear
+int bps = 0;                        // S60 ECU Packet 2004 - [0] Brake Position Sensor
 
 // Other data for display
-int g_force = 0;         // G-Force
-int num_satellites = 0;  // Number of Satellites
-int mph = 0;             // Miles per hour
+int num_satellites, mph = 0;        // G-Force, Number of Satellites, Miles per hour
 
 float headingDegrees;
 String compass_direction;
@@ -307,10 +271,7 @@ void display_update_task(void *pvParameters) {
 
   lv_scr_load(ui_MainScreen);
 
-  float gX = 0.0;
-  float gY = 0.0;
-  float gZ = 0.0;
-  float g_mag = 0.0;
+  float gX, gY, gZ, g_mag = 0.0;
 
   setRPMLights(0);
 
@@ -339,7 +300,6 @@ void display_update_task(void *pvParameters) {
         lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
       }
 
-
     } else {
 
       if (bleRequestDisconnect) {
@@ -352,7 +312,6 @@ void display_update_task(void *pvParameters) {
     lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
     lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
     lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
-    
 
     vTaskDelay(10);
   }
@@ -417,7 +376,7 @@ void can_bus_task(void *pvParameters) {
   canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
   canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
 
-  delay(1000); // wait for display init
+  delay(CANBUS_START_DELAY); // wait for display init
 
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
@@ -515,55 +474,44 @@ void can_bus_task_qm_car(void *pvParameters) {
   int rpm_recieved = 0;
   String outputString = "";
   
-  delay(1000); // wait for display init
+  delay(CANBUS_START_DELAY); // wait for display init
 
-  // mcp2515.reset();
-  // mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
-  // mcp2515.setNormalMode(); 
   while(1){
-    // for (int start = millis(); millis() - start < 20;){
-      // Serial.println("Attempting CAN BUS Read");
-      if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-        // Serial.println("Reading CAN BUS data");
+    if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+      Serial.println(F("Reading CAN BUS data"));
 
-        outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
 
-        if (canMsg.can_id == 0) {
-          Serial.println("RPM Data Received");
-          rpm = canMsg.data[0] * 1000;
-          setRPMLights(rpm);
-          // lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_recieved, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
-          // lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_recieved).c_str());  
-
+      switch(canMsg.can_id) {
+        case 0:
+          rpm = canMsg.data[0] * 100;
           tps = canMsg.data[1];
           water_temp = canMsg.data[2];
-        }
-
-        if (canMsg.can_id == 1) {
+          break;
+        case 1:
           kph = canMsg.data[2];
-        }
-        
-        if (canMsg.can_id == 2) {
+          break;
+        case 2:
           oil_temp = canMsg.data[1];
           battery_voltage = canMsg.data[2];
-        }
-        
-        if (canMsg.can_id == 3) {
+          break;
+        case 3:
           gear = canMsg.data[0];
-        }
-        
-        if (canMsg.can_id == 4) {
+          break;
+        case 4:
           bps = canMsg.data[0];
-        }
-
-        for (int i = 0; i < canMsg.can_dlc; i++)  {
-          outputString += String(canMsg.data[i], HEX) + " ";
-        }
-        outputString += "\n";
-
-        Serial.print(outputString);
+          break;
+        default:
+          break;
       }
-    // }
+
+      for (int i = 0; i < canMsg.can_dlc; i++)  {
+        outputString += String(canMsg.data[i], HEX) + " ";
+      }
+      outputString += "\n";
+
+      Serial.print(outputString);
+    }
   } 
 }
 
@@ -711,6 +659,7 @@ void demo_rpm_lights(void *pvParameters) {
     }
   }
 }
+
 
 //-----------------------------
 // Buzzer
@@ -1199,6 +1148,11 @@ void ble_task(void *pvParameters) {
 // Setup
 //-----------------------------
 
+void setup_serial() {
+  Serial.begin(SERIAL_BAUDRATE);
+  while(!Serial);
+}
+
 void setup_sd_card() {
   gpio_set_direction(SD_DETECT_GPIO, GPIO_MODE_INPUT);
   gpio_set_pull_mode(SD_DETECT_GPIO, GPIO_PULLUP_ONLY);
@@ -1239,7 +1193,9 @@ void setup_leds() {
 }
 
 void setup_spi() {
-  spi.begin(SCLK, MISO, MOSI, SDCS);
+  Serial.println("Setting up SPI");
+  Serial.println("SCLK:" + String(SCLK)+ "MISO:" + String(MISO) + "MOSI:" + String(MOSI));
+  spi.begin(SCLK, MISO, MOSI);
 }
 
 void setup_buzzer() {
@@ -1248,17 +1204,19 @@ void setup_buzzer() {
 }
 
 void setup_can_bus() {
+  // MCP2515()
   mcp2515.reset();
   mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
+  // mcp2515.startSPI(CANBUS_CS_PIN);
   mcp2515.setNormalMode();  
 }
 
 void setup(void) {
-  Serial.begin(SERIAL_BAUDRATE);
+  setup_serial();
   setup_buzzer();
   setup_leds();
-  setup_can_bus();
   setup_spi();
+  setup_can_bus();
   setup_sd_card();
 
   gui_mutex = xSemaphoreCreateMutex();
@@ -1271,8 +1229,8 @@ void setup(void) {
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  // xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
 
 
   // RPM Lights Demo
