@@ -1161,7 +1161,7 @@ void setup_leds() {
 
 void setup_spi() {
   Serial.println("Setting up SPI");
-  Serial.println("SCLK:" + String(SCLK)+ "MISO:" + String(MISO) + "MOSI:" + String(MOSI));
+  Serial.println("SCLK: " + String(SCLK)+ "MISO: " + String(MISO) + "MOSI: " + String(MOSI));
   spi.begin(SCLK, MISO, MOSI);
 }
 
