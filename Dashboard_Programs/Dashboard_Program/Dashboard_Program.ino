@@ -14,17 +14,17 @@
 // LEDs
 CRGBArray<NUM_RPM_LEDS> leds;
 int LEDBrightness = LED_DEFAULT_BRIGHTNESS;
-int rpmLightInterval = 9000 / NUM_RPM_LEDS;
+int rpmLightInterval = MAX_RPM / NUM_RPM_LEDS;
 
 // GUI and Display
 SemaphoreHandle_t gui_mutex;
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / 10];
+static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / SCREEN_COLOUR_DIVISOR];
 
-// Bluetooth
+// Race Box Module Bluetooth
 NimBLEClient *pClient = nullptr;
-static BLEUUID UART_service_UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
+static BLEUUID UART_service_UUID(BLE_UART_UUID);
+static BLEUUID TX_characteristic_UUID(BLE_TX_UUID);
 
 // SPI
 SPIClass spi = SPIClass(HSPI);
@@ -34,7 +34,7 @@ MCP2515 mcp2515(CANBUS_CS_PIN);
 struct can_frame canMsg, canReqMsg;
 
 // Race Box Module
-const int outputFrequencyHzSerial = 8; // Hz
+const int outputFrequencyHzSerial = GPS_SERIAL_FREQUENCY;
 const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial;
 
 static bool doConnect, bleRequestDisconnect, connected, updated_RaceBox_Data_Message = false;
