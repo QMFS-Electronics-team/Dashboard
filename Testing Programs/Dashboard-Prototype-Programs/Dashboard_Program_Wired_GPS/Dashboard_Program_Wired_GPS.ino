@@ -539,6 +539,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
     return;
   }
   if (file.print(message)) {
+    Serial.println(F("Appened to file"));
   } else {
     Serial.println(F("Append failed"));
   }
@@ -560,17 +561,16 @@ void my_print(const char * buf)
 
 void report_loop_duration(long start) {
   long duration = micros() - start;
-  Serial.print("Loop cycle time: ");
+  Serial.print(F("Loop cycle time: "));
   Serial.print(duration / 1000.0);
-  Serial.println(" ms\n");
+  Serial.println(F(" ms\n"));
 }
 
 //-----------------------------
 // Display Related
 //-----------------------------
 
-void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
-{
+void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p) {
   uint32_t w = (area->x2 - area->x1 + 1);
   uint32_t h = (area->y2 - area->y1 + 1);
 
@@ -582,11 +582,9 @@ void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *
   lv_disp_flush_ready( disp_drv );
 }
 
-void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
-{
+void my_touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data) {
   uint16_t touchX, touchY;
-
-  bool touched = tft.getTouch( &touchX, &touchY, 600 );
+  bool touched = tft.getTouch(&touchX, &touchY, 600);
 
   if (!touched) {
     data->state = LV_INDEV_STATE_REL;
@@ -597,11 +595,11 @@ void my_touchpad_read( lv_indev_drv_t * indev_drv, lv_indev_data_t * data )
     data->point.x = touchX;
     data->point.y = touchY;
 
-    Serial.print( "Data x " );
-    Serial.println( touchX );
+    Serial.print("Data x ");
+    Serial.println(touchX);
 
-    Serial.print( "Data y " );
-    Serial.println( touchY );
+    Serial.print("Data y ");
+    Serial.println(touchY);
   }
 }
 
