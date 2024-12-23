@@ -23,8 +23,8 @@ static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / SCREEN_COLOUR_DIVISOR];
 
 // Race Box Module Bluetooth
 NimBLEClient *pClient = nullptr;
-static BLEUUID UART_service_UUID(BLE_UART_UUID);
-static BLEUUID TX_characteristic_UUID(BLE_TX_UUID);
+static BLEUUID UART_service_UUID("E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
 
 // SPI
 SPIClass spi = SPIClass(HSPI);
