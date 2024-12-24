@@ -23,14 +23,11 @@ static lv_color_t buf[SCREEN_WIDTH * SCREEN_HEIGHT / SCREEN_COLOUR_DIVISOR];
 
 // Race Box Module Bluetooth
 NimBLEClient *pClient = nullptr;
-static BLEUUID UART_service_UUID("E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-static BLEUUID TX_characteristic_UUID("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-
-// SPI
-SPIClass spi = SPIClass(HSPI);
+static BLEUUID UART_service_UUID(BLE_UART_UUID);
+static BLEUUID TX_characteristic_UUID(BLE_TX_UUID);
 
 // CAN BUS
-MCP2515 mcp2515(CANBUS_CS_PIN);
+MCP2515 mcp2515(CANBUS_CS);
 struct can_frame canMsg, canReqMsg;
 
 // Race Box Module
@@ -276,9 +273,9 @@ void display_update_task(void *pvParameters) {
       gZ = gForceZ / 1000.0;
       g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
 
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // conversion to m/s to mph
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // no. of connected satelites
-      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G force resultant
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // Speed converted from m/s to mph
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // Number of connected satelites
+      lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G Force
 
       // Time 
       char timeString[9];                                         
@@ -286,12 +283,7 @@ void display_update_task(void *pvParameters) {
       String timeOutput = "Time: " + String(timeString);  
       lv_label_set_text(ui_MainScreen_Label_LabelTime, timeOutput.c_str());
 
-      // SD Card Status
-      if(digitalRead(SD_DETECT) == 0) {
-        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
-      } else {
-        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
-      }
+
 
     } else {
 
@@ -301,8 +293,15 @@ void display_update_task(void *pvParameters) {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
       }
     }
+    
+    // SD Card Status
+    if(!digitalRead(SD_DETECT)) {
+      lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
+    } else {
+      lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
+    }
 
-    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100),*400 LV_ANIM_OFF); // update rpm bar
     lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
     lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
 
@@ -457,35 +456,36 @@ void can_bus_task(void *pvParameters) {
   }
 }
 
-void can_bus_task_qm_car(void *pvParameters) {
+void can_bus_s60_ecu(void *pvParameters) {
 
   String outputString = "";
   
   delay(CANBUS_START_DELAY); // wait for display init
+  Serial.println(F("CAN BUS S60 ECU"));
 
   while (true){
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
       Serial.println(F("Reading CAN BUS data"));
 
-      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+      // outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
 
       switch(canMsg.can_id) {
-        case 0:
-          rpm = canMsg.data[0] * 100;
+        case PID_2000:
+          rpm = canMsg.data[0];
           tps = canMsg.data[1];
           water_temp = canMsg.data[2];
           break;
-        case 1:
+        case PID_2001:
           kph = canMsg.data[2];
           break;
-        case 2:
+        case PID_2002:
           oil_temp = canMsg.data[1];
           battery_voltage = canMsg.data[2];
           break;
-        case 3:
+        case PID_2003:
           gear = canMsg.data[0];
           break;
-        case 4:
+        case PID_2004:
           bps = canMsg.data[0];
           break;
         default:
@@ -548,8 +548,9 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
   lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
-  lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 15, LV_ANIM_OFF);
-  lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 15, LV_ANIM_OFF);
+  lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 0, LV_ANIM_OFF);
+  lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 0, LV_ANIM_OFF);
+  lv_bar_set_value(ui_MainScreen_Bar_BarRPM, 0, LV_ANIM_OFF);
 }
 
 
@@ -637,9 +638,9 @@ void demo_rpm_lights(void *pvParameters) {
 
 void buzz_double() {
   for (int i = 0; i < 2; i++) {
-    digitalWrite(BUZZER_PIN, HIGH);
+    digitalWrite(BUZZER, HIGH);
     delay(BUZZER_TONE_DELAY);
-    digitalWrite(BUZZER_PIN, LOW);
+    digitalWrite(BUZZER, LOW);
     delay(BUZZER_TONE_DELAY);
   }
 }
@@ -805,7 +806,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     // limits the amount how often we print current values to serial
 
     // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
-    Serial.println();
+    Serial.println(F(""));
     Serial.println(F("--- Updated Data From RaceBox: ---"));
     Serial.println(F("----------------------------------------------------------------------"));
     
@@ -1129,7 +1130,7 @@ void setup_sd_card() {
   if(!digitalRead(SD_DETECT)) { // 0 When SD card is present
     Serial.println(F("\nSD Card Detected"));
 
-    if (!SD.begin(SDCS, spi)) {
+    if (!SD.begin(SD_CS)) {
         Serial.println(F("Card Mount Failed"));
         return;
     }
@@ -1145,7 +1146,7 @@ void setup_sd_card() {
     // Check and create directories for data capture
     check_and_create_directory("gps-data", "GPS");
     check_and_create_directory("can-bus-data", "CAN BUS");
-    Serial.println();
+    Serial.println(F(""));
 
   } else {
     Serial.println(F("SD Card Not Detected"));
@@ -1154,26 +1155,37 @@ void setup_sd_card() {
 }
 
 void setup_leds() {
-  FastLED.addLeds<NEOPIXEL, RGB_PIN>(leds, NUM_RPM_LEDS);
+  FastLED.addLeds<NEOPIXEL, RGB>(leds, NUM_RPM_LEDS);
   FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
   rgb_startup_animation();
 }
 
 void setup_spi() {
-  Serial.println("Setting up SPI");
-  Serial.println("SCLK: " + String(SCLK)+ "MISO: " + String(MISO) + "MOSI: " + String(MOSI));
-  spi.begin(SCLK, MISO, MOSI);
+  Serial.println(F(""));
+  Serial.println(F("Setting up SPI"));
+  if(SCK == CUSTOM_SCLK && MISO == CUSTOM_MISO && MOSI == CUSTOM_MOSI) {
+    Serial.println(F("SPI Pins setup correctly"));
+    Serial.println("SCLK: " + String(SCK)+ " MISO: " + String(MISO) + " MOSI: " + String(MOSI));
+  } else {
+    Serial.println(F("Check arduino_pin.h file in Arduino15 folder."));
+  }
+  // spi.begin(SCLK, MISO, MOSI);
 }
 
 void setup_buzzer() {
-  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
   buzz_double();
 }
 
 void setup_can_bus() {
   mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); // Set CAN at speed 500KBPS and Clock 8MHz
-  mcp2515.setNormalMode();  
+  Serial.println(F(""));
+  if(mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
+    Serial.println(F("MCP2515 Initialised Successfully"));
+    mcp2515.setNormalMode();
+  } else {
+    Serial.println(F("Error Initialising MCP2515"));
+  }
 }
 
 void setup(void) {
@@ -1195,7 +1207,7 @@ void setup(void) {
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
   // xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(can_bus_task_qm_car, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
 
 
   // RPM Lights Demo

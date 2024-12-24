@@ -2,17 +2,20 @@
 #define SERIAL_BAUDRATE 115200
 
 // PIN DEFINITIONS
-#define RGB_PIN 	  4
-#define BUZZER_PIN 	  5
-#define CANBUS_CS_PIN 40
-#define SDCS 		  41
-#define SD_DETECT     46
+#define RGB 	       4
+#define BUZZER 	       5
+#define CANBUS_CS      40
+#define SD_CS 		   41
+#define SD_DETECT      46
 #define SD_DETECT_GPIO GPIO_NUM_46
 
-// SPI PIN DEFINITIONS
-#define MISO 7
-#define MOSI 15
-#define SCLK 16
+// CUSTOM SPI PIN DEFINITIONS (corresponding to arduino_pin.h)
+// macOS (~/Library/Arduino15/packages/esp32/hardware/esp32/<version>/variants/esp32s3)
+// Windows (C:\Users\<YourUsername>\AppData\Local\Arduino15\packages\esp32\hardware\esp32\<version>\variants\esp32s3)
+// Linux (~/.arduino15/packages/<platform_name>/hardware/<core_name>/<version>/cores/<core_name>/Arduino.h)
+#define CUSTOM_MISO 7
+#define CUSTOM_MOSI 15
+#define CUSTOM_SCLK 16
 
 // LED DEFINITION
 #define NUM_RPM_LEDS           10
@@ -26,7 +29,7 @@
 #define TFT_DEFAULT_BRIGHTNESS 100
 #define DISPLAY_ROTATION       1
 
-// CAN BUS DEFINITIONS
+// CAN BUS DEFINITIONS (ISO Standard)
 #define CANBUS_DATA_COUNT 				6
 #define PID_ECU_RESPONSE 				0x7E8
 #define PID_ENGINE_RPM 					0x0C
@@ -36,6 +39,14 @@
 #define PID_TRANSMISSION_ACTUAL_GEAR 	0xA4
 #define PID_CONTROL_MODULE_VOLTAGE 		0x42 // Battery voltage
 // #define PID_INTAKE_TEMP 0x0F
+
+// CAN BUS DEFINITIONS (S60 ECU)
+#define PID_2000 0
+#define PID_2001 1
+#define PID_2002 2
+#define PID_2003 3
+#define PID_2004 4
+#define PID_2005 5
 
 // Delays
 #define DISPLAY_INIT_DELAY      350
@@ -47,7 +58,7 @@
 #define BUZZER_TONE_DELAY       100
 
 // GPS Module Bluetooth UUID
-#define BLE_UART_UUID "E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define BLE_UART_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 #define BLE_TX_UUID   "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 #define GPS_SERIAL_FREQUENCY 8
