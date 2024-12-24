@@ -47,10 +47,8 @@ uint32_t iTOW;
 uint16_t year;
 uint8_t month, day, hour, minute, second;
 uint8_t validityFlags, latLonFlags, dateTimeFlags;
-uint32_t timeAccuracy;
-uint32_t nanoseconds;
-uint8_t fixStatus, fixStatusFlags;
-uint8_t numSVs;
+uint32_t timeAccuracy, nanoseconds;
+uint8_t fixStatus, fixStatusFlags, numSVs;
 int32_t longitude, latitude;
 int32_t wgsAltitude, mslAltitude;
 uint32_t horizontalAccuracy, verticalAccuracy;
@@ -301,7 +299,7 @@ void display_update_task(void *pvParameters) {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
     }
 
-    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100),*400 LV_ANIM_OFF); // update rpm bar
+    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
     lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
     lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
 
@@ -467,7 +465,7 @@ void can_bus_s60_ecu(void *pvParameters) {
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
       Serial.println(F("Reading CAN BUS data"));
 
-      // outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
 
       switch(canMsg.can_id) {
         case PID_2000:
@@ -498,6 +496,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       outputString += "\n";
 
       Serial.print(outputString);
+      vTaskDelay(10);
     }
   } 
 }
