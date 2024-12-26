@@ -61,7 +61,7 @@ float headingDegrees;
 String compass_direction;
 
 // S60 ECU Packet Global Variables
-int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Position Sensor, Water Temperature
+int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Position Sensor, [2] Water Temperature
 int kph = 0;                        // Packet 2001 - [2] Speed reported by ECU
 int oil_temp, battery_voltage = 0;  // Packet 2002 - [1] Oil Temperature, [2] Battery Voltage
 int gear = 0;                       // Packet 2003 - [0] Gear
@@ -281,13 +281,12 @@ void display_update_task(void *pvParameters) {
       String timeOutput = "Time: " + String(timeString);  
       lv_label_set_text(ui_MainScreen_Label_LabelTime, timeOutput.c_str());
 
-
-
     } else {
 
       if (bleRequestDisconnect) {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
       } else {
+        //TODO add a GPS connection count to facilitate the ... animation
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
       }
     }
@@ -299,9 +298,19 @@ void display_update_task(void *pvParameters) {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
     }
 
-    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+    // Set RPM Data on UI
+    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
+    set_rpm_lights(rpm * 400);
+    // lv_label_set_text_fmt(ui_MainScreen_Label_LabelRPM, rpm * 400);
+
     lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
     lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
+
+    if(gear > 0) {
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
+    } else {
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
+    }
 
     vTaskDelay(10);
   }
@@ -806,6 +815,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
 
     // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
     Serial.println(F(""));
+    Serial.println(F("----------------------------------------------------------------------"));
     Serial.println(F("--- Updated Data From RaceBox: ---"));
     Serial.println(F("----------------------------------------------------------------------"));
     
@@ -896,8 +906,8 @@ void print_RaceBox_Data_message_payload_to_serial() {
   else {
     Serial.println(F("Skipping serial output due to set serial update limitation"));
   }
-  Serial.println(F("----------------------------------------------------------------------"));
-  Serial.println();
+  
+  Serial.println(F(""));
 }
 
 String getCompassDirection(float headingDegrees) {
@@ -1168,12 +1178,14 @@ void setup_spi() {
   } else {
     Serial.println(F("Check arduino_pin.h file in Arduino15 folder."));
   }
-  // spi.begin(SCLK, MISO, MOSI);
+  SPI.begin();
 }
 
 void setup_buzzer() {
   pinMode(BUZZER, OUTPUT);
-  buzz_double();
+  if(!SILIENCE_BUZZER) {
+    buzz_double();
+  }
 }
 
 void setup_can_bus() {
@@ -1194,23 +1206,33 @@ void setup(void) {
   setup_spi();
   setup_can_bus();
   setup_sd_card();
+  Serial.println(F("Devices Setup"));
 
   gui_mutex = xSemaphoreCreateMutex();
   if (gui_mutex == NULL) {
     Serial.println(F("Semaphore creation failure"));
     return;
   }
+  Serial.println(F("GUI Mutex Created"));
 
   // Args: function, name of task, stack size (bytes), priority, core to pin to
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
-  // xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
 
+  // Setup CAN Bus Task based on ECU type
+  if(CANBUS_S60) {
+    xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_s60_ecu", 1024 * 5, NULL, 1, NULL, 1);
+    Serial.println(F("CAN BUS S60 Task Created"));
+  } else {
+    xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
+    Serial.println(F("CAN BUS ISO Standard Task Created"));
+  }
 
   // RPM Lights Demo
   // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);
+  Serial.println(F("Core Tasks Created"));
+  Serial.println(F("Setup Complete"));
 }
 
 
