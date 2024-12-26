@@ -29,16 +29,20 @@ static BLEUUID TX_characteristic_UUID(BLE_TX_UUID);
 // CAN BUS
 MCP2515 mcp2515(CANBUS_CS);
 struct can_frame canMsg, canReqMsg;
+const unsigned long outputIntervalCANBUSMs_Serial = 5000;
+unsigned long lastOutputTimeSerialCANBUS = 0;
 
 // Race Box Module
 const int outputFrequencyHzSerial = GPS_SERIAL_FREQUENCY;
-const unsigned long outputIntervalMs_serial = 1000 / outputFrequencyHzSerial;
+const unsigned long outputIntervalGPSMs_serial = 1000 / outputFrequencyHzSerial;
+unsigned long lastOutputTimeSerialGPS = 0;
 
 static bool doConnect, bleRequestDisconnect, connected, updated_RaceBox_Data_Message = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLEAdvertisedDevice* myRaceBox;
 
-unsigned long lastOutputTimeSerial = 0;
+// Serial Output
+SemaphoreHandle_t serial_mutex; // Used for CAN BUS and BLE GPS tasks to prevent writing at the same time.
 
 // Global variables for live data from RaceBox (at 25Hz): (examples see function void parsePayload)
 uint16_t header, payloadLength;
@@ -49,14 +53,12 @@ uint8_t month, day, hour, minute, second;
 uint8_t validityFlags, latLonFlags, dateTimeFlags;
 uint32_t timeAccuracy, nanoseconds;
 uint8_t fixStatus, fixStatusFlags, numSVs;
-int32_t longitude, latitude;
-int32_t wgsAltitude, mslAltitude;
+int32_t longitude, latitude, wgsAltitude, mslAltitude;
 uint32_t horizontalAccuracy, verticalAccuracy;
 uint32_t speed, heading, speedAccuracy, headingAccuracy;
 uint16_t pdop;
 uint8_t batteryStatus;
-int16_t gForceX, gForceY, gForceZ;
-int16_t rotRateX, rotRateY, rotRateZ;
+int16_t gForceX, gForceY, gForceZ, rotRateX, rotRateY, rotRateZ;
 float headingDegrees;
 String compass_direction;
 
@@ -178,9 +180,10 @@ void my_print(const char *buf)
 
 void display_task(void *pvParameters) {
 
-  String LVGL_Arduino = "LVGL Arduino ";
+  String LVGL_Arduino = "\nLVGL Arduino ";
   LVGL_Arduino += "\n" + String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
+  Serial.println(F(""));
 
   tft.init();
   tft.setRotation(DISPLAY_ROTATION);
@@ -355,6 +358,7 @@ void my_disp_flush(lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *c
   tft.endWrite();
 
   lv_disp_flush_ready(disp_drv);
+  return;
 }
 
 void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
@@ -367,6 +371,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
   } else {
     data->state = LV_INDEV_STATE_REL;
   }
+  return;
 }
 
 
@@ -459,10 +464,10 @@ void can_bus_standard_ecu(void *pvParameters) {
         }
 
         // Write data to SD card
-        String output = ""; 
-        output = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
-        output += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
-        appendFile(SD, "/can-bus-data/can-bus-data.csv", output.c_str());
+        String sdCardOutput = ""; 
+        sdCardOutput = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
+        sdCardOutput += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
+        appendFile(SD, "/can-bus-data/can-bus-data.csv", sdCardOutput.c_str());
 
         Serial.print(F("CAN Message ID: "));
         Serial.print(canMsg.can_id, HEX); // print ID
@@ -495,16 +500,15 @@ void can_bus_standard_ecu(void *pvParameters) {
 void can_bus_s60_ecu(void *pvParameters) {
 
   String outputString = "";
+  int s60_data_counter = 0;
   
   delay(CANBUS_START_DELAY); // wait for display init
   Serial.println(F("CAN BUS S60 ECU"));
 
   while (true){
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-      Serial.println(F("Reading CAN BUS data"));
-
-      outputString = "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
-
+      unsigned long currentTime = millis();
+      
       switch(canMsg.can_id) {
         case PID_2000:
           rpm = canMsg.data[0];
@@ -528,12 +532,37 @@ void can_bus_s60_ecu(void *pvParameters) {
           break;
       }
 
-      for (int i = 0; i < canMsg.can_dlc; i++)  {
-        outputString += String(canMsg.data[i], HEX) + " ";
+      if(canMsg.can_id == s60_data_counter) {
+        outputString += "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+        for (int i = 0; i < canMsg.can_dlc; i++)  {
+          outputString += String(canMsg.data[i], HEX) + " ";
+        }
+        outputString += "\n";
+        s60_data_counter += 1;
       }
-      outputString += "\n";
 
-      Serial.print(outputString);
+      if (s60_data_counter > CANBUS_DATA_COUNT - 1) {
+        s60_data_counter = 0;
+        outputString = "";
+      }
+
+      if(ENABLE_CAN_BUS_SERIAL_OUTPUT) {
+        if(currentTime - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter == 5 && outputString.length() > 0) {
+          if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
+            Serial.println(F(""));
+            Serial.println(F("----------------------------------------------------------------------"));
+            Serial.println(F("---------- CAN BUS Data: ----------"));
+            Serial.println(F("----------------------------------------------------------------------"));
+            Serial.print(outputString);
+            Serial.println(F("----------------------------------------------------------------------"));
+            Serial.println(F(""));
+            outputString = "";
+            lastOutputTimeSerialCANBUS = currentTime;
+            xSemaphoreGive(serial_mutex);
+          }
+        }
+      }
+      
     }
   } 
 }
@@ -548,16 +577,19 @@ static void ui_event_SettingScreen_Slider_SliderLEDBrightness(lv_event_t *event)
   LEDBrightness = (int)lv_slider_get_value(slider);
   FastLED.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 0, 255));
   FastLED.show();
+  return;
 }
 
 static void ui_event_SettingScreen_Slider_SliderDisplayBrightness(lv_event_t *event) {
   lv_obj_t *slider = lv_event_get_target(event);
   tft.setBrightness(map((int)lv_slider_get_value(slider), 0, 100, 5, 255));
+  return;
 }
 
 static void ui_event_SettingScreen_Button_ButtonRestart(lv_event_t *event) {
   delay(RESTART_DELAY);
   ESP.restart();
+  return;
 }
 
 static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event) {
@@ -574,6 +606,7 @@ static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
     }
   }
   NimBLEDevice::deinit();
+  return;
 }
 
 void ui_reset() {
@@ -587,6 +620,7 @@ void ui_reset() {
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarRPM, 0, LV_ANIM_OFF);
+  return;
 }
 
 
@@ -610,10 +644,12 @@ void set_rpm_lights(int rpmValue) {
       FastLED.show();
     }
   }
+  return;
 }
 
 void set_all_leds(struct CRGB colour) {
   leds.fill_solid(colour);
+  return;
 }
 
 void upshifting_blink() {
@@ -623,6 +659,7 @@ void upshifting_blink() {
   set_all_leds(CRGB::Black); 
   FastLED.show();
   delay(UPSHIFT_BLINK_DELAY);
+  return;
 }
 
 void rgb_startup_animation() {
@@ -655,6 +692,7 @@ void rgb_startup_animation() {
   leds[3] = leds[4] = leds[5] = leds[6] = CRGB::Red;   // Middle four
    
   FastLED.show();
+  return;
 }
 
 void demo_rpm_lights(void *pvParameters) {
@@ -679,6 +717,7 @@ void buzz_double() {
     digitalWrite(BUZZER, LOW);
     delay(BUZZER_TONE_DELAY);
   }
+  return;
 }
 
 
@@ -693,6 +732,7 @@ void createDir(fs::FS &fs, const char * path) {
   } else {
     Serial.println(F("Directory creation failed"));
   }
+  return;
 }
 
 void writeFile(fs::FS &fs, const char * path, const char * message) {
@@ -709,6 +749,7 @@ void writeFile(fs::FS &fs, const char * path, const char * message) {
     Serial.println(F("Write failed"));
   }
   file.close();
+  return;
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message) {
@@ -724,6 +765,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
     Serial.println(F("Data Append to File Failed"));
   }
   file.close();
+  return;
 }
 
 void check_and_create_directory(String directory, String module) {
@@ -739,6 +781,7 @@ void check_and_create_directory(String directory, String module) {
   } else {
     Serial.println((module + " File Exists").c_str());
   }
+  return;
 }
 
 
@@ -836,106 +879,95 @@ bool connectToRaceBox() {
 }
 
 void print_RaceBox_Data_message_payload_to_serial() {
-  // serial print the received data:
+  
   unsigned long currentTime = millis();
-  if (currentTime - lastOutputTimeSerial >= outputIntervalMs_serial) { 
-    // limits the amount how often we print current values to serial
+  String sdCardOutput = "";
+  String serialOutput = "";
+ 
+  // limits the amount how often we print current values to serial
+  if(ENABLE_BLE_GPS_SERIAL_OUTPUT) {
+    if (currentTime - lastOutputTimeSerialGPS >= outputIntervalGPSMs_serial) { 
+      
+      serialOutput = "";
+      sdCardOutput = "";
+      // Date and Time
+      sdCardOutput += String(day) + "/" + String(month) + "/" + String(year);
 
-    // Serial output with correct formatting - HINT: the serial output as well as excessive updating of the OLED will take time and can hinder fast operation (e.g. reading in at 25hz), so output should be limited
-    Serial.println(F(""));
-    Serial.println(F("----------------------------------------------------------------------"));
-    Serial.println(F("--- Updated Data From RaceBox: ---"));
-    Serial.println(F("----------------------------------------------------------------------"));
-    
-    String output = "";
+      // Time
+      char timeString[9];                                          // Buffer to store the formatted time string
+      sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
+      serialOutput += ("Date: " + String(day) + "/" + String(month) + "/" + String(year) + ", Time (UTC): " + String(timeString) + "\n");
+      sdCardOutput += "," + String(timeString);
 
-    // Date and Time
-    // Serial.println("iTOW: " + String(iTOW) + " ms");
-    output += String(day) + "/" + String(month) + "/" + String(year);
+      // GPS Fix and Number of Satellites
+      String fixStatusText;
+      if (fixStatus == 0) {
+        fixStatusText = "No Fix";
+      } else if (fixStatus == 2) {
+        fixStatusText = "2D Fix";
+      } else if (fixStatus == 3) {
+        fixStatusText = "3D Fix";
+      } else {
+        fixStatusText = "Unknown";
+      }
+      serialOutput += ("GPS: " + fixStatusText + ", Satellites: " + String(numSVs) + "\n");
+      sdCardOutput += "," + fixStatusText + "," + String(numSVs);
 
-    // Time
-    char timeString[9];                                          // Buffer to store the formatted time string
-    sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
-    Serial.println("Date: " + String(day) + "/" + String(month) + "/" + String(year) + " Time (UTC): " + String(timeString) + "\n");
-    output += ","+String(timeString);
+      // Lattitude and longitude
+      serialOutput += ("Latitude: " + String(latitude / 1e7, 7) + "deg, " + "Longitude: " + String(longitude / 1e7, 7) + "deg" + "\n"); 
+      sdCardOutput += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7);
+      
+      // WGS and MSL Altitude 
+      serialOutput += ("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + "m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + "m" + "\n");
+      sdCardOutput += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); 
 
-    // GPS Fix and Number of Satellites
-    String fixStatusText;
-    if (fixStatus == 0) {
-      fixStatusText = "No Fix";
-    } else if (fixStatus == 2) {
-      fixStatusText = "2D Fix";
-    } else if (fixStatus == 3) {
-      fixStatusText = "3D Fix";
+      // Horizontal and vertical accuracy (not logged to SD card)
+      serialOutput += ("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + "m, " + "Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + "m" + "\n\n");
+      
+      // Speed
+      serialOutput += ("Speed: " + String(speed * 3.6 / 1000.0, 2) + "km/h, ");
+      serialOutput += ("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + "m/s" + "\n\n");
+      sdCardOutput += "," + String(speed * 3.6 / 1000.0, 2);
+      
+      // Heading and compass direction
+      serialOutput += ("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + "deg");
+      serialOutput += (" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)") + "\n");
+      serialOutput += ("Heading: ");
+      serialOutput += String(headingDegrees, 1); // heading (one decimal)
+      serialOutput += ("deg, Compass Direction: ");
+      serialOutput += (compass_direction + "\n\n"); // magnetic compass direction (e.g., "N", "NO")
+      sdCardOutput += "," + String(headingDegrees, 1) + "," + String(compass_direction);
+
+      // G Force
+      serialOutput += ("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3) + "\n");
+      sdCardOutput += "," + String(gForceX / 1000.0, 3) + "," + String(gForceY / 1000.0, 3) + "," + String(gForceZ / 1000.0, 3);
+
+      serialOutput += ("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n\n");
+      sdCardOutput += "," + String(rotRateX / 100.0, 2) + "," + String(rotRateY / 100.0, 2) + "," + String(rotRateZ / 100.0, 2) + "\n";
+
+      // Battery
+      float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
+      serialOutput += ("RaceBox Input Voltage: " + String(inputVoltage, 1) + "V" + "\n");
+
+      if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
+        Serial.println(F(""));
+        Serial.println(F("----------------------------------------------------------------------"));
+        Serial.println(F("--- Updated Data From RaceBox: ---"));
+        Serial.println(F("----------------------------------------------------------------------"));
+        Serial.println(serialOutput); // Write GPS datea to Serial
+        appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str()); // Write data to sd card
+        Serial.println(F("----------------------------------------------------------------------"));
+        Serial.println(F(""));
+        xSemaphoreGive(serial_mutex);
+      }
+      
+      lastOutputTimeSerialGPS = currentTime;
     } else {
-      fixStatusText = "Unknown";
+      Serial.println(F("Skipping serial output due to set serial update limitation"));
     }
-    Serial.println("GPS: " + fixStatusText + ", Satellites: " + String(numSVs) + "\n");
-    output += "," + fixStatusText + "," + String(numSVs);
-
-    // print fix status flags
-    // Serial.println("Fix Status Flags (Hex): " + String(fixStatusFlags, HEX));
-    // Serial.println("Fix Status Flags (Binary): " + String(fixStatusFlags, BIN));
-
-    // print fix status flags with interpretation
-    // Serial.println("Fix Status Flags Interpretation:");
-    // Serial.println("  Bit 0: Valid Fix: " + String((fixStatusFlags & 0x01) ? "Yes" : "No"));
-    // Serial.println("  Bit 1: Differential Corrections Applied: " + String((fixStatusFlags & 0x02) ? "Yes" : "No"));
-    // Serial.println("  Bits 4..2: Power State: " + String((fixStatusFlags >> 2) & 0x07));
-    // Serial.println("  Bit 5: Valid Heading: " + String((fixStatusFlags & 0x20) ? "Yes" : "No"));
-    // Serial.println("  Bits 7..6: Carrier Phase Range Solution: " + String((fixStatusFlags >> 6) & 0x03));
-    // Serial.println();
-
-    // Lattitude and longitude
-    // we need to divide the latitude by 10^7 because the datasheet states that it is transmitted with a factor of 10^7
-    Serial.println("Latitude: " + String(latitude / 1e7, 7) + "deg, " + "Longitude: " + String(longitude / 1e7, 7) + "deg"); 
-    output += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7);
-    
-    // WGS and MSL Altitude 
-    Serial.println("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + "m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + "m");
-    output += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); 
-
-    // Horizontal and vertical accuracy (not logged to SD card)
-    Serial.println("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + "m, " + "Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + "m" + "\n");
-    
-    
-    // Speed
-    // Serial.println("Speed: " + String(speed / 1000.0, 2) + " m/s");
-    Serial.println("Speed: " + String(speed * 3.6 / 1000.0, 2) + "km/h");
-    Serial.println("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + "m/s" + "\n");
-    output += "," + String(speed * 3.6 / 1000.0, 2);
-    
-    // Heading and compass direction
-    Serial.print("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + "deg");
-    Serial.println(" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)"));
-    // Serial.print("Heading: " + String(heading / 1e5, 1) + " deg");
-    Serial.print("Heading: ");
-    Serial.print(headingDegrees, 1); // heading (one decimal)
-    Serial.print("deg, Compass Direction: ");
-    Serial.println(compass_direction + "\n"); // magnetic compass direction (e.g., "N", "NO")
-    output += "," + String(headingDegrees, 1) + "," + String(compass_direction);
-
-    // G Force
-    // Serial.println("PDOP: " + String(pdop / 100.0, 2));
-    Serial.println("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3));
-    output += "," + String(gForceX / 1000.0, 3) + "," + String(gForceY / 1000.0, 3) + "," + String(gForceZ / 1000.0, 3);
-
-    Serial.println("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n");
-    output += "," + String(rotRateX / 100.0, 2) + "," + String(rotRateY / 100.0, 2) + "," + String(rotRateZ / 100.0, 2);
-
-    // Battery
-    float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
-    Serial.println("RaceBox Input Voltage: " + String(inputVoltage, 1) + "V" + "\n");
-
-    // Write data to sd card
-    output += "\n";
-    appendFile(SD, "/gps-data/gps-data.csv", output.c_str());
-  }
-  else {
-    Serial.println(F("Skipping serial output due to set serial update limitation"));
   }
   
-  Serial.println(F(""));
+  return;
 }
 
 String getCompassDirection(float headingDegrees) {
@@ -964,6 +996,7 @@ void calculateChecksum(uint8_t *data, uint16_t length, uint8_t &CK_A, uint8_t &C
     CK_A += data[i];
     CK_B += CK_A;
   }
+  return;
 }
 
 void parsePayload(uint8_t *data) {
@@ -988,12 +1021,6 @@ void parsePayload(uint8_t *data) {
     Serial.println(F(" bytes."));
     return;
   }
-  else { 
-    // if packetLength is within allowed limits, print out some info on the data packet:
-    // Serial.println("Payload length is " + String(payloadLength) + " bytes");
-    // Serial.println("Expected payload length according to datasheet: 0 - 504 bytes. For a RaceBox Data Message payload length is 80 bytes.");
-    // Serial.println("Packet length (including checksum) is " + String(packetLength) + " bytes");
-  }
 
   // validate checksum
   uint8_t CK_A, CK_B;
@@ -1001,30 +1028,13 @@ void parsePayload(uint8_t *data) {
   if (data[packetLength - 2] != CK_A || data[packetLength - 1] != CK_B) {
     Serial.println(F("*** Checksum validation of incoming data package failed. ***"));
     return;
-  } else {
-    // Serial.println("Checksum validation successful.");
   }
-  // Serial.println();
-
-  // print message class and message ID - used to determine the type of message. A RaceBox Data Message has messageClass 0xFF and messageId 0x01.
-  //    Serial.print("Message Class: 0x");
-  //    Serial.println(messageClass, HEX);
-  //    Serial.print("Message ID: 0x");
-  //    Serial.println(messageId, HEX);
 
   // check if the message class and ID match the expected values for a live data packet
   if (messageClass == 0xFF || messageId == 0x01) { 
-    // in case we receive live data (standard on start of RaceBox) and interpret it accordingly
-    // Serial.println("the received message has messageClass 0xFF and messageId 0x01, this is a (valid) RaceBox Data Message. Parsing payload.");
     parse_RaceBox_Data_Message_payload(data); // sending variable data to this function to interpret it
-    // outputting received data (this will be triggered each time a payload is parsed, so be aware that it may delay data update rate if e.g. printing a lot of info to serial takes longer than it takes for the next data to arrive.)
-    //    print_RaceBox_Data_message_payload_to_oled();
-    //
-    //      //####### be aware that those serial outputs below are sent each time a payload is parsed (i.e. up to 25x per second) like an interrupt, so the serial output from this function can overlay/interfere with output from void loop #######
-    //    print_RaceBox_Data_message_payload_to_serial(); //<-- ATTENTION! see comment above
-    //      //if you move this function to loop, you may want to comment out all serial outputs from void parsePayload.
   }
-
+  
   // examples how to handle other received messages;
   else if (messageClass == 0xFF || messageId == 0x21) { // History Data Message
     Serial.println(F("the received message has messageClass 0xFF and messageId 0x21, this is a (valid) History Data Message message. Parsing payload NOT yet implemented."));
@@ -1033,19 +1043,14 @@ void parsePayload(uint8_t *data) {
     // Standalone Recording Status
     Serial.println(F("the received message has messageClass 0xFF and messageId 0x22, this is a (valid) Standalone Recording Status message. Parsing payload NOT yet implemented."));
     // parse_standalone_Recording_Status_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
-  } else if (messageClass == 0xFF || messageId == 0x23)
-  { // Recorded Data Download
+  } else if (messageClass == 0xFF || messageId == 0x23) { // Recorded Data Download
     Serial.println(F("the received message has messageClass 0xFF and messageId 0x23, this is a (valid) Recorded Data Download message. Parsing payload NOT yet implemented."));
     // parse_Recorded_Data_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
   } else if (messageClass == 0xFF || messageId == 0x26) { 
     // Standalone Recording State Change Message
     Serial.println(F("the received message has messageClass 0xFF and messageId 0x26, this is a (valid) Standalone Recording State Change Message. Parsing payload NOT yet implemented."));
     // parse_Recorded_Data_payload(data); //sending variable data to this function to interpret it  (function not yet implemented)
-  }
-  //    else if (messageClass == 0x_something_else_1 || messageId == 0x_something_else_2){
-  //      //handle other message class(es) like this
-  //    }
-  else { 
+  } else { 
     // in case we receive different data (with different message class or message IDs as implemented above, we would need to handle it differently, or even assemble multiple messages that may have ben split.
     Serial.print(F("unknown message class and message ID found (it may be other data?): "));
     Serial.print(F("Message Class: 0x"));
@@ -1055,6 +1060,7 @@ void parsePayload(uint8_t *data) {
     Serial.println(F("Ignoring packet. This is not a known/implemented data packet. Interpreting the payload for this kind of packet is not yet implemented."));
     return;
   }
+  return;
 }
 
 void parse_RaceBox_Data_Message_payload(uint8_t *data) { 
@@ -1094,6 +1100,7 @@ void parse_RaceBox_Data_Message_payload(uint8_t *data) {
   headingDegrees = heading / 100000.0;                     // convert it to a float variable that is needed for the function getCompassDirection
   compass_direction = getCompassDirection(headingDegrees); // generate human readable compass_direction like N, NW, SW etc. from the heading degrees and save them in String 'compass_direction'
   updated_RaceBox_Data_Message = true;                     // bool is used to determine if updated data for variables in RaceBox Data Message is available (e.g. to print or display them in void loop() )
+  return;
 }
 
 static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, uint8_t* pData, size_t length, bool isNotify) {
@@ -1104,6 +1111,7 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, ui
     Serial.println(F("For other messages, the payload can be shorter."));
     parsePayload(pData);
   }
+  return;
 }
 
 void ble_task(void *pvParameters) {
@@ -1158,6 +1166,7 @@ void ble_task(void *pvParameters) {
 void setup_serial() {
   Serial.begin(SERIAL_BAUDRATE);
   while(!Serial);
+  return;
 }
 
 void setup_sd_card() {
@@ -1178,7 +1187,7 @@ void setup_sd_card() {
       return;
     }
     
-    Serial.println(F("SD Card Mounted Successfully \n"));
+    Serial.println(F("SD Card Mounted Successfully\n"));
     
     // Check and create directories for data capture
     check_and_create_directory("gps-data", "GPS");
@@ -1186,15 +1195,16 @@ void setup_sd_card() {
     Serial.println(F(""));
 
   } else {
-    Serial.println(F("SD Card Not Detected"));
+    Serial.println(F("SD Card Not Detected\n"));
   }
-
+  return;
 }
 
 void setup_leds() {
   FastLED.addLeds<NEOPIXEL, RGB>(leds, NUM_RPM_LEDS);
   FastLED.setBrightness(LED_DEFAULT_BRIGHTNESS);
   rgb_startup_animation();
+  return;
 }
 
 void setup_spi() {
@@ -1207,6 +1217,7 @@ void setup_spi() {
     Serial.println(F("Check arduino_pin.h file in Arduino15 folder."));
   }
   SPI.begin();
+  return;
 }
 
 void setup_buzzer() {
@@ -1214,6 +1225,7 @@ void setup_buzzer() {
   if(!SILIENCE_BUZZER) {
     buzz_double();
   }
+  return;
 }
 
 void setup_can_bus() {
@@ -1225,6 +1237,7 @@ void setup_can_bus() {
   } else {
     Serial.println(F("Error Initialising MCP2515"));
   }
+  return;
 }
 
 void setup(void) {
@@ -1238,29 +1251,38 @@ void setup(void) {
 
   gui_mutex = xSemaphoreCreateMutex();
   if (gui_mutex == NULL) {
-    Serial.println(F("Semaphore creation failure"));
+    Serial.println(F("GUI mutex creation failure"));
     return;
   }
   Serial.println(F("GUI Mutex Created"));
 
+  serial_mutex = xSemaphoreCreateMutex();
+  if(serial_mutex == NULL) {
+    Serial.println(F("Serial mutex creation failure"));
+    return;
+  }
+  Serial.println(F("Serial Mutex Created"));
+
   // Args: function, name of task, stack size (bytes), priority, core to pin to
   xTaskCreatePinnedToCore(display_task, "loading_task", 1024 * 10, NULL, 3, NULL, 1); 
   xTaskCreatePinnedToCore(display_update_task, "loading_task", 1024 * 3, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
+  Serial.println(F("Display Tasks Created"));
 
-  // Setup CAN Bus Task based on ECU type
-  if(CANBUS_S60) {
-    xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_s60_ecu", 1024 * 5, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(ble_task, "ble_task", 1024 * 10, NULL, 1, NULL, 1);
+  Serial.println(F("Bluetooth GPS Task Created"));
+
+  // Setup CAN BUS Task based on ECU type
+  if(ECU_TYPE) {
+    xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_s60_ecu", 1024 * 10, NULL, 1, NULL, 1);
     Serial.println(F("CAN BUS S60 Task Created"));
   } else {
-    xTaskCreatePinnedToCore(can_bus_standard_ecu, "can_bus_standard_ecu", 1024 * 5, NULL, 1, NULL, 1);
+    xTaskCreatePinnedToCore(can_bus_standard_ecu, "can_bus_standard_ecu", 1024 * 10, NULL, 1, NULL, 1);
     Serial.println(F("CAN BUS Standard ECU Task Created"));
   }
 
   // RPM Lights Demo
   // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);
-  Serial.println(F("Core Tasks Created"));
-  Serial.println(F("Setup Complete"));
+  Serial.println(F("\nSetup Complete"));
 }
 
 
