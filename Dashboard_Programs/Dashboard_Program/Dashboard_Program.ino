@@ -610,6 +610,7 @@ static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
 }
 
 void ui_reset() {
+  lv_label_set_text(ui_MainScreen_Label_LabelTime, "");
   lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
