@@ -33,7 +33,7 @@
 #define DISPLAY_ROTATION       1
 
 // Preferences
-#define CANBUS_S60 					 1
+#define ECU_TYPE 					 1
 #define ENABLE_CAN_BUS_SERIAL_OUTPUT 1
 #define ENABLE_BLE_GPS_SERIAL_OUTPUT 1
 
