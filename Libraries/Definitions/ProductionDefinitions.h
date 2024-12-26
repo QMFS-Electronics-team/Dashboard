@@ -32,7 +32,10 @@
 #define TFT_DEFAULT_BRIGHTNESS 100
 #define DISPLAY_ROTATION       1
 
-#define CANBUS_S60 1
+// Preferences
+#define CANBUS_S60 					 1
+#define ENABLE_CAN_BUS_SERIAL_OUTPUT 1
+#define ENABLE_BLE_GPS_SERIAL_OUTPUT 1
 
 // CAN BUS DEFINITIONS (ISO Standard)
 #define CANBUS_DATA_COUNT 				6
