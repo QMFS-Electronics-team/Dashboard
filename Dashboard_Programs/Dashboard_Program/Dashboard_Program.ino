@@ -301,16 +301,22 @@ void display_update_task(void *pvParameters) {
     // Set RPM Data on UI
     lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
     set_rpm_lights(rpm * 400);
-    // lv_label_set_text_fmt(ui_MainScreen_Label_LabelRPM, rpm * 400);
+    lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
 
+    // TPS and BPS
     lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
     lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
 
+    // Gear
     if(gear > 0) {
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
     } else {
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
     }
+
+    // Oil and Water Temperature
+    lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", water_temp);
+    lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
 
     vTaskDelay(10);
   }
@@ -345,7 +351,7 @@ void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
 // CAN BUS
 //-----------------------------
 
-void can_bus_task(void *pvParameters) {
+void can_bus_standard_ecu(void *pvParameters) {
 
   const uint8_t canbus_data[CANBUS_DATA_COUNT] = {PID_ENGINE_RPM, PID_THROTTLE, PID_COOLANT_TEMP, PID_ENGINE_OIL_TEMP, PID_TRANSMISSION_ACTUAL_GEAR, PID_CONTROL_MODULE_VOLTAGE};
   unsigned long currentMillis = millis();
@@ -505,7 +511,6 @@ void can_bus_s60_ecu(void *pvParameters) {
       outputString += "\n";
 
       Serial.print(outputString);
-      vTaskDelay(10);
     }
   } 
 }
@@ -1225,8 +1230,8 @@ void setup(void) {
     xTaskCreatePinnedToCore(can_bus_s60_ecu, "can_bus_s60_ecu", 1024 * 5, NULL, 1, NULL, 1);
     Serial.println(F("CAN BUS S60 Task Created"));
   } else {
-    xTaskCreatePinnedToCore(can_bus_task, "can_bus_task", 1024 * 5, NULL, 1, NULL, 1);
-    Serial.println(F("CAN BUS ISO Standard Task Created"));
+    xTaskCreatePinnedToCore(can_bus_standard_ecu, "can_bus_standard_ecu", 1024 * 5, NULL, 1, NULL, 1);
+    Serial.println(F("CAN BUS Standard ECU Task Created"));
   }
 
   // RPM Lights Demo
