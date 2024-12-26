@@ -255,11 +255,13 @@ void display_update_task(void *pvParameters) {
     lv_bar_set_value(ui_LoadingScreen_Bar_loadingBar, i, LV_ANIM_OFF);
   }
 
-  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
+  lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting   ");
 
   lv_scr_load(ui_MainScreen);
 
   float gX, gY, gZ, g_mag = 0.0;
+  int gps_connect_counter = 0;
+  String dots;
 
   set_rpm_lights(0);
 
@@ -286,8 +288,29 @@ void display_update_task(void *pvParameters) {
       if (bleRequestDisconnect) {
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Disconnected");
       } else {
-        //TODO add a GPS connection count to facilitate the ... animation
-        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, "GPS: Connecting..");
+        
+        gps_connect_counter += 1;
+        if(gps_connect_counter > 3) {
+          gps_connect_counter = 0;
+        }
+
+        switch(gps_connect_counter) {
+          case 1:
+            dots = ".  ";
+            break;
+          case 2:
+            dots = ".. ";
+            break;
+          case 3:
+            dots = "...";
+            break;
+          default:
+            dots = "   ";
+            break;
+        }
+
+        delay(GPS_CONNECTION_COUNTER_DELAY);
+        lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, ("GPS: Connecting" + dots).c_str());
       }
     }
     

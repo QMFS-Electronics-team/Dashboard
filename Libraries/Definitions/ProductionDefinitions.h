@@ -54,13 +54,14 @@
 #define PID_2005 5
 
 // Delays
-#define DISPLAY_INIT_DELAY      350
-#define LOADING_SCREEN_DELAY    10
-#define CANBUS_START_DELAY      1000
-#define RESTART_DELAY           1000
-#define UPSHIFT_BLINK_DELAY     200
-#define LED_ANIMATION_DELAY     250
-#define BUZZER_TONE_DELAY       100
+#define DISPLAY_INIT_DELAY           350
+#define LOADING_SCREEN_DELAY         10
+#define CANBUS_START_DELAY           1000
+#define RESTART_DELAY                1000
+#define UPSHIFT_BLINK_DELAY          200
+#define LED_ANIMATION_DELAY          250
+#define BUZZER_TONE_DELAY            100
+#define GPS_CONNECTION_COUNTER_DELAY 250
 
 // GPS Module Bluetooth UUID
 #define BLE_UART_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
