@@ -37,8 +37,8 @@
 #define BPS_PCB_EN                   0 // When 1, the BPS is read from the PCB Pin and not the CAN BUS
 #define NETURAL_DETECT_PCB_EN        0 // When 1, the Netural is determined by the PCB Pin and not the CAN BUS
 #define ECU_TYPE 					 1
-#define ENABLE_CAN_BUS_SERIAL_OUTPUT 1
-#define ENABLE_BLE_GPS_SERIAL_OUTPUT 0 // Disbled to prevent freezing bug
+#define ENABLE_CAN_BUS_SERIAL_OUTPUT 0
+#define ENABLE_BLE_GPS_SERIAL_OUTPUT 1 // Disbled to prevent freezing bug
 
 // CAN BUS DEFINITIONS (ISO Standard)
 #define CANBUS_DATA_COUNT 				6
