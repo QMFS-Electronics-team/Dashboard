@@ -6,7 +6,8 @@
 #define BUZZER 	       5
 #define CANBUS_CS      40
 #define SD_CS 		   41
-#define SD_DETECT      46
+#define BPS            GPIO_NUM_1
+#define NETURAL_DETECT GPIO_NUM_42
 #define SD_DETECT_GPIO GPIO_NUM_46
 
 // CUSTOM SPI PIN DEFINITIONS (corresponding to arduino_pin.h)
@@ -33,6 +34,8 @@
 #define DISPLAY_ROTATION       1
 
 // Preferences
+#define BPS_PCB_EN                   0 // When 1, the BPS is read from the PCB Pin and not the CAN BUS
+#define NETURAL_DETECT_PCB_EN        0 // When 1, the Netural is determined by the PCB Pin and not the CAN BUS
 #define ECU_TYPE 					 1
 #define ENABLE_CAN_BUS_SERIAL_OUTPUT 1
 #define ENABLE_BLE_GPS_SERIAL_OUTPUT 1

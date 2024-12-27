@@ -67,7 +67,7 @@ int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Posit
 int kph = 0;                        // Packet 2001 - [2] Speed reported by ECU
 int oil_temp, battery_voltage = 0;  // Packet 2002 - [1] Oil Temperature, [2] Battery Voltage
 int gear = 0;                       // Packet 2003 - [0] Gear
-int bps = 0;                        // Packet 2004 - [0] Brake Position Sensor
+int bps = 0;                        // Packet 2004 - [0] Brake Position Sensor (Also used for BPS PCB Pin if pre-processor is set for it)
 
 
 class LGFX : public lgfx::LGFX_Device {
@@ -321,6 +321,24 @@ void display_update_task(void *pvParameters) {
     } else {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
     }
+
+    // BPS Status
+    if(BPS_PCB_EN){
+      if(analogRead(BPS) != bps) {
+        bps = analogRead(BPS);
+        Serial.println("BPS Read: " + String(bps));
+        lv_bar_set_value(ui_MainScreen_Bar_BarBPS, map(bps, 0, 1023, 0, 100), LV_ANIM_OFF);
+      }
+    }
+
+    // Netural Status - Active Low
+    if(NETURAL_DETECT_PCB_EN) {
+      if(!gpio_get_level(NETURAL_DETECT)) {
+        Serial.println(F("Netural Gear"));
+        lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
+      }
+    }
+
     vTaskDelay(10);
   }
 }
@@ -523,14 +541,18 @@ void can_bus_s60_ecu(void *pvParameters) {
             if(gear > 0) {
               lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
             } else {
-              lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
+              if(NETURAL_DETECT_PCB_EN == 0) {
+                lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
+              }
             }
           }
           break;
         case PID_2004:
-          if(canMsg.data[0] != bps) {
-            bps = canMsg.data[0];
-            lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
+          if (BPS_PCB_EN == 0) {
+            if(canMsg.data[0] != bps) {
+              bps = canMsg.data[0];
+              lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
+            }
           }
           break;
         default:
@@ -1235,6 +1257,18 @@ void setup_buzzer() {
   return;
 }
 
+void setup_bps() {
+  gpio_set_direction(BPS, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(BPS, GPIO_PULLUP_ONLY);
+  return;
+}
+
+void setup_neutral_detect() {
+  gpio_set_direction(NETURAL_DETECT, GPIO_MODE_INPUT);
+  gpio_set_pull_mode(NETURAL_DETECT, GPIO_PULLUP_ONLY);
+  return;
+}
+
 void setup_can_bus() {
   mcp2515.reset();
   Serial.println(F(""));
@@ -1254,6 +1288,8 @@ void setup(void) {
   setup_spi();
   setup_can_bus();
   setup_sd_card();
+  setup_bps();
+  setup_neutral_detect();
   Serial.println(F("Devices Setup"));
 
   gui_mutex = xSemaphoreCreateMutex();
