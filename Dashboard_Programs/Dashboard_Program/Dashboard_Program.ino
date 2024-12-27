@@ -316,7 +316,7 @@ void display_update_task(void *pvParameters) {
     }
     
     // SD Card Status
-    if(!digitalRead(SD_DETECT)) {
+    if(!gpio_get_level(SD_DETECT_GPIO)) {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
     } else {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
@@ -1179,8 +1179,8 @@ void setup_serial() {
 void setup_sd_card() {
   gpio_set_direction(SD_DETECT_GPIO, GPIO_MODE_INPUT);
   gpio_set_pull_mode(SD_DETECT_GPIO, GPIO_PULLUP_ONLY);
-  
-  if(!digitalRead(SD_DETECT)) { // 0 When SD card is present
+
+  if(!gpio_get_level(SD_DETECT_GPIO)) { // 0 When SD card is present
     Serial.println(F("\nSD Card Detected"));
 
     if (!SD.begin(SD_CS)) {
