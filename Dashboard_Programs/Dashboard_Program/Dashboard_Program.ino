@@ -31,8 +31,8 @@ MCP2515 mcp2515(CANBUS_CS);
 struct can_frame canMsg, canReqMsg;
 const unsigned long outputIntervalCANBUSMs_Serial = 5000;
 unsigned long lastOutputTimeSerialCANBUS = 0;
-unsigned long lastOutputTimeSDCANBUS = 0;
 const unsigned long outputIntervalCANBUSMs_SD = 10000;
+unsigned long lastOutputTimeSDCANBUS = 0;
 
 // Race Box Module
 const int outputFrequencyHzSerial = GPS_SERIAL_FREQUENCY;
