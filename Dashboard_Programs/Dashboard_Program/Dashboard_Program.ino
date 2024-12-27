@@ -702,12 +702,12 @@ void set_rpm_lights(int rpmValue) {
       } else if (i < 10) {
         leds[i] = CRGB:: Blue;
       }
-      FastLED.show();
     } else {
       leds[i] = CRGB::Black;
-      FastLED.show();
     }
   }
+  FastLED.show();
+  vTaskDelay(10);
   return;
 }
 
