@@ -69,6 +69,7 @@ int oil_temp, battery_voltage = 0;  // Packet 2002 - [1] Oil Temperature, [2] Ba
 int gear = 0;                       // Packet 2003 - [0] Gear
 int bps = 0;                        // Packet 2004 - [0] Brake Position Sensor (Also used for BPS PCB Pin if pre-processor is set for it)
 
+int sd_mounted, sd_mounted_old_state = 0;
 
 class LGFX : public lgfx::LGFX_Device {
 
@@ -264,7 +265,8 @@ void display_update_task(void *pvParameters) {
 
   float gX, gY, gZ, g_mag = 0.0;
   int gps_connect_counter = 0;
-  String dots;
+  String dots, timeOutput;
+  char timeString[9];
 
   while (true) {
     if (connected) {
@@ -278,10 +280,9 @@ void display_update_task(void *pvParameters) {
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // Number of connected satelites
       lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G Force
 
-      // Time 
-      char timeString[9];                                         
+      // Time                                         
       sprintf(timeString, "%02d:%02d:%02d", hour, minute, second);
-      String timeOutput = "Time: " + String(timeString);  
+      timeOutput = "Time: " + String(timeString);  
       lv_label_set_text(ui_MainScreen_Label_LabelTime, timeOutput.c_str());
 
     } else {
@@ -316,10 +317,15 @@ void display_update_task(void *pvParameters) {
     }
     
     // SD Card Status
-    if(!gpio_get_level(SD_DETECT_GPIO)) {
-      lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
-    } else {
-      lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
+    sd_mounted = !gpio_get_level(SD_DETECT_GPIO); // Get the current state
+    if(sd_mounted != sd_mounted_old_state) {
+      sd_mounted_old_state = sd_mounted;
+      if(sd_mounted_old_state) {
+        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
+        setup_sd_card(); // Setup SD Card again 
+      } else {
+        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
+      }
     }
 
     // BPS Status
