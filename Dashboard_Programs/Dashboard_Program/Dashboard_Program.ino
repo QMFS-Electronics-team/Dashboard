@@ -759,17 +759,6 @@ void rgb_startup_animation() {
   return;
 }
 
-void demo_rpm_lights(void *pvParameters) {
-  while (true) {
-    for (int i = 0; i < 13; i++) {
-      rpm = i * 1000;
-      set_rpm_lights(rpm);
-      delay(LED_ANIMATION_DELAY);
-    }
-  }
-}
-
-
 //-----------------------------
 // Buzzer
 //-----------------------------
@@ -1393,8 +1382,6 @@ void setup(void) {
     Serial.println(F("CAN BUS Standard ECU Task Created"));
   }
 
-  // RPM Lights Demo
-  // xTaskCreatePinnedToCore(demo_rpm_lights, "demo_rpm_lights", 1024 * 5, NULL, 3, NULL, 1);
   Serial.println(F("\nSetup Complete"));
 }
 
