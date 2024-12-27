@@ -351,7 +351,7 @@ void display_update_task(void *pvParameters) {
       }
     }
 
-    vTaskDelay(10);
+    vTaskDelay(5);
   }
 }
 
@@ -626,6 +626,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       }
       
     }
+    vTaskDelay(5);
   } 
 }
 
@@ -707,7 +708,7 @@ void set_rpm_lights(int rpmValue) {
     }
   }
   FastLED.show();
-  vTaskDelay(10);
+  vTaskDelay(5);
   return;
 }
 
