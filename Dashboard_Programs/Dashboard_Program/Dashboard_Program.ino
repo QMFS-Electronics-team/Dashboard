@@ -266,8 +266,6 @@ void display_update_task(void *pvParameters) {
   int gps_connect_counter = 0;
   String dots;
 
-  set_rpm_lights(0);
-
   while (true) {
     if (connected) {
 
@@ -323,27 +321,6 @@ void display_update_task(void *pvParameters) {
     } else {
       lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
     }
-
-    // Set RPM Data on UI
-    lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
-    set_rpm_lights(rpm * 400);
-    lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
-
-    // TPS and BPS
-    lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
-    lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
-
-    // Gear
-    if(gear > 0) {
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
-    } else {
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
-    }
-
-    // Oil and Water Temperature
-    lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", water_temp);
-    lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
-
     vTaskDelay(10);
   }
 }
@@ -511,22 +488,50 @@ void can_bus_s60_ecu(void *pvParameters) {
       
       switch(canMsg.can_id) {
         case PID_2000:
-          rpm = canMsg.data[0];
-          tps = canMsg.data[1];
-          water_temp = canMsg.data[2];
+          if(canMsg.data[0] != rpm) {
+            rpm = canMsg.data[0];
+            lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
+            set_rpm_lights(rpm * 400);
+            lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
+          }
+          if(canMsg.data[1] != tps) {
+            tps = canMsg.data[1];
+            lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
+          }
+          if(canMsg.data[2] != water_temp) {
+            water_temp = canMsg.data[2];
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", water_temp);
+          }
           break;
         case PID_2001:
-          kph = canMsg.data[2];
+          if(canMsg.data[2] != kph) {
+            kph = canMsg.data[2];
+          }
           break;
         case PID_2002:
-          oil_temp = canMsg.data[1];
-          battery_voltage = canMsg.data[2];
+          if(canMsg.data[1] != oil_temp) {
+            oil_temp = canMsg.data[1];
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
+          }
+          if(canMsg.data[2] != battery_voltage) {
+            battery_voltage = canMsg.data[2];
+          }
           break;
         case PID_2003:
-          gear = canMsg.data[0];
+          if(canMsg.data[0] != gear) {
+            gear = canMsg.data[0];
+            if(gear > 0) {
+              lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
+            } else {
+              lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
+            }
+          }
           break;
         case PID_2004:
-          bps = canMsg.data[0];
+          if(canMsg.data[0] != bps) {
+            bps = canMsg.data[0];
+            lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
+          }
           break;
         default:
           break;
@@ -612,6 +617,7 @@ static void ui_event_SettingScreen_Button_ButtonBLEDisconnect(lv_event_t *event)
 void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelTime, "");
   lv_label_set_text(ui_MainScreen_Label_LabelRPM, "0");
+  set_rpm_lights(0);
   lv_label_set_text(ui_MainScreen_Label_LabelGear, "N");
   lv_label_set_text(ui_MainScreen_Label_LabelSpeed, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelBattV, "Batt: USB");
