@@ -1258,14 +1258,18 @@ void setup_buzzer() {
 }
 
 void setup_bps() {
-  gpio_set_direction(BPS, GPIO_MODE_INPUT);
-  gpio_set_pull_mode(BPS, GPIO_PULLUP_ONLY);
+  if(BPS_PCB_EN){
+    gpio_set_direction(BPS, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(BPS, GPIO_PULLUP_ONLY);
+  }
   return;
 }
 
 void setup_neutral_detect() {
-  gpio_set_direction(NETURAL_DETECT, GPIO_MODE_INPUT);
-  gpio_set_pull_mode(NETURAL_DETECT, GPIO_PULLUP_ONLY);
+  if(NETURAL_DETECT_PCB_EN) {
+    gpio_set_direction(NETURAL_DETECT, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(NETURAL_DETECT, GPIO_PULLUP_ONLY);
+  }
   return;
 }
 
