@@ -1,29 +1,32 @@
 // Reference: https://how2electronics.com/interfacing-mcp2515-can-bus-module-with-arduino/
 #include <SPI.h>          // Library for using SPI Communication 
 #include <mcp2515.h>      // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
- 
-struct can_frame canMsg;
- 
-MCP2515 mcp2515(10); 
- 
-void setup()
-{
-  while (!Serial);
-  Serial.begin(9600);
-  SPI.begin();               // Begin SPI communication
- 
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ); //Sets CAN at speed 500KBPS and Clock 8MHz
-  mcp2515.setNormalMode();
+#include <CAN-BUS-Setup.h>
 
-  Serial.println("CAN-Transmit");
-}
+struct can_frame canMsg;
+
+MCP2515 mcp2515(CANBUS_CS); 
  
 int h = 100;
 int t = 200;
+
+void setup() {
+  while (!Serial);
+  Serial.begin(BAUDRATE);
+  Serial.println("CAN-Transmitter");
  
-void loop()
-{
+  mcp2515.reset();
+  if(mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
+    Serial.println("CAN BUS Initialised");
+  } else {
+    Serial.println("CAN BUS Not Initialised. Error.");
+  }
+  mcp2515.setNormalMode();
+
+}
+ 
+
+void loop() {
   
   h += 1;
   t += 1; 
@@ -47,8 +50,8 @@ void loop()
   canMsg.data[6] = 0x00;
   canMsg.data[7] = 0x00;
 
-  Serial.println(h);
-  Serial.println(t);
+  Serial.println("Value of h: " + h);
+  Serial.println("Value of t: " + t);
   Serial.println("Sending message");
   mcp2515.sendMessage(&canMsg);     // Send the CAN message
   
