@@ -54,12 +54,12 @@
 // #define PID_INTAKE_TEMP 0x0F
 
 // CAN BUS DEFINITIONS (S60 ECU)
-#define PID_2000 0
-#define PID_2001 1
-#define PID_2002 2
-#define PID_2003 3
-#define PID_2004 4
-#define PID_2005 5
+#define PID_2000 0x2000
+#define PID_2001 0x2001
+#define PID_2002 0x2002
+#define PID_2003 0x2003
+#define PID_2004 0x2004
+#define PID_2005 0x2005
 
 // Delays
 #define DISPLAY_INIT_DELAY           350

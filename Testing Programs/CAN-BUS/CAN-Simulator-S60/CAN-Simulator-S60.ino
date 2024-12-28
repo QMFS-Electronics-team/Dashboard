@@ -18,19 +18,18 @@ void setup() {
   Serial.println(F("CAN BUS S60 Simulator"));
   
   mcp2515.reset();
-  int can_setup = mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);
-  mcp2515.setNormalMode();
-  
-  if(can_setup == MCP2515::ERROR_OK) {
+  if(mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
     Serial.println("CAN BUS Initialised");
   } else {
     Serial.println("CAN BUS Not Initialised. Error.");
   }
+  mcp2515.setNormalMode();
 }
 
 
 void sendPacket2000() {
   canMsg2000.can_id  = 0x2000;
+  canMsg2000.can_id |= CAN_EFF_FLAG;
   canMsg2000.can_dlc = 4;
   canMsg2000.data[0] = get_rpm();         // RPM
   canMsg2000.data[1] = get_tps();         // TPS %
@@ -43,6 +42,7 @@ void sendPacket2000() {
 
 void sendPacket2001() {
   canMsg2001.can_id  = 0x2001;
+  canMsg2001.can_id |= CAN_EFF_FLAG;
   canMsg2001.can_dlc = 4;
   canMsg2001.data[0] = 0x01; // MAP Kpa
   canMsg2001.data[1] = 0x01; // Lambda x 1000
@@ -55,6 +55,7 @@ void sendPacket2001() {
 
 void sendPacket2002() {
   canMsg2002.can_id  = 0x2002;
+  canMsg2002.can_id |= CAN_EFF_FLAG;
   canMsg2002.can_dlc = 4;
   canMsg2002.data[0] = 0x03;                  // Fuel P Kpa
   canMsg2002.data[1] = get_oil_temp();        // Oil Temp C
@@ -67,6 +68,7 @@ void sendPacket2002() {
 
 void sendPacket2003() {
   canMsg2003.can_id  = 0x2003;
+  canMsg2003.can_id |= CAN_EFF_FLAG;
   canMsg2003.can_dlc = 4;
   canMsg2003.data[0] = get_gear(); // Gear
   canMsg2003.data[1] = 0x02;       // Advance Degx10
@@ -79,6 +81,7 @@ void sendPacket2003() {
 
 void sendPacket2004() {
   canMsg2004.can_id  = 0x2004;
+  canMsg2004.can_id |= CAN_EFF_FLAG;
   canMsg2004.can_dlc = 4;
   canMsg2004.data[0] = get_bps();  // Ana1 mV - BPS
   canMsg2004.data[1] = 0x02;       // Ana2 mV
@@ -91,6 +94,7 @@ void sendPacket2004() {
 
 void sendPacket2005() {
   canMsg2005.can_id  = 0x2005;
+  canMsg2005.can_id |= CAN_EFF_FLAG;
   canMsg2005.can_dlc = 4;
   canMsg2005.data[0] = 0x10; // Cam Targ x 10
   canMsg2005.data[1] = 0x10; // CAM PWM x 10

@@ -527,7 +527,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       unsigned long currentTime = millis();
       unsigned long currentTimeSD = millis();
       
-      switch(canMsg.can_id) {
+      switch((canMsg.can_id & 0x1FFFFFFF)) {
         case PID_2000:
           if(canMsg.data[0] != rpm) {
             rpm = canMsg.data[0];
