@@ -28,8 +28,7 @@ void setup() {
 
 
 void sendPacket2000() {
-  canMsg2000.can_id  = 0x2000;
-  canMsg2000.can_id |= CAN_EFF_FLAG;
+  canMsg2000.can_id  = 0x2000| CAN_EFF_FLAG;
   canMsg2000.can_dlc = 4;
   canMsg2000.data[0] = get_rpm();         // RPM
   canMsg2000.data[1] = get_tps();         // TPS %
@@ -41,8 +40,7 @@ void sendPacket2000() {
 }
 
 void sendPacket2001() {
-  canMsg2001.can_id  = 0x2001;
-  canMsg2001.can_id |= CAN_EFF_FLAG;
+  canMsg2001.can_id  = 0x2001 | CAN_EFF_FLAG;
   canMsg2001.can_dlc = 4;
   canMsg2001.data[0] = 0x01; // MAP Kpa
   canMsg2001.data[1] = 0x01; // Lambda x 1000
@@ -54,8 +52,7 @@ void sendPacket2001() {
 }
 
 void sendPacket2002() {
-  canMsg2002.can_id  = 0x2002;
-  canMsg2002.can_id |= CAN_EFF_FLAG;
+  canMsg2002.can_id  = 0x2002 | CAN_EFF_FLAG;
   canMsg2002.can_dlc = 4;
   canMsg2002.data[0] = 0x03;                  // Fuel P Kpa
   canMsg2002.data[1] = get_oil_temp();        // Oil Temp C
@@ -67,8 +64,7 @@ void sendPacket2002() {
 }
 
 void sendPacket2003() {
-  canMsg2003.can_id  = 0x2003;
-  canMsg2003.can_id |= CAN_EFF_FLAG;
+  canMsg2003.can_id  = 0x2003 | CAN_EFF_FLAG;
   canMsg2003.can_dlc = 4;
   canMsg2003.data[0] = get_gear(); // Gear
   canMsg2003.data[1] = 0x02;       // Advance Degx10
@@ -80,8 +76,7 @@ void sendPacket2003() {
 }
 
 void sendPacket2004() {
-  canMsg2004.can_id  = 0x2004;
-  canMsg2004.can_id |= CAN_EFF_FLAG;
+  canMsg2004.can_id  = 0x2004 | CAN_EFF_FLAG;
   canMsg2004.can_dlc = 4;
   canMsg2004.data[0] = get_bps();  // Ana1 mV - BPS
   canMsg2004.data[1] = 0x02;       // Ana2 mV
@@ -93,8 +88,7 @@ void sendPacket2004() {
 }
 
 void sendPacket2005() {
-  canMsg2005.can_id  = 0x2005;
-  canMsg2005.can_id |= CAN_EFF_FLAG;
+  canMsg2005.can_id  = 0x2005 | CAN_EFF_FLAG;
   canMsg2005.can_dlc = 4;
   canMsg2005.data[0] = 0x10; // Cam Targ x 10
   canMsg2005.data[1] = 0x10; // CAM PWM x 10
