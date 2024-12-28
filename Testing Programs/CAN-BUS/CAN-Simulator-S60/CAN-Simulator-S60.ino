@@ -11,6 +11,8 @@ struct can_frame canMsg2004;
 struct can_frame canMsg2005;
 
 MCP2515 mcp2515(CANBUS_CS);
+ 
+int send_delay = 1/SEND_FREQUENCY;
 
 void setup() {
   while(!Serial);
@@ -110,7 +112,7 @@ int get_tps() {
 }
 
 int get_water_temp() {
-  return int(map(analogRead(KNOB_SEVEN), 0, 1023, 100, 0));
+  return int(map(analogRead(KNOB_ONE), 0, 1023, 100, 0));
 }
 
 // Packet 2002
@@ -119,7 +121,7 @@ int get_oil_temp() {
 }
 
 int get_battery_voltage() {
-  return int(map(analogRead(KNOB_ONE), 0, 1023, 15, 0));
+  return int(map(analogRead(KNOB_SEVEN), 0, 1023, 15, 0));
 }
 
 // Packet 2003
@@ -160,6 +162,6 @@ void loop() {
   sendPacket2003();
   sendPacket2004();
   sendPacket2005();
-  
   logOutput();
+  delay(send_delay);
 }
