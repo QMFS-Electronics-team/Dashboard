@@ -1,7 +1,7 @@
 // Reference: https://how2electronics.com/interfacing-mcp2515-can-bus-module-with-arduino/
 #include <SPI.h>                      // Library for using SPI Communication 
 #include <mcp2515.h>                  // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
-#include <S60SimulatorDefinitions.h>  // Preprocessor for this code
+#include <CAN-BUS-Setup.h>
 
 struct can_frame canMsg2000;
 struct can_frame canMsg2001;
@@ -18,7 +18,7 @@ void setup() {
   Serial.println(F("CAN BUS S60 Simulator"));
   
   mcp2515.reset();
-  if(mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
+  if(mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
     Serial.println("CAN BUS Initialised");
   } else {
     Serial.println("CAN BUS Not Initialised. Error.");

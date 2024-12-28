@@ -1320,7 +1320,7 @@ void setup_neutral_detect() {
 void setup_can_bus() {
   mcp2515.reset();
   Serial.println(F(""));
-  if(mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
+  if(mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
     Serial.println(F("MCP2515 Initialised Successfully"));
     mcp2515.setNormalMode();
   } else {
