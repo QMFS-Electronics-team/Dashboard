@@ -318,6 +318,7 @@ void display_update_task(void *pvParameters) {
         }
 
         delay(GPS_CONNECTION_COUNTER_DELAY);
+        lv_label_set_text(ui_MainScreen_Label_LabelTime, "");
         lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack, ("GPS: Connecting" + dots).c_str());
       }
     }
