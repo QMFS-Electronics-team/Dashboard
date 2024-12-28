@@ -12,3 +12,4 @@
 #define CANBUS_CS 10
 
 #define BAUDRATE 115200
+#define SEND_FREQUENCY 50
