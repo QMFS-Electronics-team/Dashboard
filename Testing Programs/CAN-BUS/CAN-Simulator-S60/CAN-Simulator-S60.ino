@@ -57,7 +57,7 @@ void sendPacket2000() {
   canMsg2000.data[3] = lower_byte;
 
   // Water Temp C
-  water_temp = get_rpm();
+  water_temp = get_water_temp();
   higher_byte = (water_temp >> 8) & 0xFF;
   lower_byte = water_temp & 0xFF;
   canMsg2000.data[4] = higher_byte;
@@ -164,13 +164,16 @@ void sendPacket2004() {
   canMsg2004.data[1] = lower_byte;
   
   // Ana2 mV
-  canMsg2004.data[1] = 0x00;
+  canMsg2004.data[2] = 0x00;
+  canMsg2004.data[3] = 0x00;
   
   // Ana3 mV
-  canMsg2004.data[2] = 0x00;
+  canMsg2004.data[4] = 0x00;
+  canMsg2004.data[5] = 0x00;
 
   // Cam Advance x 10
-  canMsg2004.data[3] = 0x00;
+  canMsg2004.data[6] = 0x00;
+  canMsg2004.data[7] = 0x00;
 
   Serial.println(F("Sending Packet 2004"));
   mcp2515.sendMessage(&canMsg2004);
