@@ -4,7 +4,7 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Arduino_GFX_Library.h>
-#include <TestingDefinitions.h>
+#include <PrototypeDashboard.h>
 #include <FS.h>
 #include <FastLED.h>
 #include <SD.h>
