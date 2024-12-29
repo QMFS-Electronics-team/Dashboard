@@ -481,7 +481,7 @@ void can_bus_standard_ecu(void *pvParameters) {
           }
         }
 
-        if(ENABLE_CAN_BUS_SERIAL_OUTPUT) {
+        if(CAN_BUS_SERIAL_OUTPUT_EN) {
           if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
             Serial.print(F("CAN Message ID: "));
             Serial.print(canMsg.can_id, HEX); // print ID
@@ -524,43 +524,37 @@ void can_bus_s60_ecu(void *pvParameters) {
 
   while (true){
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-      unsigned long currentTime = millis();
-      unsigned long currentTimeSD = millis();
+      unsigned long currentTimeCAN = millis();
+      unsigned long currentTimeCANSD = millis();
       
       switch((canMsg.can_id & 0x1FFFFFFF)) {
         case PID_2000:
-          if(canMsg.data[0] != rpm) {
-            rpm = canMsg.data[0];
-            lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
-            set_rpm_lights(rpm * 400);
-            lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
-          }
-          if(canMsg.data[1] != tps) {
-            tps = canMsg.data[1];
-            lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
-          }
-          if(canMsg.data[2] != water_temp) {
-            water_temp = canMsg.data[2];
-            lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", water_temp);
-          }
+          rpm = (canMsg.data[0] << 8) | canMsg.data[1];            
+          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
+          set_rpm_lights(rpm * 400);
+          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
+
+          tps = (canMsg.data[2] << 8) | canMsg.data[3];
+          lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
+          
+          water_temp = (canMsg.data[4] << 8) | canMsg.data[5];
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", water_temp);
           break;
+
         case PID_2001:
-          if(canMsg.data[2] != kph) {
-            kph = canMsg.data[2];
-          }
+          kph = (canMsg.data[4] << 8) | canMsg.data[5];
           break;
+        
         case PID_2002:
-          if(canMsg.data[1] != oil_temp) {
-            oil_temp = canMsg.data[1];
-            lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
-          }
-          if(canMsg.data[2] != battery_voltage) {
-            battery_voltage = canMsg.data[2];
-          }
+          oil_temp = (canMsg.data[2] << 8) | canMsg.data[3];
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
+
+          battery_voltage = (canMsg.data[4] << 8) | canMsg.data[5];
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %i", battery_voltage);
           break;
+
         case PID_2003:
-          if(canMsg.data[0] != gear) {
-            gear = canMsg.data[0];
+            gear = (canMsg.data[0] << 8) | canMsg.data[1];            
             if(gear > 0) {
               lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
             } else {
@@ -568,16 +562,15 @@ void can_bus_s60_ecu(void *pvParameters) {
                 lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
               }
             }
-          }
           break;
+
         case PID_2004:
           if (BPS_PCB_EN == 0) {
-            if(canMsg.data[0] != bps) {
-              bps = canMsg.data[0];
-              lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
-            }
+            bps = (canMsg.data[0] << 8) | canMsg.data[1];
+            lv_bar_set_value(ui_MainScreen_Bar_BarBPS, bps, LV_ANIM_OFF);
           }
           break;
+
         default:
           break;
       }
@@ -597,20 +590,20 @@ void can_bus_s60_ecu(void *pvParameters) {
       }
 
       if(SD_CARD_LOGGING_CAN_BUS_EN) {
-        if(currentTimeSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter == 5) {
+        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter == 5) {
           if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
             String sdCardOutput = ""; 
             sdCardOutput = String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
             sdCardOutput += String(kph) + "," + String(oil_temp) + "," + (gear) + "," + String(battery_voltage) + "\n";
             appendFile(SD, "/can-bus-data/can-bus-data-S60-ECU.csv", sdCardOutput.c_str());
-            lastOutputTimeSDCANBUS = currentTimeSD;
+            lastOutputTimeSDCANBUS = currentTimeCANSD;
             xSemaphoreGive(sd_mutex);
           }
         }
       }
 
-      if(ENABLE_CAN_BUS_SERIAL_OUTPUT) {
-        if(currentTime - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter == 5 && outputString.length() > 0) {
+      if(CAN_BUS_SERIAL_OUTPUT_EN) {
+        if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter == 5 && outputString.length() > 0) {
           if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
             Serial.println(F(""));
             Serial.println(F("----------------------------------------------------------------------"));
@@ -620,7 +613,7 @@ void can_bus_s60_ecu(void *pvParameters) {
             Serial.println(F("----------------------------------------------------------------------"));
             Serial.println(F(""));
             outputString = "";
-            lastOutputTimeSerialCANBUS = currentTime;
+            lastOutputTimeSerialCANBUS = currentTimeCAN;
             xSemaphoreGive(serial_mutex);
           }
         }
@@ -1022,7 +1015,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
       }
     }
     
-    if(ENABLE_BLE_GPS_SERIAL_OUTPUT) {
+    if(BLE_GPS_SERIAL_OUTPUT_EN) {
       if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
         Serial.println(F(""));
         Serial.println(F("----------------------------------------------------------------------"));
@@ -1037,7 +1030,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     
     lastOutputTimeSerialGPS = currentTime;
   } else {
-    if(ENABLE_BLE_GPS_SERIAL_OUTPUT) {
+    if(BLE_GPS_SERIAL_OUTPUT_EN) {
       Serial.println(F("Skipping serial output due to set serial update limitation"));
     }
   }
