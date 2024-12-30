@@ -1241,29 +1241,16 @@ void setup_sd_card() {
   gpio_set_direction(SD_DETECT_GPIO, GPIO_MODE_INPUT);
   gpio_set_pull_mode(SD_DETECT_GPIO, GPIO_PULLUP_ONLY);
 
+  SD.begin(SD_CS); // Configure the SD Reader
   if(!gpio_get_level(SD_DETECT_GPIO)) { // 0 When SD card is present
-    Serial.println(F("\nSD Card Detected"));
-
-    if (!SD.begin(SD_CS)) {
-        Serial.println(F("Card Mount Failed"));
-        return;
-    }
-    uint8_t cardType = SD.cardType();
-
-    if (cardType == CARD_NONE) {
-      Serial.println(F("No SD card attached"));
-      return;
-    }
-    
-    Serial.println(F("SD Card Mounted Successfully\n"));
+    Serial.println(F("\nSD Card Mounted Successfully"));
     
     // Check and create directories for data capture
     check_and_create_directory("gps-data", "GPS");
     check_and_create_directory("can-bus-data", "CAN BUS");
     Serial.println(F(""));
-
   } else {
-    Serial.println(F("SD Card Not Detected\n"));
+    Serial.println(F("\nSD Card Not Detected"));
   }
   return;
 }
