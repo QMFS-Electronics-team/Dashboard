@@ -518,15 +518,18 @@ void can_bus_standard_ecu(void *pvParameters) {
 void can_bus_s60_ecu(void *pvParameters) {
 
   String outputString = "";
-  int s60_data_counter = 0;
+  String sdCardOutput = "";
+  int s60_data_counter = int(PID_2000);
+  unsigned long currentTimeCAN = 0;
+  unsigned long currentTimeCANSD = 0;
   
   delay(CANBUS_START_DELAY); // wait for display init
-  Serial.println(F("CAN BUS S60 ECU"));
+  Serial.println(F("CAN BUS TASK S60 ECU"));
 
   while (true){
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-      unsigned long currentTimeCAN = millis();
-      unsigned long currentTimeCANSD = millis();
+      currentTimeCAN = millis();
+      currentTimeCANSD = millis();
       
       switch((canMsg.can_id & 0x1FFFFFFF)) {
         case PID_2000:
@@ -576,8 +579,8 @@ void can_bus_s60_ecu(void *pvParameters) {
           break;
       }
 
-      if(canMsg.can_id == s60_data_counter) {
-        outputString += "CAN Message ID: " + String(canMsg.can_id, HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+      if(int(canMsg.can_id & 0x1FFFFFFF) == s60_data_counter) {
+        outputString += "CAN Message ID: " + String((canMsg.can_id & 0x1FFFFFFF), HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
         for (int i = 0; i < canMsg.can_dlc; i++)  {
           outputString += String(canMsg.data[i], HEX) + " ";
         }
@@ -585,17 +588,13 @@ void can_bus_s60_ecu(void *pvParameters) {
         s60_data_counter += 1;
       }
 
-      if (s60_data_counter > CANBUS_DATA_COUNT - 1) {
-        s60_data_counter = 0;
-        outputString = "";
-      }
-
       if(SD_CARD_LOGGING_CAN_BUS_EN) {
-        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter == 5) {
+        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter > int(PID_2004)) {
           if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
-            String sdCardOutput = ""; 
+            sdCardOutput = ""; 
             sdCardOutput = String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
             sdCardOutput += String(kph) + "," + String(oil_temp) + "," + (gear) + "," + String(battery_voltage) + "\n";
+            Serial.print(F("CAN BUS - "));
             appendFile(SD, "/can-bus-data/can-bus-data-S60-ECU.csv", sdCardOutput.c_str());
             lastOutputTimeSDCANBUS = currentTimeCANSD;
             xSemaphoreGive(sd_mutex);
@@ -604,7 +603,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       }
 
       if(CAN_BUS_SERIAL_OUTPUT_EN) {
-        if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter == 5 && outputString.length() > 0) {
+        if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter > int(PID_2004) && outputString.length() > 0) {
           if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
             Serial.println(F(""));
             Serial.println(F("----------------------------------------------------------------------"));
@@ -619,9 +618,14 @@ void can_bus_s60_ecu(void *pvParameters) {
           }
         }
       }
+
+      if (s60_data_counter > int(PID_2004)) { // int(PID_2000) + CANBUS_DATA_COUNT - 1
+        s60_data_counter = int(PID_2000);
+        outputString = "";
+      }
       
     }
-    vTaskDelay(5);
+    // vTaskDelay(5);
   } 
 }
 
@@ -1012,7 +1016,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
 
     if(SD_CARD_LOGGING_GPS_EN) {
       if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
-        Serial.print(F("GPS Data - "));
+        Serial.print(F("GPS - "));
         appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
         xSemaphoreGive(sd_mutex);
       }
