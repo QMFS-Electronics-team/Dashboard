@@ -38,9 +38,9 @@
 #define NETURAL_DETECT_PCB_EN        0 // When 1, the Netural is determined by the PCB Pin and not the CAN BUS
 #define ECU_TYPE 					 1 // 1 For S60 ECU, 0 For Standard ECU
 #define CAN_BUS_SERIAL_OUTPUT_EN     1
-#define BLE_GPS_SERIAL_OUTPUT_EN     1 
-#define SD_CARD_LOGGING_CAN_BUS_EN   1
-#define SD_CARD_LOGGING_GPS_EN       1
+#define BLE_GPS_SERIAL_OUTPUT_EN     0
+#define CAN_BUS_SD_CARD_LOGGING_EN 	 1
+#define GPS_SD_CARD_LOGGING_EN       0
 
 // CAN BUS DEFINITIONS (Standard ECU)
 #define CANBUS_DATA_COUNT 				6

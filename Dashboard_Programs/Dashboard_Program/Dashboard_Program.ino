@@ -472,7 +472,7 @@ void can_bus_standard_ecu(void *pvParameters) {
           break;
         }
 
-        if(SD_CARD_LOGGING_CAN_BUS_EN) {
+        if(CAN_BUS_SD_CARD_LOGGING_EN) {
           if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
             String sdCardOutput = ""; 
             sdCardOutput = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
@@ -588,7 +588,7 @@ void can_bus_s60_ecu(void *pvParameters) {
         s60_data_counter += 1;
       }
 
-      if(SD_CARD_LOGGING_CAN_BUS_EN) {
+      if(CAN_BUS_SD_CARD_LOGGING_EN) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter > int(PID_2004)) {
           if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
             sdCardOutput = ""; 
@@ -1014,7 +1014,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
     serialOutput += ("RaceBox Input Voltage: " + String(inputVoltage, 1) + "V" + "\n");
 
-    if(SD_CARD_LOGGING_GPS_EN) {
+    if(GPS_SD_CARD_LOGGING_EN) {
       if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
         Serial.print(F("GPS - "));
         appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
