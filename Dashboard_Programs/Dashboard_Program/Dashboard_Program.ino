@@ -531,9 +531,9 @@ void can_bus_s60_ecu(void *pvParameters) {
       switch((canMsg.can_id & 0x1FFFFFFF)) {
         case PID_2000:
           rpm = (canMsg.data[0] << 8) | canMsg.data[1];            
-          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map((rpm * 400), 0, 12000, 0, 100), LV_ANIM_OFF);
-          set_rpm_lights(rpm * 400);
-          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm * 400).c_str());
+          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm, 0, 12000, 0, 100), LV_ANIM_OFF);
+          set_rpm_lights(rpm);
+          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm).c_str());
 
           tps = (canMsg.data[2] << 8) | canMsg.data[3];
           lv_bar_set_value(ui_MainScreen_Bar_BarTPS, tps, LV_ANIM_OFF);
