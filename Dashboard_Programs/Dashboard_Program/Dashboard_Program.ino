@@ -531,6 +531,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       currentTimeCAN = millis();
       currentTimeCANSD = millis();
       
+      // Collect CAN BUS Data
       switch((canMsg.can_id & 0x1FFFFFFF)) {
         case PID_2000:
           rpm = (canMsg.data[0] << 8) | canMsg.data[1];            
@@ -579,17 +580,9 @@ void can_bus_s60_ecu(void *pvParameters) {
           break;
       }
 
-      if(int(canMsg.can_id & 0x1FFFFFFF) == s60_data_counter) {
-        outputString += "CAN Message ID: " + String((canMsg.can_id & 0x1FFFFFFF), HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
-        for (int i = 0; i < canMsg.can_dlc; i++)  {
-          outputString += String(canMsg.data[i], HEX) + " ";
-        }
-        outputString += "\n";
-        s60_data_counter += 1;
-      }
-
+      // Log Data to SD Card
       if(CAN_BUS_SD_CARD_LOGGING_EN) {
-        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD && s60_data_counter > int(PID_2004)) {
+        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
             sdCardOutput = ""; 
             sdCardOutput = String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
@@ -603,6 +596,17 @@ void can_bus_s60_ecu(void *pvParameters) {
       }
 
       if(CAN_BUS_SERIAL_OUTPUT_EN) {
+        // Gather CAN BUS data from CAN ID 2000 to 2004 for serial output 
+        if(int(canMsg.can_id & 0x1FFFFFFF) == s60_data_counter) {
+          outputString += "CAN Message ID: " + String((canMsg.can_id & 0x1FFFFFFF), HEX)  + " Message Length: " + String(canMsg.can_dlc, HEX) + " Data: ";
+          for (int i = 0; i < canMsg.can_dlc; i++)  {
+            outputString += String(canMsg.data[i], HEX) + " ";
+          }
+          outputString += "\n";
+          s60_data_counter += 1;
+        }
+      
+        // Print data to serial output
         if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter > int(PID_2004) && outputString.length() > 0) {
           if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
             Serial.println(F(""));
@@ -617,15 +621,15 @@ void can_bus_s60_ecu(void *pvParameters) {
             xSemaphoreGive(serial_mutex);
           }
         }
+
+        // Reset Counter and outputString for next set of CAN BUS data
+        if (s60_data_counter > int(PID_2004)) {
+          s60_data_counter = int(PID_2000);
+          outputString = "";
+        }
       }
 
-      if (s60_data_counter > int(PID_2004)) { // int(PID_2000) + CANBUS_DATA_COUNT - 1
-        s60_data_counter = int(PID_2000);
-        outputString = "";
-      }
-      
     }
-    // vTaskDelay(5);
   } 
 }
 
@@ -950,70 +954,62 @@ void print_RaceBox_Data_message_payload_to_serial() {
   unsigned long currentTime = millis();
   String sdCardOutput = "";
   String serialOutput = "";
+  String fixStatusText = "";
  
   // limits the amount how often we print current values to serial
-  if (currentTime - lastOutputTimeSerialGPS >= outputIntervalGPSMs_serial) { 
+  if (currentTime - lastOutputTimeSerialGPS >= outputIntervalGPSMs_serial) {
     
-    serialOutput = "";
-    sdCardOutput = "";
-    // Date and Time
-    sdCardOutput += String(day) + "/" + String(month) + "/" + String(year);
+    if(BLE_GPS_SERIAL_OUTPUT_EN || GPS_SD_CARD_LOGGING_EN) {
+      fixStatusText = "";
+      if (fixStatus == 0) {
+        fixStatusText = "No Fix";
+      } else if (fixStatus == 2) {
+        fixStatusText = "2D Fix";
+      } else if (fixStatus == 3) {
+        fixStatusText = "3D Fix";
+      } else {
+        fixStatusText = "Unknown";
+      }
+    } 
 
-    // Time
     sprintf(timeString, "%02d:%02d:%02d", hour, minute, second); // build a time string that always has the time format 00:00:00
-    serialOutput += ("Date: " + String(day) + "/" + String(month) + "/" + String(year) + ", Time (UTC): " + String(timeString) + "\n");
-    sdCardOutput += "," + String(timeString);
 
-    // GPS Fix and Number of Satellites
-    String fixStatusText;
-    if (fixStatus == 0) {
-      fixStatusText = "No Fix";
-    } else if (fixStatus == 2) {
-      fixStatusText = "2D Fix";
-    } else if (fixStatus == 3) {
-      fixStatusText = "3D Fix";
-    } else {
-      fixStatusText = "Unknown";
+    // Serial formatting
+    if(BLE_GPS_SERIAL_OUTPUT_EN) {
+      serialOutput = "";
+      serialOutput += ("Date: " + String(day) + "/" + String(month) + "/" + String(year) + ", Time (UTC): " + String(timeString) + "\n");
+      serialOutput += ("GPS: " + fixStatusText + ", Satellites: " + String(numSVs) + "\n");
+      serialOutput += ("Latitude: " + String(latitude / 1e7, 7) + "deg, " + "Longitude: " + String(longitude / 1e7, 7) + "deg" + "\n"); 
+      serialOutput += ("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + "m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + "m" + "\n");
+      serialOutput += ("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + "m, " + "Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + "m" + "\n\n"); // Horizontal and vertical accuracy
+      serialOutput += ("Speed: " + String(speed * 3.6 / 1000.0, 2) + "km/h, ");
+      serialOutput += ("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + "m/s" + "\n\n");
+      serialOutput += ("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + "deg");
+      serialOutput += (" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)") + "\n");
+      serialOutput += ("Heading: ");
+      serialOutput += String(headingDegrees, 1); // heading (one decimal)
+      serialOutput += ("deg, Compass Direction: ");
+      serialOutput += (compass_direction + "\n\n"); // magnetic compass direction (e.g., "N", "NO")
+      serialOutput += ("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3) + "\n");
+      serialOutput += ("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n\n");
+      serialOutput += ("RaceBox Input Voltage: " + String((batteryStatus / 10.0), 1) + "V" + "\n"); // Battery voltage to RaceBox module. Input voltage must be multiplied by 10, according to datasheet
     }
-    serialOutput += ("GPS: " + fixStatusText + ", Satellites: " + String(numSVs) + "\n");
-    sdCardOutput += "," + fixStatusText + "," + String(numSVs);
-
-    // Lattitude and longitude
-    serialOutput += ("Latitude: " + String(latitude / 1e7, 7) + "deg, " + "Longitude: " + String(longitude / 1e7, 7) + "deg" + "\n"); 
-    sdCardOutput += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7);
     
-    // WGS and MSL Altitude 
-    serialOutput += ("WGS Altitude: " + String(wgsAltitude / 1000.0, 2) + "m, " + "MSL Altitude: " + String(mslAltitude / 1000.0, 2) + "m" + "\n");
-    sdCardOutput += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); 
-
-    // Horizontal and vertical accuracy (not logged to SD card)
-    serialOutput += ("Horizontal Accuracy: " + String(horizontalAccuracy / 1000.0, 2) + "m, " + "Vertical Accuracy: " + String(verticalAccuracy / 1000.0, 2) + "m" + "\n\n");
+    // SD Formatting
+    if(GPS_SD_CARD_LOGGING_EN) {
+      sdCardOutput = "";
+      sdCardOutput += String(day) + "/" + String(month) + "/" + String(year); // Date and Time
+      sdCardOutput += "," + String(timeString); // Time
+      sdCardOutput += "," + fixStatusText + "," + String(numSVs); // GPS Fix and Number of Satellites
+      sdCardOutput += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7); // Lattitude and longitude
+      sdCardOutput += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); // WGS and MSL Altitude
+      sdCardOutput += "," + String(speed * 3.6 / 1000.0, 2); // Speed
+      sdCardOutput += "," + String(headingDegrees, 1) + "," + String(compass_direction); // Heading and compass direction
+      sdCardOutput += "," + String(gForceX / 1000.0, 3) + "," + String(gForceY / 1000.0, 3) + "," + String(gForceZ / 1000.0, 3); // G Force
+      sdCardOutput += "," + String(rotRateX / 100.0, 2) + "," + String(rotRateY / 100.0, 2) + "," + String(rotRateZ / 100.0, 2) + "\n";
+    }
     
-    // Speed
-    serialOutput += ("Speed: " + String(speed * 3.6 / 1000.0, 2) + "km/h, ");
-    serialOutput += ("Speed Accuracy: " + String(speedAccuracy / 1000.0, 2) + "m/s" + "\n\n");
-    sdCardOutput += "," + String(speed * 3.6 / 1000.0, 2);
-    
-    // Heading and compass direction
-    serialOutput += ("Heading Accuracy: " + String(headingAccuracy / 1e5, 1) + "deg");
-    serialOutput += (" (heading " + String((fixStatusFlags & 0x20) ? "valid)" : "NOT valid - may need movement to become valid)") + "\n");
-    serialOutput += ("Heading: ");
-    serialOutput += String(headingDegrees, 1); // heading (one decimal)
-    serialOutput += ("deg, Compass Direction: ");
-    serialOutput += (compass_direction + "\n\n"); // magnetic compass direction (e.g., "N", "NO")
-    sdCardOutput += "," + String(headingDegrees, 1) + "," + String(compass_direction);
-
-    // G Force
-    serialOutput += ("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3) + "\n");
-    sdCardOutput += "," + String(gForceX / 1000.0, 3) + "," + String(gForceY / 1000.0, 3) + "," + String(gForceZ / 1000.0, 3);
-
-    serialOutput += ("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n\n");
-    sdCardOutput += "," + String(rotRateX / 100.0, 2) + "," + String(rotRateY / 100.0, 2) + "," + String(rotRateZ / 100.0, 2) + "\n";
-
-    // Battery
-    float inputVoltage = batteryStatus / 10.0; // Input voltage must be multiplied by 10, according to datasheet
-    serialOutput += ("RaceBox Input Voltage: " + String(inputVoltage, 1) + "V" + "\n");
-
+    // Log Data to SD Card
     if(GPS_SD_CARD_LOGGING_EN) {
       if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
         Serial.print(F("GPS - "));
@@ -1022,6 +1018,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
       }
     }
     
+    // Print data to serial output
     if(BLE_GPS_SERIAL_OUTPUT_EN) {
       if(xSemaphoreTake(serial_mutex, portMAX_DELAY) == pdTRUE) {
         Serial.println(F(""));
