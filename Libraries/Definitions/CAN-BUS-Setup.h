@@ -1,4 +1,3 @@
-
 // Potentiometers
 #define KNOB_ONE    A0
 #define KNOB_TWO    A1
@@ -11,6 +10,6 @@
 // PINs
 #define CANBUS_CS 10
 
-#define BAUDRATE 115200
-#define SEND_FREQUENCY 50
-#define MILLISECOND 1000
+#define BAUDRATE 		115200
+#define SEND_FREQUENCY 	50
+#define MILLISECOND 	1000
