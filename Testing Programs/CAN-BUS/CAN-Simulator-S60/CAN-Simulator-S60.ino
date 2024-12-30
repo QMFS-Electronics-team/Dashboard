@@ -15,7 +15,7 @@ byte lower_byte;
 
 MCP2515 mcp2515(CANBUS_CS);
  
-int send_delay = 1/SEND_FREQUENCY;
+int send_delay = MILLISECOND/SEND_FREQUENCY;
 
 int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Position Sensor, [2] Water Temperature
 int kph = 0;                        // Packet 2001 - [2] Speed reported by ECU
@@ -206,7 +206,7 @@ void sendPacket2005() {
 
 // Packet 2000
 int get_rpm() {
-  return int(map(analogRead(KNOB_SIX), 0, 1023, 30, 0));
+   return int(map(analogRead(KNOB_SIX), 0, 1023, 12000, 0));
 }
 
 int get_tps() {
@@ -241,16 +241,22 @@ void logOutput() {
   Serial.println(F(""));
   Serial.print(F("Water Temp - "));
   Serial.println(get_water_temp());
+
   Serial.print(F("TPS - "));
   Serial.println(get_tps());
+
   Serial.print(F("RPM - "));
   Serial.println(get_rpm());
+
   Serial.print(F("Gear - "));
   Serial.println(get_gear());
+
   Serial.print(F("Oil Temp - "));
   Serial.println(get_oil_temp());
+
   Serial.print(F("Battery Voltage - "));
   Serial.println(get_battery_voltage());
+  
   Serial.print(F("BPS - "));
   Serial.println(get_bps());
   Serial.println(F(""));
