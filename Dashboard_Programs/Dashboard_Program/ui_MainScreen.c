@@ -85,9 +85,9 @@ lv_obj_set_style_text_font(ui_MainScreen_Label_LabelRPM, &lv_font_montserrat_32,
 
 ui_MainScreen_Panel_PanelSpeed = lv_obj_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Panel_PanelSpeed, 130);
-lv_obj_set_height( ui_MainScreen_Panel_PanelSpeed, 67);
-lv_obj_set_x( ui_MainScreen_Panel_PanelSpeed, -163 );
-lv_obj_set_y( ui_MainScreen_Panel_PanelSpeed, 29 );
+lv_obj_set_height( ui_MainScreen_Panel_PanelSpeed, 70);
+lv_obj_set_x( ui_MainScreen_Panel_PanelSpeed, -164 );
+lv_obj_set_y( ui_MainScreen_Panel_PanelSpeed, 30 );
 lv_obj_set_align( ui_MainScreen_Panel_PanelSpeed, LV_ALIGN_CENTER );
 lv_obj_clear_flag( ui_MainScreen_Panel_PanelSpeed, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_radius(ui_MainScreen_Panel_PanelSpeed, 1, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -99,8 +99,8 @@ lv_obj_set_style_border_opa(ui_MainScreen_Panel_PanelSpeed, 255, LV_PART_MAIN| L
 ui_MainScreen_Label_LabeltextSpeed = lv_label_create(ui_MainScreen_Panel_PanelSpeed);
 lv_obj_set_width( ui_MainScreen_Label_LabeltextSpeed, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabeltextSpeed, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabeltextSpeed, -1 );
-lv_obj_set_y( ui_MainScreen_Label_LabeltextSpeed, 23 );
+lv_obj_set_x( ui_MainScreen_Label_LabeltextSpeed, 0 );
+lv_obj_set_y( ui_MainScreen_Label_LabeltextSpeed, 20 );
 lv_obj_set_align( ui_MainScreen_Label_LabeltextSpeed, LV_ALIGN_CENTER );
 lv_label_set_text(ui_MainScreen_Label_LabeltextSpeed,"SPEED");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabeltextSpeed, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
@@ -121,8 +121,8 @@ lv_obj_set_style_text_font(ui_MainScreen_Label_LabelSpeed, &lv_font_montserrat_3
 ui_MainScreen_Panel_PanelGForce = lv_obj_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Panel_PanelGForce, 122);
 lv_obj_set_height( ui_MainScreen_Panel_PanelGForce, 60);
-lv_obj_set_x( ui_MainScreen_Panel_PanelGForce, 166 );
-lv_obj_set_y( ui_MainScreen_Panel_PanelGForce, 62 );
+lv_obj_set_x( ui_MainScreen_Panel_PanelGForce, 165 );
+lv_obj_set_y( ui_MainScreen_Panel_PanelGForce, 65 );
 lv_obj_set_align( ui_MainScreen_Panel_PanelGForce, LV_ALIGN_CENTER );
 lv_obj_clear_flag( ui_MainScreen_Panel_PanelGForce, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 lv_obj_set_style_radius(ui_MainScreen_Panel_PanelGForce, 0, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -275,8 +275,8 @@ lv_obj_set_style_bg_opa(ui_MainScreen_Bar_BarBPS, 200, LV_PART_INDICATOR| LV_STA
 ui_MainScreen_Label_LabelBattV = lv_label_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Label_LabelBattV, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabelBattV, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabelBattV, -160 );
-lv_obj_set_y( ui_MainScreen_Label_LabelBattV, 116 );
+lv_obj_set_x( ui_MainScreen_Label_LabelBattV, 160 );
+lv_obj_set_y( ui_MainScreen_Label_LabelBattV, 110 );
 lv_obj_set_align( ui_MainScreen_Label_LabelBattV, LV_ALIGN_CENTER );
 lv_label_set_text(ui_MainScreen_Label_LabelBattV,"Batt: 13.4V");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabelBattV, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
@@ -286,8 +286,8 @@ lv_obj_set_style_text_font(ui_MainScreen_Label_LabelBattV, &lv_font_montserrat_1
 ui_MainScreen_Label_LabelGPSTrack = lv_label_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Label_LabelGPSTrack, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabelGPSTrack, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabelGPSTrack, 6 );
-lv_obj_set_y( ui_MainScreen_Label_LabelGPSTrack, -97 );
+lv_obj_set_x( ui_MainScreen_Label_LabelGPSTrack, 0 );
+lv_obj_set_y( ui_MainScreen_Label_LabelGPSTrack, -95 );
 lv_obj_set_align( ui_MainScreen_Label_LabelGPSTrack, LV_ALIGN_CENTER );
 lv_label_set_text(ui_MainScreen_Label_LabelGPSTrack,"GPS Fix: 4");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabelGPSTrack, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
@@ -297,10 +297,10 @@ lv_obj_set_style_text_font(ui_MainScreen_Label_LabelGPSTrack, &lv_font_montserra
 ui_MainScreen_Label_LabelWaterTemp = lv_label_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Label_LabelWaterTemp, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabelWaterTemp, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabelWaterTemp, -160 );
-lv_obj_set_y( ui_MainScreen_Label_LabelWaterTemp, 89 );
+lv_obj_set_x( ui_MainScreen_Label_LabelWaterTemp, -150 );
+lv_obj_set_y( ui_MainScreen_Label_LabelWaterTemp, 90 );
 lv_obj_set_align( ui_MainScreen_Label_LabelWaterTemp, LV_ALIGN_CENTER );
-lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp,"Water: 97 C");
+lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp,"Water: 100 C");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabelWaterTemp, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_MainScreen_Label_LabelWaterTemp, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_MainScreen_Label_LabelWaterTemp, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -308,35 +308,35 @@ lv_obj_set_style_text_font(ui_MainScreen_Label_LabelWaterTemp, &lv_font_montserr
 ui_MainScreen_Label_LabelOilTemp = lv_label_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Label_LabelOilTemp, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabelOilTemp, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabelOilTemp, -160 );
-lv_obj_set_y( ui_MainScreen_Label_LabelOilTemp, 143 );
+lv_obj_set_x( ui_MainScreen_Label_LabelOilTemp, -150 );
+lv_obj_set_y( ui_MainScreen_Label_LabelOilTemp, 120 );
 lv_obj_set_align( ui_MainScreen_Label_LabelOilTemp, LV_ALIGN_CENTER );
-lv_label_set_text(ui_MainScreen_Label_LabelOilTemp,"Oil: 122 C");
+lv_label_set_text(ui_MainScreen_Label_LabelOilTemp,"Oil: 100 C");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabelOilTemp, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_MainScreen_Label_LabelOilTemp, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_MainScreen_Label_LabelOilTemp, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
+
+ui_MainScreen_Label_LabelTime = lv_label_create(ui_MainScreen);
+lv_obj_set_width( ui_MainScreen_Label_LabelTime, LV_SIZE_CONTENT);  /// 1
+lv_obj_set_height( ui_MainScreen_Label_LabelTime, LV_SIZE_CONTENT);   /// 1
+lv_obj_set_x( ui_MainScreen_Label_LabelTime, 5 );
+lv_obj_set_y( ui_MainScreen_Label_LabelTime, 148 );
+lv_obj_set_align( ui_MainScreen_Label_LabelTime, LV_ALIGN_CENTER );
+lv_label_set_text(ui_MainScreen_Label_LabelTime,"Time: 12:00:00");
+lv_obj_set_style_text_color(ui_MainScreen_Label_LabelTime, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_text_opa(ui_MainScreen_Label_LabelTime, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_MainScreen_Label_LabelTime, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_MainScreen_Label_LabelSDCardMounted = lv_label_create(ui_MainScreen);
 lv_obj_set_width( ui_MainScreen_Label_LabelSDCardMounted, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_MainScreen_Label_LabelSDCardMounted, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_MainScreen_Label_LabelSDCardMounted, 160 );
-lv_obj_set_y( ui_MainScreen_Label_LabelSDCardMounted, 116 );
+lv_obj_set_y( ui_MainScreen_Label_LabelSDCardMounted, 140 );
 lv_obj_set_align( ui_MainScreen_Label_LabelSDCardMounted, LV_ALIGN_CENTER );
 lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted,"SD: Mounted");
 lv_obj_set_style_text_color(ui_MainScreen_Label_LabelSDCardMounted, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_MainScreen_Label_LabelSDCardMounted, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_MainScreen_Label_LabelSDCardMounted, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
-
-ui_MainScreen_Label_LabelTime = lv_label_create(ui_MainScreen);
-lv_obj_set_width( ui_MainScreen_Label_LabelTime, LV_SIZE_CONTENT);  /// 1
-lv_obj_set_height( ui_MainScreen_Label_LabelTime, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_MainScreen_Label_LabelTime, 4 );
-lv_obj_set_y( ui_MainScreen_Label_LabelTime, 148 );
-lv_obj_set_align( ui_MainScreen_Label_LabelTime, LV_ALIGN_CENTER );
-lv_label_set_text(ui_MainScreen_Label_LabelTime,"Time: 12:00");
-lv_obj_set_style_text_color(ui_MainScreen_Label_LabelTime, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
-lv_obj_set_style_text_opa(ui_MainScreen_Label_LabelTime, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_MainScreen_Label_LabelTime, &lv_font_montserrat_16, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 lv_obj_add_event_cb(ui_MainScreen, ui_event_MainScreen, LV_EVENT_ALL, NULL);
 

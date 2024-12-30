@@ -47,8 +47,8 @@ lv_obj_t *ui_MainScreen_Label_LabelBattV;
 lv_obj_t *ui_MainScreen_Label_LabelGPSTrack;
 lv_obj_t *ui_MainScreen_Label_LabelWaterTemp;
 lv_obj_t *ui_MainScreen_Label_LabelOilTemp;
-lv_obj_t *ui_MainScreen_Label_LabelSDCardMounted;
 lv_obj_t *ui_MainScreen_Label_LabelTime;
+lv_obj_t *ui_MainScreen_Label_LabelSDCardMounted;
 
 
 // SCREEN: ui_SettingScreen

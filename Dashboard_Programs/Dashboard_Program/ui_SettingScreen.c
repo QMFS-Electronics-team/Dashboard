@@ -142,13 +142,15 @@ lv_obj_set_style_text_font(ui_SettingScreen_Label_LabelRecordingStorage, &lv_fon
 
 ui_SettingScreen_Button_ButtonRestart = lv_btn_create(ui_SettingScreen);
 lv_obj_set_width( ui_SettingScreen_Button_ButtonRestart, 132);
-lv_obj_set_height( ui_SettingScreen_Button_ButtonRestart, 50);
-lv_obj_set_x( ui_SettingScreen_Button_ButtonRestart, 144 );
+lv_obj_set_height( ui_SettingScreen_Button_ButtonRestart, 70);
+lv_obj_set_x( ui_SettingScreen_Button_ButtonRestart, 145 );
 lv_obj_set_y( ui_SettingScreen_Button_ButtonRestart, 112 );
 lv_obj_set_align( ui_SettingScreen_Button_ButtonRestart, LV_ALIGN_CENTER );
 lv_obj_set_style_bg_color(ui_SettingScreen_Button_ButtonRestart, lv_color_hex(0xEB3B3B), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_bg_opa(ui_SettingScreen_Button_ButtonRestart, 230, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_bg_img_src( ui_SettingScreen_Button_ButtonRestart, &ui_img_488183857, LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_img_src( ui_SettingScreen_Button_ButtonRestart, &ui_img_1930579982, LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_img_recolor(ui_SettingScreen_Button_ButtonRestart, lv_color_hex(0x000000), LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_bg_img_recolor_opa(ui_SettingScreen_Button_ButtonRestart, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_border_color(ui_SettingScreen_Button_ButtonRestart, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_border_opa(ui_SettingScreen_Button_ButtonRestart, 100, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_border_width(ui_SettingScreen_Button_ButtonRestart, 2, LV_PART_MAIN| LV_STATE_DEFAULT);

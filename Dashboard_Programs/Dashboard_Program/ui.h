@@ -61,8 +61,8 @@ extern lv_obj_t *ui_MainScreen_Label_LabelBattV;
 extern lv_obj_t *ui_MainScreen_Label_LabelGPSTrack;
 extern lv_obj_t *ui_MainScreen_Label_LabelWaterTemp;
 extern lv_obj_t *ui_MainScreen_Label_LabelOilTemp;
-extern lv_obj_t *ui_MainScreen_Label_LabelSDCardMounted;
 extern lv_obj_t *ui_MainScreen_Label_LabelTime;
+extern lv_obj_t *ui_MainScreen_Label_LabelSDCardMounted;
 // SCREEN: ui_SettingScreen
 void ui_SettingScreen_screen_init(void);
 extern lv_obj_t *ui_SettingScreen;
@@ -113,13 +113,14 @@ extern lv_obj_t *ui_Startevents____initial_actions0;
 
 LV_IMG_DECLARE( ui_img_1525559409);   // assets/qmfs-logo-2.png
 LV_IMG_DECLARE( ui_img_880103820);   // assets/noun-return.png
-LV_IMG_DECLARE( ui_img_488183857);   // assets/power-button.png
+LV_IMG_DECLARE( ui_img_1930579982);   // assets/restart-icon.png
 LV_IMG_DECLARE( ui_img_166935938);   // assets/qr-code-qmfs.png
 LV_IMG_DECLARE( ui_img_1828040333);   // assets/linkedin-logo.png
 LV_IMG_DECLARE( ui_img_340328804);   // assets/insta-logo.png
 LV_IMG_DECLARE( ui_img_111512867);   // assets/tiktok-logo.png
 LV_IMG_DECLARE( ui_img_2128159454);   // assets/youtube-logo.png
 LV_IMG_DECLARE( ui_img_786562192);   // assets/qr-code-github.png
+LV_IMG_DECLARE( ui_img_488183857);   // assets/power-button.png
 
 
 LV_FONT_DECLARE( ui_font_OD180);
