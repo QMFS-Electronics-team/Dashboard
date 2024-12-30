@@ -326,13 +326,14 @@ void display_update_task(void *pvParameters) {
     // SD Card Status
     sd_mounted = !gpio_get_level(SD_DETECT_GPIO); // Get the current state
     if(sd_mounted != sd_mounted_old_state) {
-      sd_mounted_old_state = sd_mounted;
-      if(sd_mounted_old_state) {
+      if(sd_mounted) {
         lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
-        setup_sd_card(); // Setup SD Card again 
+        check_and_create_directory("gps-data", "GPS");
+        check_and_create_directory("can-bus-data", "CAN BUS");
       } else {
         lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
       }
+      sd_mounted_old_state = sd_mounted;
     }
 
     // BPS Status
@@ -676,6 +677,7 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelGForce, "0");
   lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
   lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
+  lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted,  "");
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarRPM, 0, LV_ANIM_OFF);
@@ -1244,13 +1246,13 @@ void setup_sd_card() {
   SD.begin(SD_CS); // Configure the SD Reader
   if(!gpio_get_level(SD_DETECT_GPIO)) { // 0 When SD card is present
     Serial.println(F("\nSD Card Mounted Successfully"));
-    
     // Check and create directories for data capture
     check_and_create_directory("gps-data", "GPS");
     check_and_create_directory("can-bus-data", "CAN BUS");
     Serial.println(F(""));
   } else {
     Serial.println(F("\nSD Card Not Detected"));
+    sd_mounted_old_state = -1;
   }
   return;
 }
