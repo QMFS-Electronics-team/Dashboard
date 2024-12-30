@@ -881,8 +881,8 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           // If no specific address is defined, connect to any device whose name starts with "RaceBox"
           Serial.println(F("RaceBox found. TARGET_DEVICE_ADDRESS is not set in code (or commented out ), so we connect to any RaceBox that we find."));
           NimBLEDevice::getScan()->stop();  // Stop scanning
-          Serial.println(F("stopped bluetooth scanning."));
-          Serial.printf("Connecting to RaceBox with address %s.... \n", advertisedDevice->getAddress().toString().c_str());
+          Serial.println(F("Stopped bluetooth scanning."));
+          Serial.printf("Connecting to RaceBox with address %s \n", advertisedDevice->getAddress().toString().c_str());
           myRaceBox = advertisedDevice;
           doConnect = true;
         }
@@ -1012,7 +1012,8 @@ void print_RaceBox_Data_message_payload_to_serial() {
 
     if(SD_CARD_LOGGING_GPS_EN) {
       if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
-        appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str()); // Write data to sd card
+        Serial.print(F("GPS Data - "));
+        appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
         xSemaphoreGive(sd_mutex);
       }
     }
