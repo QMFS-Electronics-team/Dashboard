@@ -473,7 +473,7 @@ void can_bus_standard_ecu(void *pvParameters) {
         }
 
         if(CAN_BUS_SD_CARD_LOGGING_EN) {
-          if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+          if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             String sdCardOutput = ""; 
             sdCardOutput = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
             sdCardOutput += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
@@ -483,7 +483,7 @@ void can_bus_standard_ecu(void *pvParameters) {
         }
 
         if(CAN_BUS_SERIAL_OUTPUT_EN) {
-          if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+          if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             Serial.print(F("CAN Message ID: "));
             Serial.print(canMsg.can_id, HEX); // print ID
             Serial.print(F(" "));
@@ -583,7 +583,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       // Log Data to SD Card
       if(CAN_BUS_SD_CARD_LOGGING_EN) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
-          if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+          if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = ""; 
             sdCardOutput = String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
             sdCardOutput += String(kph) + "," + String(oil_temp) + "," + (gear) + "," + String(battery_voltage) + "\n";
@@ -608,7 +608,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       
         // Print data to serial output
         if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial && s60_data_counter > int(PID_2004) && outputString.length() > 0) {
-          if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+          if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             Serial.println(F(""));
             Serial.println(F("----------------------------------------------------------------------"));
             Serial.println(F("---------- CAN BUS Data: ----------"));
@@ -1023,7 +1023,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     
     // Log Data to SD Card
     if(GPS_SD_CARD_LOGGING_EN) {
-      if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+      if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
         Serial.print(F("GPS - "));
         appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
         xSemaphoreGive(sd_mutex);
@@ -1032,7 +1032,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     
     // Print data to serial output
     if(BLE_GPS_SERIAL_OUTPUT_EN) {
-      if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
+      if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
         Serial.println(F(""));
         Serial.println(F("----------------------------------------------------------------------"));
         Serial.println(F("--- Updated Data From RaceBox: ---"));
@@ -1239,6 +1239,7 @@ void ble_task(void *pvParameters) {
         updated_RaceBox_Data_Message = false;
       }
     }
+    vTaskDelay(5);
   }
 }
 
