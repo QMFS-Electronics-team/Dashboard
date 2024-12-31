@@ -1004,7 +1004,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
       serialOutput += (compass_direction + "\n\n"); // magnetic compass direction (e.g., "N", "NO")
       serialOutput += ("G-Force X: " + String(gForceX / 1000.0, 3) + ", Y: " + String(gForceY / 1000.0, 3) + ", Z: " + String(gForceZ / 1000.0, 3) + "\n");
       serialOutput += ("Rot Rate X: " + String(rotRateX / 100.0, 2) + "deg/s" + ", Y: " + String(rotRateY / 100.0, 2) + "deg/s" + " Z: " + String(rotRateZ / 100.0, 2) + "deg/s" + "\n\n");
-      serialOutput += ("RaceBox Input Voltage: " + String((batteryStatus / 10.0), 1) + "V" + "\n"); // Battery voltage to RaceBox module. Input voltage must be multiplied by 10, according to datasheet
+      serialOutput += ("RaceBox Input Voltage: " + String((batteryStatus / 10.0), 1) + "V"); // Battery voltage to RaceBox module. Input voltage must be multiplied by 10, according to datasheet
     }
     
     // SD Formatting
