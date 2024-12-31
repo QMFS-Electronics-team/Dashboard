@@ -328,10 +328,10 @@ void display_update_task(void *pvParameters) {
     if(sd_mounted != sd_mounted_old_state) {
       if(sd_mounted) {
         lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Mounted"); 
-        check_and_create_directory("gps-data", "GPS");
-        check_and_create_directory("can-bus-data", "CAN BUS");
+        setup_sd_card();
       } else {
-        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted"); 
+        lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted, "SD: Not Mounted");
+        lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, "");
       }
       sd_mounted_old_state = sd_mounted;
     }
@@ -466,7 +466,7 @@ void can_bus_standard_ecu(void *pvParameters) {
         case PID_CONTROL_MODULE_VOLTAGE:
           battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
           battery_decoded = (battery_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f", battery_decoded);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f V", battery_decoded);
           break;
         default:
           break;
@@ -555,7 +555,7 @@ void can_bus_s60_ecu(void *pvParameters) {
           lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp);
 
           battery_voltage = (canMsg.data[4] << 8) | canMsg.data[5];
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %i", battery_voltage);
+          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %i V", battery_voltage);
           break;
 
         case PID_2003:
@@ -687,6 +687,7 @@ void ui_reset() {
   lv_label_set_text(ui_MainScreen_Label_LabelWaterTemp, "Water: 0 C");
   lv_label_set_text(ui_MainScreen_Label_LabelOilTemp, "Oil: 0 C");
   lv_label_set_text(ui_MainScreen_Label_LabelSDCardMounted,  "");
+  lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, "Storage Remaining: ");
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarRPM, 0, LV_ANIM_OFF);
@@ -713,7 +714,6 @@ void set_rpm_lights(int rpmValue) {
     }
   }
   FastLED.show();
-  vTaskDelay(5);
   return;
 }
 
@@ -823,6 +823,8 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   } else {
     Serial.println(F("Data Append to File Failed"));
   }
+
+  lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, ("Storage Remaining: " + String(get_storage_used()) + "%").c_str());
   file.close();
   return;
 }
@@ -850,12 +852,21 @@ void check_and_create_directory(String directory, String module) {
         appendFile(SD, ("/" + directory + "/" + directory + ecu + ".csv").c_str(), ("RPM,Throttle,BrakePosition,WaterTemperature,Speed(Kph),OilTemperature,Battery\n"));
       }
     }
+
+    lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, ("Storage Remaining: " + String(get_storage_used()) + "%").c_str());
   } else {
     Serial.println((module + " File Exists").c_str());
   }
   return;
 }
 
+int get_storage_used() {
+  uint64_t total = SD.totalBytes(); // Total number of bytes
+  uint64_t used = SD.usedBytes();   // Number of used bytes
+  uint64_t free = total - used;
+  return int(((float)free / (float)total)*100);
+
+}
 
 //-----------------------------
 // BLE GPS Functions
@@ -1012,7 +1023,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     
     // Log Data to SD Card
     if(GPS_SD_CARD_LOGGING_EN) {
-      if(xSemaphoreTake(sd_mutex, portMAX_DELAY) == pdTRUE) {
+      if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
         Serial.print(F("GPS - "));
         appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
         xSemaphoreGive(sd_mutex);
