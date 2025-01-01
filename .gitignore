@@ -85,5 +85,7 @@ ArduinoOutput
 CMakeLists.txt
 filelist.txt
 ui_comp_hook.c
+Dashboard-GUI/UI/*
+Dashboard-GUI/cache
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
