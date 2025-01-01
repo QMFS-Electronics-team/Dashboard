@@ -81,4 +81,9 @@ ArduinoOutput
 # Ignore Vscode files
 .vscode
 
+# SquareLine Studio Files
+CMakeLists.txt
+filelist.txt
+ui_comp_hook.c
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
