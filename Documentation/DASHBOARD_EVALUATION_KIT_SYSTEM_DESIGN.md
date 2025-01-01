@@ -176,3 +176,17 @@ Note the numbers are from left to right based on the barcode sticker on the GPS 
 |     G6/CLK     |    NO    |   N/A                           |
 |     GND        |    YES   |   Power                         |
 
+
+## Libraries to Install
+`Adafruit BusIO           1.16.1`\
+`Adafruit HMC5883 Unified 1.2.3`\
+`Adafruit MPU6050         2.2.6`\
+`Adafruit Unified Sensor  1.1.1`\
+`autowp-mcp2515           1.2.1`\
+`EspSoftwareSerial        8.1.0`\
+`FastLED                  3.6.0`\
+`GFX Library for Arduino  1.4.1`\
+`LovyanGFX                1.1.7`\
+`lvgl                     8.3.8`\
+`NimBLE-Arduino           1.4.2`\
+`TinyGPSPlus              1.1.0`
