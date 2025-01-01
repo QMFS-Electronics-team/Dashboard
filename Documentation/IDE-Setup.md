@@ -20,6 +20,16 @@ For development VSCode `1.96.2` was used.
 
 Install the extension `Arduino: vsciot-vscode.vscode-arduino` or `vscode-arduino.vscode-arduino-community` from the extensions tab.
 
+Open up the repository with VSCode. Once the `.vscode` directory is generated, navigate to `arduino.json`. Append the following lines in addition to what is alredy present. The `Output` folder containes the build and having this folder speeds up the build time as it servers as a cache.
+
+```
+{
+    "output": "ArduinoOutput",
+    "arduino.enableCache": true,
+    "arduino.logLevel": "info"
+}
+```
+
 ## Arduino IDE
 
 ### Install Arduino IDE
