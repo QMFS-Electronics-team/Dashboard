@@ -21,8 +21,8 @@ The display comes with a capacitive touch screen to provide the driver with addi
 ## Repository Structure
 .\
 ├── Dashboard Programs\
-├── Documentation\
-├── images\
+├── Documentation (Containes instructions and information about the project)\
+├── Images\
 ├── Libraries   (Directory for libraries needed for Arduino code)\
 ├── Release Hex\
 ├── Testing Programs\
