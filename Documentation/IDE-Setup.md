@@ -42,6 +42,10 @@ If you want to install via the commandline -
 
 For this project VSCode `2.3.4` was used.
 
+
+### Setup ESP Exception Decode
+This is useful for debugging when you have a stack trace from ESP32. Follow this [link](https://github.com/dankeboy36/esp-exception-decoder) for instructions.
+
 ## Setup Instructions for Both VSCode and Arduino IDE
 
 ### Install ESP32 Core 
