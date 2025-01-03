@@ -62,7 +62,7 @@
 #define PID_2005 0x2005
 
 // Delays
-#define DISPLAY_INIT_DELAY           350
+#define DISPLAY_INIT_DELAY           700
 #define LOADING_SCREEN_DELAY         10
 #define CANBUS_START_DELAY           1000
 #define RESTART_DELAY                1000
