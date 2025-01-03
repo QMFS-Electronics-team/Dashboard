@@ -474,8 +474,9 @@ void can_bus_standard_ecu(void *pvParameters) {
 
         if(CAN_BUS_SD_CARD_LOGGING_EN) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
-            String sdCardOutput = ""; 
-            sdCardOutput = String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
+            sdCardOutput = "";
+            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString); // Date & Time
+            sdCardOutput += String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
             sdCardOutput += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
             appendFile(SD, "/can-bus-data/can-bus-data-standard-ECU.csv", sdCardOutput.c_str());
             xSemaphoreGive(sd_mutex);
@@ -585,7 +586,8 @@ void can_bus_s60_ecu(void *pvParameters) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = ""; 
-            sdCardOutput = String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
+            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString); // Date & Time
+            sdCardOutput += String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
             sdCardOutput += String(kph) + "," + String(oil_temp) + "," + (gear) + "," + String(battery_voltage) + "\n";
             Serial.print(F("CAN BUS - "));
             appendFile(SD, "/can-bus-data/can-bus-data-S60-ECU.csv", sdCardOutput.c_str());
@@ -829,7 +831,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
   return;
 }
 
-void check_and_create_directory(String directory, String module) {
+void check_and_create_directory(String module_name, String module) {
   String ecu = "";
   if(module == "CAN BUS") {
     if(ECU_TYPE) {
@@ -837,23 +839,28 @@ void check_and_create_directory(String directory, String module) {
     } else {
       ecu = "-standard-ECU";
     }
+  } else {
+    ecu = "";
   }
 
-  if (!SD.exists(("/" + directory + "/" + directory + ecu +".csv").c_str())) {
-    createDir(SD, ("/" + directory).c_str());
+  String file = "/" + module_name + "/" + module_name + ecu + ".csv";
+  String directory = "/" + module_name;
+
+  if (!SD.exists(directory.c_str())) {
+    createDir(SD, directory.c_str());
     Serial.println(("Creating " + module + " File").c_str());
 
     if(module == "GPS") {
-      appendFile(SD, ("/" + directory + "/" + directory + ".csv").c_str(), ("Date,Time-UTC,GPS-Fix,Satellites,Latitude,Longitude,WGS-Altitude,MSL-Altitude,Speed-KPH,Heading,Compass-Direction,G-Force-X,G-Force-Y,G-Force-Z,Rotation-X,Rotation-Y,Rotation-Z\n"));
+      writeFile(SD, file.c_str(), ("Date,Time-UTC,GPS-Fix,Satellites,Latitude,Longitude,WGS-Altitude,MSL-Altitude,Speed-KPH,Heading,Compass-Direction,G-Force-X,G-Force-Y,G-Force-Z,Rotation-X,Rotation-Y,Rotation-Z\n"));
     } else if(module == "CAN BUS") {
       if(ECU_TYPE) {
-        appendFile(SD, ("/" + directory + "/" + directory + ecu + ".csv").c_str(), ("RPM,Throttle,Coolant,Gear,Battery\n"));
+        writeFile(SD, file.c_str(), ("Date,Time,RPM,Throttle,BrakePosition,WaterTemperature,Speed(Kph),OilTemperature,Battery\n")); // S60        
       } else {
-        appendFile(SD, ("/" + directory + "/" + directory + ecu + ".csv").c_str(), ("RPM,Throttle,BrakePosition,WaterTemperature,Speed(Kph),OilTemperature,Battery\n"));
+        writeFile(SD, file.c_str(), ("Date,Time,RPM,Throttle,Coolant,Gear,Battery\n")); // Standard
       }
     }
 
-    lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, ("Storage Remaining: " + String(get_storage_used()) + "%").c_str());
+    // lv_label_set_text(ui_SettingScreen_Label_LabelRecordingStorage, ("Storage Remaining: " + String(get_storage_used()) + "%").c_str());
   } else {
     Serial.println((module + " File Exists").c_str());
   }
@@ -891,7 +898,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
 
     void onResult(NimBLEAdvertisedDevice* advertisedDevice) {
       Serial.println(F("Advertised BLE Device found: "));
-      // Serial.println(advertisedDevice->toString().c_str());
+      Serial.println(advertisedDevice->toString().c_str());
 
       if (advertisedDevice->isAdvertisingService(UART_service_UUID)) {
         // Check if the device name starts with "RaceBox"
