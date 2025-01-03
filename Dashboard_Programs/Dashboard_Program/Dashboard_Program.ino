@@ -418,6 +418,8 @@ void can_bus_standard_ecu(void *pvParameters) {
   canReqMsg.data[6] = 0xCC; // ISO 15765-2 suggests CCh
   canReqMsg.data[7] = 0xCC; // ISO 15765-2 suggests CCh
 
+  String sdCardOutput = "";
+
   delay(CANBUS_START_DELAY); // wait for display init
 
   while (true) {
