@@ -588,7 +588,7 @@ void can_bus_s60_ecu(void *pvParameters) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = ""; 
-            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString); // Date & Time
+            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString) + ","; // Date & Time
             sdCardOutput += String(rpm) + "," + String(tps) + "," + String(bps) + "," + String(water_temp) + ",";
             sdCardOutput += String(kph) + "," + String(oil_temp) + "," + (gear) + "," + String(battery_voltage) + "\n";
             Serial.print(F("CAN BUS - "));
@@ -856,7 +856,7 @@ void check_and_create_directory(String module_name, String module) {
       writeFile(SD, file.c_str(), ("Date,Time-UTC,GPS-Fix,Satellites,Latitude,Longitude,WGS-Altitude,MSL-Altitude,Speed-KPH,Heading,Compass-Direction,G-Force-X,G-Force-Y,G-Force-Z,Rotation-X,Rotation-Y,Rotation-Z\n"));
     } else if(module == "CAN BUS") {
       if(ECU_TYPE) {
-        writeFile(SD, file.c_str(), ("Date,Time,RPM,Throttle,BrakePosition,WaterTemperature,Speed(Kph),OilTemperature,Battery\n")); // S60        
+        writeFile(SD, file.c_str(), ("Date,Time,RPM,Throttle,BrakePosition,WaterTemperature,Speed(Kph),OilTemperature,Gear,Battery\n")); // S60        
       } else {
         writeFile(SD, file.c_str(), ("Date,Time,RPM,Throttle,Coolant,Gear,Battery\n")); // Standard
       }
