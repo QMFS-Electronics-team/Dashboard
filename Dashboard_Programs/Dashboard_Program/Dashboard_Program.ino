@@ -294,6 +294,7 @@ void display_update_task(void *pvParameters) {
       // Info Screen
       displaySpeedAccuracy = "Speed Accuracy: " + String(speedAccuracy/1000.0) + "mph";
       displayGPSAccuracy = "GPS Accuracy: " + String(sqrt((verticalAccuracy*verticalAccuracy)/1000000.0 + (horizontalAccuracy*horizontalAccuracy)/1000000.0)) + "m";
+      lv_label_set_text(ui_InfoScreen_Label_LabelBluetoothRSSI,  displayBLERSSI.c_str());
       lv_label_set_text(ui_InfoScreen_Label_LabelSpeedAcc, displaySpeedAccuracy.c_str());
       lv_label_set_text(ui_InfoScreen_Label_LabelGPSAcc, displayGPSAccuracy.c_str());
       lv_label_set_text(ui_InfoScreen_Label_LabelDataRate, "GPS Data Rate: 25Hz"); // Keep This Default 25Hz
@@ -935,8 +936,7 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           Serial.println(F("Stopped bluetooth scanning."));
           Serial.printf("Connecting to RaceBox with address %s \n", advertisedDevice->getAddress().toString().c_str());
           
-          String displayBLERSSI = "Bluetooth RSSI: " +  String(advertisedDevice->getRSSI()) + "dB";
-          lv_label_set_text(ui_InfoScreen_Label_LabelBluetoothRSSI,  displayBLERSSI.c_str());
+          displayBLERSSI = "Bluetooth RSSI: " +  String(advertisedDevice->getRSSI()) + "dB";
           
           myRaceBox = advertisedDevice;
           doConnect = true;
