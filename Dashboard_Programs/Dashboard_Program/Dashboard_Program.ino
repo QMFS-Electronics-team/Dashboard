@@ -488,7 +488,7 @@ void can_bus_standard_ecu(void *pvParameters) {
         canbus_data_counter++;
       }
 
-      if(CAN_BUS_SD_CARD_LOGGING_EN) {
+      if(CAN_BUS_SD_CARD_LOGGING_EN && sd_mounted) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = "";
@@ -523,7 +523,6 @@ void can_bus_standard_ecu(void *pvParameters) {
             xSemaphoreGive(serial_mutex);
           }
         }
-        canbus_data_counter++;
         send_rq = 0; // reset request
       } else {
         // timeout resend request
@@ -604,7 +603,7 @@ void can_bus_s60_ecu(void *pvParameters) {
       }
 
       // Log Data to SD Card
-      if(CAN_BUS_SD_CARD_LOGGING_EN) {
+      if(CAN_BUS_SD_CARD_LOGGING_EN && sd_mounted) {
         if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = ""; 
@@ -1044,7 +1043,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     }
     
     // SD Formatting
-    if(GPS_SD_CARD_LOGGING_EN) {
+    if(GPS_SD_CARD_LOGGING_EN && sd_mounted) {
       sdCardOutput = "";
       sdCardOutput += String(day) + "/" + String(month) + "/" + String(year); // Date and Time
       sdCardOutput += "," + String(timeString); // Time
@@ -1058,7 +1057,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
     }
     
     // Log Data to SD Card
-    if(GPS_SD_CARD_LOGGING_EN) {
+    if(GPS_SD_CARD_LOGGING_EN && sd_mounted) {
       if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
         Serial.print(F("GPS - "));
         appendFile(SD, "/gps-data/gps-data.csv", sdCardOutput.c_str());
