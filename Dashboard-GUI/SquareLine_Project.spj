@@ -19852,7 +19852,7 @@
                   {
                     "nid": 1928606360,
                     "strtype": "OBJECT/Align",
-                    "strval": "CENTER",
+                    "strval": "LEFT_MID",
                     "InheritedType": 3
                   },
                   {
@@ -20153,7 +20153,7 @@
                     "flags": 17,
                     "strtype": "OBJECT/Position",
                     "intarray": [
-                      12,
+                      -2,
                       -21
                     ],
                     "InheritedType": 7
@@ -20171,7 +20171,7 @@
                   {
                     "nid": -1496637845,
                     "strtype": "OBJECT/Align",
-                    "strval": "CENTER",
+                    "strval": "LEFT_MID",
                     "InheritedType": 3
                   },
                   {
@@ -20472,7 +20472,7 @@
                     "flags": 17,
                     "strtype": "OBJECT/Position",
                     "intarray": [
-                      -5,
+                      -2,
                       8
                     ],
                     "InheritedType": 7
@@ -20490,7 +20490,7 @@
                   {
                     "nid": 1813041042,
                     "strtype": "OBJECT/Align",
-                    "strval": "CENTER",
+                    "strval": "LEFT_MID",
                     "InheritedType": 3
                   },
                   {
@@ -20791,7 +20791,7 @@
                     "flags": 17,
                     "strtype": "OBJECT/Position",
                     "intarray": [
-                      -9,
+                      -2,
                       34
                     ],
                     "InheritedType": 7
@@ -20809,7 +20809,7 @@
                   {
                     "nid": -1466469529,
                     "strtype": "OBJECT/Align",
-                    "strval": "CENTER",
+                    "strval": "LEFT_MID",
                     "InheritedType": 3
                   },
                   {
@@ -21714,7 +21714,7 @@
           }
         ],
         "isPage": true,
-        "editor_posx": 1680,
+        "editor_posx": 1710,
         "editor_posy": -1440,
         "locked": false,
         "properties": [
@@ -21992,7 +21992,7 @@
     "theme_color2": 0,
     "uiExportFolderPath": "/Users/bhargav/Documents/GitRepositories/Dashboard/Dashboard-GUI/UI",
     "projectExportFolderPath": "/Users/bhargav/Documents/GitRepositories/Dashboard/Dashboard-GUI",
-    "backup_cnt": 120,
+    "backup_cnt": 127,
     "autosave_cnt": 0,
     "lvgl_version": "8.3.6",
     "callfuncsexport": "C_FILE",
