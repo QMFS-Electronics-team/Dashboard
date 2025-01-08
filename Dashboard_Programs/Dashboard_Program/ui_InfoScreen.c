@@ -100,7 +100,7 @@ lv_obj_set_width( ui_InfoScreen_Label_LabelBluetoothRSSI, LV_SIZE_CONTENT);  ///
 lv_obj_set_height( ui_InfoScreen_Label_LabelBluetoothRSSI, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_InfoScreen_Label_LabelBluetoothRSSI, -2 );
 lv_obj_set_y( ui_InfoScreen_Label_LabelBluetoothRSSI, -46 );
-lv_obj_set_align( ui_InfoScreen_Label_LabelBluetoothRSSI, LV_ALIGN_CENTER );
+lv_obj_set_align( ui_InfoScreen_Label_LabelBluetoothRSSI, LV_ALIGN_LEFT_MID );
 lv_label_set_text(ui_InfoScreen_Label_LabelBluetoothRSSI,"Bluetooth RSSI: -40dB");
 lv_obj_set_style_text_color(ui_InfoScreen_Label_LabelBluetoothRSSI, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_InfoScreen_Label_LabelBluetoothRSSI, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -109,9 +109,9 @@ lv_obj_set_style_text_font(ui_InfoScreen_Label_LabelBluetoothRSSI, &lv_font_mont
 ui_InfoScreen_Label_LabelSpeedAcc = lv_label_create(ui_InfoScreen_Panel_PanelGPSInfo);
 lv_obj_set_width( ui_InfoScreen_Label_LabelSpeedAcc, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_InfoScreen_Label_LabelSpeedAcc, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_InfoScreen_Label_LabelSpeedAcc, 12 );
+lv_obj_set_x( ui_InfoScreen_Label_LabelSpeedAcc, -2 );
 lv_obj_set_y( ui_InfoScreen_Label_LabelSpeedAcc, -21 );
-lv_obj_set_align( ui_InfoScreen_Label_LabelSpeedAcc, LV_ALIGN_CENTER );
+lv_obj_set_align( ui_InfoScreen_Label_LabelSpeedAcc, LV_ALIGN_LEFT_MID );
 lv_label_set_text(ui_InfoScreen_Label_LabelSpeedAcc,"Speed Accuracy: 0.2 mph");
 lv_obj_set_style_text_color(ui_InfoScreen_Label_LabelSpeedAcc, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_InfoScreen_Label_LabelSpeedAcc, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -120,9 +120,9 @@ lv_obj_set_style_text_font(ui_InfoScreen_Label_LabelSpeedAcc, &lv_font_montserra
 ui_InfoScreen_Label_LabelGPSAcc = lv_label_create(ui_InfoScreen_Panel_PanelGPSInfo);
 lv_obj_set_width( ui_InfoScreen_Label_LabelGPSAcc, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_InfoScreen_Label_LabelGPSAcc, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_InfoScreen_Label_LabelGPSAcc, -5 );
+lv_obj_set_x( ui_InfoScreen_Label_LabelGPSAcc, -2 );
 lv_obj_set_y( ui_InfoScreen_Label_LabelGPSAcc, 8 );
-lv_obj_set_align( ui_InfoScreen_Label_LabelGPSAcc, LV_ALIGN_CENTER );
+lv_obj_set_align( ui_InfoScreen_Label_LabelGPSAcc, LV_ALIGN_LEFT_MID );
 lv_label_set_text(ui_InfoScreen_Label_LabelGPSAcc,"GPS Accuracy: 0.20m");
 lv_obj_set_style_text_color(ui_InfoScreen_Label_LabelGPSAcc, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_InfoScreen_Label_LabelGPSAcc, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -131,9 +131,9 @@ lv_obj_set_style_text_font(ui_InfoScreen_Label_LabelGPSAcc, &lv_font_montserrat_
 ui_InfoScreen_Label_LabelDataRate = lv_label_create(ui_InfoScreen_Panel_PanelGPSInfo);
 lv_obj_set_width( ui_InfoScreen_Label_LabelDataRate, LV_SIZE_CONTENT);  /// 1
 lv_obj_set_height( ui_InfoScreen_Label_LabelDataRate, LV_SIZE_CONTENT);   /// 1
-lv_obj_set_x( ui_InfoScreen_Label_LabelDataRate, -9 );
+lv_obj_set_x( ui_InfoScreen_Label_LabelDataRate, -2 );
 lv_obj_set_y( ui_InfoScreen_Label_LabelDataRate, 34 );
-lv_obj_set_align( ui_InfoScreen_Label_LabelDataRate, LV_ALIGN_CENTER );
+lv_obj_set_align( ui_InfoScreen_Label_LabelDataRate, LV_ALIGN_LEFT_MID );
 lv_label_set_text(ui_InfoScreen_Label_LabelDataRate,"GPS Data Rate: 25Hz");
 lv_obj_set_style_text_color(ui_InfoScreen_Label_LabelDataRate, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_InfoScreen_Label_LabelDataRate, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
