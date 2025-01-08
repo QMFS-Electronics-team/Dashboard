@@ -874,7 +874,6 @@ int get_storage_used() {
   uint64_t used = SD.usedBytes();   // Number of used bytes
   uint64_t free = total - used;
   return int(((float)free / (float)total)*100);
-
 }
 
 //-----------------------------
@@ -1328,7 +1327,14 @@ void setup_neutral_detect() {
 void setup_can_bus() {
   mcp2515.reset();
   Serial.println(F(""));
-  if(mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
+
+  #if ECU_TYPE 
+    MCP2515::ERROR can_bus = mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ); // S60 ECU
+  #else if
+    MCP2515::ERROR can_bus = mcp2515.setBitrate(CAN_500KBPS, MCP_8MHZ);  // Standard ECU
+  #endif
+
+  if(can_bus == MCP2515::ERROR_OK)  {
     Serial.println(F("MCP2515 Initialised Successfully"));
     mcp2515.setNormalMode();
   } else {
