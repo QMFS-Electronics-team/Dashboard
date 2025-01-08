@@ -1183,7 +1183,7 @@
               {
                 "nid": -1210931650,
                 "strtype": "LABEL/Text",
-                "strval": "Ver 1.2",
+                "strval": "Ver 1.0",
                 "InheritedType": 10
               },
               {
@@ -21990,9 +21990,9 @@
     "theme_dark": false,
     "theme_color1": 5,
     "theme_color2": 0,
-    "uiExportFolderPath": "",
-    "projectExportFolderPath": "",
-    "backup_cnt": 115,
+    "uiExportFolderPath": "/Users/bhargav/Documents/GitRepositories/Dashboard/Dashboard-GUI/UI",
+    "projectExportFolderPath": "/Users/bhargav/Documents/GitRepositories/Dashboard/Dashboard-GUI",
+    "backup_cnt": 120,
     "autosave_cnt": 0,
     "lvgl_version": "8.3.6",
     "callfuncsexport": "C_FILE",
