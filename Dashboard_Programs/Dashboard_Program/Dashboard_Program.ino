@@ -427,6 +427,9 @@ void can_bus_standard_ecu(void *pvParameters) {
 
   String sdCardOutput = "";
 
+  unsigned long currentTimeCAN = 0;
+  unsigned long currentTimeCANSD = 0;
+
   delay(CANBUS_START_DELAY); // wait for display init
 
   while (true) {
@@ -445,54 +448,62 @@ void can_bus_standard_ecu(void *pvParameters) {
     }
 
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
+      currentTimeCAN = millis();
+      currentTimeCANSD = millis();
 
       if (canMsg.can_id == PID_ECU_RESPONSE) {
         switch (canMsg.data[2]) {
-        case PID_ENGINE_RPM:
-          rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-          rpm_decoded = (rpm_byte / 4);
-          set_rpm_lights(rpm_decoded);
-          lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
-          lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
-          break;
-        case PID_THROTTLE:
-          throttle_decoded = map(canMsg.data[3], 0, 255, 0, 100);
-          lv_bar_set_value(ui_MainScreen_Bar_BarTPS, throttle_decoded, LV_ANIM_OFF);
-          break;
-        case PID_COOLANT_TEMP:
-          coolant_temp_decoded = canMsg.data[3] - 40;
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
-          break;
-        case PID_ENGINE_OIL_TEMP:
-          // oil_temp_decoded = canMsg.data[3] - 40;
-          // lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", coolant_temp_decoded);
-          break;
-        case PID_TRANSMISSION_ACTUAL_GEAR:
-          transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
-          transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "Gear: %.2f", transmission_actual_gear_decoded);
-          break;
-        case PID_CONTROL_MODULE_VOLTAGE:
-          battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
-          battery_decoded = (battery_byte / 1000.0);
-          lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f V", battery_decoded);
-          break;
-        default:
-          break;
+          case PID_ENGINE_RPM:
+            rpm_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+            rpm_decoded = (rpm_byte / 4);
+            set_rpm_lights(rpm_decoded);
+            lv_bar_set_value(ui_MainScreen_Bar_BarRPM, map(rpm_decoded, 0, 12000, 0, 100), LV_ANIM_OFF); // update rpm bar
+            lv_label_set_text(ui_MainScreen_Label_LabelRPM, String(rpm_decoded).c_str());                // update rpm label
+            break;
+          case PID_THROTTLE:
+            throttle_decoded = map(canMsg.data[3], 0, 255, 0, 100);
+            lv_bar_set_value(ui_MainScreen_Bar_BarTPS, throttle_decoded, LV_ANIM_OFF);
+            break;
+          case PID_COOLANT_TEMP:
+            coolant_temp_decoded = canMsg.data[3] - 40;
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelWaterTemp, "Water: %i C", coolant_temp_decoded);
+            break;
+          case PID_ENGINE_OIL_TEMP:
+            oil_temp_decoded = canMsg.data[3] - 40;
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelOilTemp, "Oil: %i C", oil_temp_decoded);
+            break;
+          case PID_TRANSMISSION_ACTUAL_GEAR:
+            transmission_actual_gear_byte = (uint16_t)(canMsg.data[5] << 8) + (canMsg.data[6]);
+            transmission_actual_gear_decoded = (transmission_actual_gear_byte / 1000.0);
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "Gear: %.2f", transmission_actual_gear_decoded);
+            break;
+          case PID_CONTROL_MODULE_VOLTAGE:
+            battery_byte = (uint16_t)(canMsg.data[3] << 8) + (canMsg.data[4]);
+            battery_decoded = (battery_byte / 1000.0);
+            lv_label_set_text_fmt(ui_MainScreen_Label_LabelBattV, "Batt: %.1f V", battery_decoded);
+            break;
+          default:
+            break;
         }
+        canbus_data_counter++;
+      }
 
-        if(CAN_BUS_SD_CARD_LOGGING_EN) {
+      if(CAN_BUS_SD_CARD_LOGGING_EN) {
+        if(currentTimeCANSD - lastOutputTimeSDCANBUS >= outputIntervalCANBUSMs_SD) {
           if(xSemaphoreTake(sd_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             sdCardOutput = "";
-            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString); // Date & Time
+            sdCardOutput += String(day) + "/" + String(month) + "/" + String(year) + "," + String(timeString) + ","; // Date & Time
             sdCardOutput += String(rpm_decoded) + "," + String(throttle_decoded) + "," + String(coolant_temp_decoded) + ",";
             sdCardOutput += String(transmission_actual_gear_decoded) + "," + String(battery_decoded) + "\n";
             appendFile(SD, "/can-bus-data/can-bus-data-standard-ECU.csv", sdCardOutput.c_str());
+            lastOutputTimeSDCANBUS = currentTimeCANSD;
             xSemaphoreGive(sd_mutex);
           }
         }
+      }
 
-        if(CAN_BUS_SERIAL_OUTPUT_EN) {
+      if(CAN_BUS_SERIAL_OUTPUT_EN) {
+        if(currentTimeCAN - lastOutputTimeSerialCANBUS >= outputIntervalCANBUSMs_Serial) {
           if(xSemaphoreTake(serial_mutex, pdMS_TO_TICKS(TIMEOUT)) == pdTRUE) {
             Serial.print(F("CAN Message ID: "));
             Serial.print(canMsg.can_id, HEX); // print ID
@@ -508,6 +519,7 @@ void can_bus_standard_ecu(void *pvParameters) {
             Serial.println();
             Serial.print(F("canbus_data_counter: "));
             Serial.println(canbus_data_counter);
+            lastOutputTimeSerialCANBUS = currentTimeCAN;
             xSemaphoreGive(serial_mutex);
           }
         }
@@ -522,6 +534,7 @@ void can_bus_standard_ecu(void *pvParameters) {
         }
       }
     }
+    vTaskDelay(5);
   }
 }
 
