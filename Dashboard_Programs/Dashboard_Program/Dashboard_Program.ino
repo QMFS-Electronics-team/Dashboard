@@ -1085,6 +1085,8 @@ void print_RaceBox_Data_message_payload_to_serial() {
       Serial.println(F("Skipping serial output due to set serial update limitation"));
     }
   }
+
+  vTaskDelay(1);
   
   return;
 }
