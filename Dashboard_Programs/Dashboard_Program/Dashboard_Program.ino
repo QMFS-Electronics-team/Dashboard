@@ -271,7 +271,7 @@ void display_update_task(void *pvParameters) {
 
   float gX, gY, gZ, g_mag = 0.0;
   int gps_connect_counter = 0;
-  String dots, timeOutput;
+  String dots, timeOutput, displaySpeedAccuracy, displayGPSAccuracy;
   char timeString[9];
 
   while (true) {
@@ -290,6 +290,13 @@ void display_update_task(void *pvParameters) {
       sprintf(timeString, "%02d:%02d:%02d", hour, minute, second);
       timeOutput = "Time: " + String(timeString);  
       lv_label_set_text(ui_MainScreen_Label_LabelTime, timeOutput.c_str());
+
+      // Info Screen
+      displaySpeedAccuracy = "Speed Accuracy: " + String(speedAccuracy/1000.0) + "mph";
+      displayGPSAccuracy = "GPS Accuracy: " + String(sqrt((verticalAccuracy*verticalAccuracy)/1000000.0 + (horizontalAccuracy*horizontalAccuracy)/1000000.0)) + "m";
+      lv_label_set_text(ui_InfoScreen_Label_LabelSpeedAcc, displaySpeedAccuracy.c_str());
+      lv_label_set_text(ui_InfoScreen_Label_LabelGPSAcc, displayGPSAccuracy.c_str());
+      lv_label_set_text(ui_InfoScreen_Label_LabelDataRate, "GPS Data Rate: 25Hz"); // Keep This Default 25Hz
 
     } else {
 
@@ -695,6 +702,10 @@ void ui_reset() {
   lv_bar_set_value(ui_MainScreen_Bar_BarTPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarBPS, 0, LV_ANIM_OFF);
   lv_bar_set_value(ui_MainScreen_Bar_BarRPM, 0, LV_ANIM_OFF);
+  lv_label_set_text(ui_InfoScreen_Label_LabelBluetoothRSSI, "Bluetooth RSSI:     ");
+  lv_label_set_text(ui_InfoScreen_Label_LabelDataRate, "GPS Data Rate:     ");
+  lv_label_set_text(ui_InfoScreen_Label_LabelSpeedAcc, "GPS Accuracy:     ");
+  lv_label_set_text(ui_InfoScreen_Label_LabelGPSAcc, "GPS Accuracy:     ");
   return;
 }
 
@@ -911,6 +922,10 @@ class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
           NimBLEDevice::getScan()->stop();  // Stop scanning
           Serial.println(F("Stopped bluetooth scanning."));
           Serial.printf("Connecting to RaceBox with address %s \n", advertisedDevice->getAddress().toString().c_str());
+          
+          String displayBLERSSI = "Bluetooth RSSI: " +  String(advertisedDevice->getRSSI()) + "dB";
+          lv_label_set_text(ui_InfoScreen_Label_LabelBluetoothRSSI,  displayBLERSSI.c_str());
+          
           myRaceBox = advertisedDevice;
           doConnect = true;
         }
