@@ -1087,7 +1087,6 @@ void print_RaceBox_Data_message_payload_to_serial() {
   } else {
     if(BLE_GPS_SERIAL_OUTPUT_EN) {
       Serial.println(F("Skipping serial output due to set serial update limitation"));
-      Serial.flush();
     }
   }
 
