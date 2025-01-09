@@ -63,6 +63,7 @@ uint8_t batteryStatus;
 int16_t gForceX, gForceY, gForceZ, rotRateX, rotRateY, rotRateZ;
 float headingDegrees;
 String compass_direction;
+String displayBLERSSI;
 
 // S60 ECU Packet Global Variables
 int rpm, tps, water_temp = 0;       // Packet 2000 - [0] RPM, [1] Throttle Position Sensor, [2] Water Temperature
@@ -520,6 +521,7 @@ void can_bus_standard_ecu(void *pvParameters) {
             Serial.println();
             Serial.print(F("canbus_data_counter: "));
             Serial.println(canbus_data_counter);
+            Serial.flush();
             lastOutputTimeSerialCANBUS = currentTimeCAN;
             xSemaphoreGive(serial_mutex);
           }
@@ -640,6 +642,7 @@ void can_bus_s60_ecu(void *pvParameters) {
             Serial.print(outputString);
             Serial.println(F("----------------------------------------------------------------------"));
             Serial.println(F(""));
+            Serial.flush();
             outputString = "";
             lastOutputTimeSerialCANBUS = currentTimeCAN;
             xSemaphoreGive(serial_mutex);
@@ -1075,6 +1078,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
         Serial.println(serialOutput); // Write GPS datea to serial
         Serial.println(F("----------------------------------------------------------------------"));
         Serial.println(F(""));
+        Serial.flush();
         xSemaphoreGive(serial_mutex);
       }
     }
@@ -1083,6 +1087,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
   } else {
     if(BLE_GPS_SERIAL_OUTPUT_EN) {
       Serial.println(F("Skipping serial output due to set serial update limitation"));
+      Serial.flush();
     }
   }
 
