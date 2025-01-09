@@ -1081,10 +1081,6 @@ void print_RaceBox_Data_message_payload_to_serial() {
     }
     
     lastOutputTimeSerialGPS = currentTime;
-  } else {
-    if(BLE_GPS_SERIAL_OUTPUT_EN) {
-      Serial.println(F("Skipping serial output due to set serial update limitation"));
-    }
   }
 
   vTaskDelay(1);
