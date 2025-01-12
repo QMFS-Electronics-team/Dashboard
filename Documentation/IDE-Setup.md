@@ -40,7 +40,7 @@ If you want to install via the commandline -
 - macOS `brew install arduino-ide`
 - Linux `sudo apt install arduino-ide`
 
-For this project VSCode `2.3.4` was used.
+For this project Arduino IDE `2.3.4` was used.
 
 
 ### Setup ESP Exception Decode
