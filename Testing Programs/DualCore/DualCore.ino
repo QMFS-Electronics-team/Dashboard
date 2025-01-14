@@ -1,6 +1,5 @@
 // This program is an example program using dual cores on the ESP32-S3
 
-// Import Libraries
 #include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -108,8 +107,7 @@ void sdWriteTask(void *parameter) {
       if (dataFile) {
         dataFile.println(dataString);
         dataFile.close();
-        Serial.println("Data written to SD card: ");
-        Serial.println(dataString);
+        Serial.println("Data written to SD card: " + dataString);
       } else {
         Serial.println("Failed to open file for writing.");
       }
