@@ -26,8 +26,13 @@ int bps = 0;
 void setup() {
   while(!Serial);
   Serial.begin(BAUDRATE);
-  Serial.println(F("CAN BUS S60 Simulator"));
-  
+
+  if(ECU_TYPE) {
+    Serial.println(F("CAN BUS S60 Simulator"));
+  } else {
+    Serial.println(F("Standard ECU Simulator"));
+  }
+
   mcp2515.reset();
   if(mcp2515.setBitrate(CAN_1000KBPS, MCP_8MHZ) == MCP2515::ERROR_OK) {
     Serial.println("CAN BUS Initialised");
@@ -37,6 +42,7 @@ void setup() {
   mcp2515.setNormalMode();
 }
 
+// S60 ECU Packets
 
 void sendPacket2000() {
   canMsg2000.can_id  = 0x2000| CAN_EFF_FLAG;
@@ -203,6 +209,7 @@ void sendPacket2005() {
   mcp2515.sendMessage(&canMsg2005);
 }
 
+// Getters for Simulated Engine Data
 
 // Packet 2000
 int get_rpm() {
@@ -264,12 +271,22 @@ void logOutput() {
 
 
 void loop() {
-  sendPacket2000();
-  sendPacket2001();
-  sendPacket2002();
-  sendPacket2003();
-  sendPacket2004();
-  sendPacket2005();
+
+  // S60 ECU
+  if(ECU_TYPE) {
+    sendPacket2000();
+    sendPacket2001();
+    sendPacket2002();
+    sendPacket2003();
+    sendPacket2004();
+    sendPacket2005();
+  } 
+  
+  // Standard ECU
+  else {
+
+  }
+
   logOutput();
   delay(send_delay);
 }
