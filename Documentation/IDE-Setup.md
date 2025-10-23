@@ -88,8 +88,20 @@ This can also be done via `arduino-cli` like so
 
 `arduino-cli lib install <library>@<version>`
 
+To install all of the dependences in one go use the following command
+
+`arduino-cli lib install "FastLED@3.6.0" "LovyanGFX@1.1.7" "NimBLE-Arduino@1.4.2" "lvgl@8.3.8" "autowp-mcp2515@1.2.1"`
+
 Additionally place the header files used in this project (`Libraries/DashboardProjectHeaderFiles`) under `~/Documents/Arduino/libraries`
 
 In the lvgl library place the `lv_conf.h` found in `Libraries/lv_conf.h` of this repository into `Documents/Arduino/Libraries/lvgl/src/`.
 
+### Compile
+
 At this point you are ready to compile the code.
+
+From Arduino IDE you can compile by clicking on the verify button.
+
+From the commandline you can use the following command from the directory `Dashboard_Programs/Dashboard_Program/Dashboard_Program.ino`
+
+`arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled Dashboard_Program.ino`
