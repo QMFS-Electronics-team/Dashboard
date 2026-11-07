@@ -32,7 +32,7 @@ Open up the repository with VSCode. Once the `.vscode` directory is generated, n
 
 ```
 {
-    "output": "ArduinoOutput",
+    "output": "Arduino_Output",
     "arduino.enableCache": true,
     "arduino.logLevel": "info"
 }
