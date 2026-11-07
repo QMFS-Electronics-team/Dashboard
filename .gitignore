@@ -76,7 +76,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # Output files for arduino compiliations
-ArduinoOutput
+Arduino_Output
 
 # Ignore Vscode files
 .vscode
