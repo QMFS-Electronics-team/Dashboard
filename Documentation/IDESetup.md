@@ -146,9 +146,9 @@ Libraries for the testing Programs -
 
 ### Custom Libraries for Required Project
 
-Additionally place the header files used in this project (`Libraries/DashboardProjectHeaderFiles`) under `~/Documents/Arduino/libraries/`
+Additionally place the header files used in this project (`Libraries/DashboardLibraries/DashboardProjectHeaderFiles`) under `~/Documents/Arduino/libraries/`
 
-In the lvgl library place the `lv_conf.h` found in `Libraries/lv_conf.h` of this repository into `~/Documents/Arduino/libraries/lvgl/src/`.
+In the lvgl library place the `lv_conf.h` found in `Libraries/DashboardLibraries/lv_conf.h` of this repository into `~/Documents/Arduino/libraries/lvgl/src/`.
 
 ### Compile
 
@@ -166,7 +166,14 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino: verify`
 
 From the commandline you can use the following command from the directory `Dashboard_Program/`
 
-    arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled Dashboard_Program.ino
-
+    arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --output-dir ../build Dashboard_Program.ino
 
 ### Upload
+
+From Arduino IDE you can compile by clicking on the upload button.
+
+From VSCode enter `CMD+SHIFT+P` and enter `Arduino CLI: Upload`
+
+From the commandline you can use the following command from the the directory `Dashboard_Program/`
+
+    arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --input-dir ../build Dashboard_Program.ino
