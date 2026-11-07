@@ -126,7 +126,7 @@ or replace the file with the one found in this repository `Libraries/BoardSuppor
     Adafruit Unified Sensor  1.1.14
     EspSoftwareSerial        8.1.0
     GFX Library for Arduino  1.4.1
-    TinyGPSPlus              1.1.0 
+    TinyGPSPlus              1.0.3 
 
 Use the Library Manager to install the correct version of these libraries.
 
@@ -142,7 +142,7 @@ Libraries for the Dashboard Program -
 
 Libraries for the testing Programs - 
 
-    arduino-cli lib install "Adafruit BusIO@1.16.1" "Adafruit HMC5883 Unified@1.2.3" "GFX Library for Arduino@1.4.1" "EspSoftwareSerial@8.1.0" "TinyGPSPlus@1.1.0" "Adafruit MPU6050@2.2.6" "Adafruit Unified Sensor@1.1.14"
+    arduino-cli lib install "Adafruit BusIO@1.16.1" "Adafruit HMC5883 Unified@1.2.3" "GFX Library for Arduino@1.4.1" "EspSoftwareSerial@8.1.0" "TinyGPSPlus@1.0.3" "Adafruit MPU6050@2.2.6" "Adafruit Unified Sensor@1.1.14"
 
 ### Custom Libraries for Required Project
 
