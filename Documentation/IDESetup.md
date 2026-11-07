@@ -96,7 +96,7 @@ This project uses custom SPI pins, `pins_arduino.h` needs to be edited and can b
 
 #### Linux 
 
-    ~/.arduino15/packages/<platform_name>/hardware/<core_name>/<version>/cores/<core_name>/Arduino.h
+    ~/.arduino15/packages/esp32/hardware/esp32/2.0.11/variants/esp32s3/
 
 Edit the file's MOSI, MISO and SCK lines to the following:
 
@@ -152,12 +152,21 @@ In the lvgl library place the `lv_conf.h` found in `Libraries/lv_conf.h` of this
 
 ### Compile
 
-TODO: Configuration required on teh board manager to compile the code
+Setup the board config as per the following settings:
+
+    Board: ESP32S3 Dev Module (esp32)
+    Partition Scheme: Huge APP (3MB No OTA/1MB SPIFFS)
+    Upload Speed: 115200
 
 At this point you are ready to compile the code.
 
 From Arduino IDE you can compile by clicking on the verify button.
 
-From the commandline you can use the following command from the directory `Dashboard-Program/`
+From VSCode enter `CMD+SHIFT+P` and enter `Arduino: verify`
+
+From the commandline you can use the following command from the directory `Dashboard_Program/`
 
     arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled Dashboard_Program.ino
+
+
+### Upload
