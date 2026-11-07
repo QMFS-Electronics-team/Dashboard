@@ -1,7 +1,7 @@
 // Reference: https://how2electronics.com/interfacing-mcp2515-can-bus-module-with-arduino/
 #include <SPI.h>                      // Library for using SPI Communication 
 #include <mcp2515.h>                  // Library for using CAN Communication (https://github.com/autowp/arduino-mcp2515/)
-#include <CAN-BUS-Setup.h> 
+#include <CAN_BUS_Setup.h> 
 
 struct can_frame canMsg;
 
