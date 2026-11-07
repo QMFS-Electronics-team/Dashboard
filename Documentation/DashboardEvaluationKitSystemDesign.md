@@ -1,6 +1,5 @@
 # Dashboard System Design
 
-
 ## Evaluation Kit Electronic Devices
 The below table are for components used for evaluating the feasibility of the Dashboard System.
 
@@ -97,7 +96,7 @@ Note this is currently used without any other devices connected to the ESP 32
 Note the numbers are from left to right based on the barcode sticker on the GPS module.
 
 
-!["GPS Module"](/Images/BN-880-GPS.PNG)
+!["GPS Module"](/Images/BN_880_GPS.PNG)
 
 | **Device Pin** | **ESP32 Pin** | **Colour** | **Device Specific** |
 |----------------|---------------|------------|---------------------|

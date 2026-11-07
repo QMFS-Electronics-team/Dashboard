@@ -1,6 +1,6 @@
 # Documentation Contents
 
-  - [Dashboard Evaluation Kit - Setup to prototype devices on a breadboard](./DASHBOARD_EVALUATION_KIT_SYSTEM_DESIGN.md)
+  - [Dashboard Evaluation Kit - Setup to prototype devices on a breadboard](./DashboardEvaluationKitSystemDesign.md)
   - [Dashboard Pinout - Pinout for the Dashboard PCB](./DashboardPinout.md)
   - [IDE Setup - Setup for IDEs used for software development](./IDE-Setup.md)
   - [RaceBox BLE Protocol Description - Information for reading and writing data to the RaceBox module](./RaceBox%20BLE%20Protocol%20Description%20rev%208.pdf)
