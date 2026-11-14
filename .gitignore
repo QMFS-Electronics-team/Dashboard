@@ -91,4 +91,8 @@ Dashboard-GUI/cache/*
 SquareLine_Project_autosave*
 SquareLine_Project_backup*
 
+# Compressed files
+*.zip
+*.tar
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
