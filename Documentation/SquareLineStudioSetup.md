@@ -15,7 +15,7 @@ When you want to use a GUI you have created in SquareLine Studio, click on `Expo
 
 ## Project Settings
 
-Note that Properties and Board properties will already be setup and are shown below as reference. The import section below is 'File Export'.
+Note that Properties and Board properties will already be setup and are shown below as reference.
 
 ### Properties
 Resolution: `480 x 320`\
