@@ -38,7 +38,7 @@ From a powershell window.
 Run a powershell windows as admin then run the following commands
    
    usbipd list
-   usbipd bind --busid 2-3
+   usbipd bind --busid 2-3 # Replace the number with your busid
    usbipd attach --wsl --busid 2-3
 
 ### Install Arduino Extension for VS Code
