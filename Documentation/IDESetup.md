@@ -24,6 +24,23 @@ If you want to install via the commandline -
 
 or follow this [guide](https://code.visualstudio.com/docs/setup/linux) if you want to install with `apt`
 
+### VSCode Devcontainer 
+
+If you want to use the devcontainer make sure you have Docker installed on your computer. `CMD+SHFT+P` or `CTL+SHFT+P` and select `reopen in container`. Everything should be configured for you automatically. 
+
+#### Windows configuration
+If you are using the dev container on Windows make sure you can access the com ports on the machine.
+
+From a powershell window. 
+
+    install usbipd 'winget install usbipd' # Identify your COM device
+
+Run a powershell windows as admin then run the following commands
+   
+   usbipd list
+   usbipd bind --busid 2-3
+   usbipd attach --wsl --busid 2-3
+
 ### Install Arduino Extension for VS Code
 
 From the extensions tab install the extension Arduino extension `vscode-arduino.vscode-arduino-community`
@@ -176,4 +193,4 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino CLI: Upload`
 
 From the commandline you can use the following command from the the directory `Dashboard_Program/`
 
-    arduino-cli upload -p COM3 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --input-dir ../build Dashboard_Program.ino
+    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --input-dir ../build Dashboard_Program.ino
