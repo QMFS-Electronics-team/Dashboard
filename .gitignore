@@ -95,4 +95,9 @@ SquareLine_Project_backup*
 *.zip
 *.tar
 
+# Debug Files
+debug_custom.json
+debug.cfg
+debug.svd
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,windows,macos
