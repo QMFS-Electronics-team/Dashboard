@@ -1,6 +1,9 @@
 FROM mcr.microsoft.com/devcontainers/base:resolute
 
-RUN apt update && apt install -y --no-install-recommends arduino-cli python3 python3-serial
+RUN curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sudo BINDIR=/usr/local/bin sh
+RUN apt update && apt install -y --no-install-recommends python3 python3-serial
+
+# arduino-cli
 
 RUN arduino-cli update
 RUN arduino-cli core install esp32:esp32@2.0.11

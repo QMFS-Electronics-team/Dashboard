@@ -16,9 +16,14 @@
 	"postCreateCommand": "bash .devcontainer/setup-container.sh",
 
 	// Configure tool-specific properties.
-	"customizations": {    
+	"customizations": {
 		"vscode": {
-			"extensions": ["ms-vscode.vscode-serial-monitor", "ms-vscode.cpptools", "vscode-arduino.vscode-arduino-community"]
+			"extensions": ["ms-vscode.vscode-serial-monitor", "ms-vscode.cpptools", "vscode-arduino.vscode-arduino-community"],
+			"settings": {
+				"arduino.path": "/usr/local/bin/",
+				"arduino.commandPath": "arduino-cli",
+				"arduino.useArduinoCli": true
+			}
     	}
 	},
 
