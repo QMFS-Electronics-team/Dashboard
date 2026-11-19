@@ -101,7 +101,7 @@ For this project, ESP32 Core Version: `2.0.11` has been used and the ESP32 packa
 
 This version of the ESP32 Core can be installed via the board manager on VSCode (Arduino extension) or on Arduino IDE.
 
-To install via command line:
+To install via command line arduino-cli can be used. Note that for this project arduino-cli `1.6.0` has been used.
 
 #### macOS - Install arduino-cli
 
