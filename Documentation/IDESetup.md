@@ -183,7 +183,7 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino: verify`
 
 From the commandline you can use the following command from the directory `Dashboard_Program/`
 
-    arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --output-dir ../build Dashboard_Program.ino
+    arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --output-dir ../build --build-path ../Arduino_Output Dashboard_Program.ino
 
 ### Upload
 
@@ -193,4 +193,4 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino CLI: Upload`
 
 From the commandline you can use the following command from the the directory `Dashboard_Program/`
 
-    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --input-dir ../build Dashboard_Program.ino
+    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled,UploadSpeed=115200 --input-dir ../build Dashboard_Program.ino
