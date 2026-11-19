@@ -18,7 +18,13 @@
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
-			"extensions": ["ms-vscode.vscode-serial-monitor", "ms-vscode.cpptools", "vscode-arduino.vscode-arduino-community"],
+			"extensions": [
+				"ms-vscode.vscode-serial-monitor",
+				"ms-vscode.cpptools",
+				"vscode-arduino.vscode-arduino-community",
+				"mathematic.vscode-pdf",
+				"DavidAnson.vscode-markdownlint"
+			],
 			"settings": {
 				"arduino.path": "/usr/local/bin/",
 				"arduino.commandPath": "arduino-cli",

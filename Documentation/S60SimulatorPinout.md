@@ -1,12 +1,13 @@
 # S60 Simulator Pinout
 
-### Components Used
-- 1x Arduino Nano 
+## Components Used
+
+- 1x Arduino Nano
 - 1x MCP2515 CAN Bus Module
 - 7x Potentiometers
 
+## Pinout Table
 
-### Pinout Table
 | Arduino Nano Pin | CAN BUS Module | Potentiometer |
 |------------------|----------------|---------------|
 | 5V               | VCC            |               |
@@ -22,4 +23,3 @@
 | A2               |                | BPS           |
 | A1               |                | OIL TEMP      |
 | A0               |                | WATER TEMP    |
-

@@ -1,45 +1,57 @@
 # IDE Setup
-This markdown file gives instructions on how to setup an IDE for software development for the Dashboard. 
+
+This markdown file gives instructions on how to setup an IDE for software development for the Dashboard.
 
 There are two options for IDEs
+
 - VSCode
 - Arduino IDE
 
 ## VSCode
 
 ### Install VSCode
+
 At the time of development VSCode `1.96.2` was used.
 
-Follow this [link](https://code.visualstudio.com/download) for the installer for VSCode.
+Here is the [installer](https://code.visualstudio.com/download) for the VSCode.
 
-If you want to install via the commandline - 
+If you want to install via the commandline -
 
-#### macOS 
-    
-    brew install visual-studio-code
+#### macOS - VSCode Commandline Install
 
-#### Linux (Ubuntu)
-    
+```bash
+brew install visual-studio-code
+```
+
+#### Linux (Ubuntu) - VSCode Commandline Install
+
+```bash
     sudo snap install --classic code
+```
 
 or follow this [guide](https://code.visualstudio.com/docs/setup/linux) if you want to install with `apt`
 
-### VSCode Devcontainer 
+### VSCode Devcontainer
 
-If you want to use the devcontainer make sure you have Docker installed on your computer. `CMD+SHIFT+P` or `CTL+SHIFT+P` and select `reopen in container`. Everything should be configured for you automatically. 
+If you want to use the devcontainer make sure you have Docker installed on your computer. `CMD+SHIFT+P` or `CTL+SHIFT+P` and select `reopen in container`. Everything should be configured for you automatically.
 
 #### Windows configuration
+
 If you are using the dev container on Windows make sure you can access the com ports on the machine.
 
-From a powershell window. 
+From a powershell window.
 
-    install usbipd 'winget install usbipd' # Identify your COM device
+```powershell
+install usbipd 'winget install usbipd' # Identify your COM device
+```
 
 Run a powershell windows as admin then run the following commands
-   
-   usbipd list
-   usbipd bind --busid 2-3 # Replace the number with your busid
-   usbipd attach --wsl --busid 2-3
+
+```powershell
+usbipd list
+usbipd bind --busid 2-3 # Replace the number with your busid
+usbipd attach --wsl --busid 2-3
+```
 
 ### Install Arduino Extension for VS Code
 
@@ -47,7 +59,7 @@ From the extensions tab install the extension Arduino extension `vscode-arduino.
 
 Open up the repository with VSCode. Once the `.vscode` directory is generated, navigate to `arduino.json`. Append the following lines in addition to what is already present. The `Output` folder contains the build and having this folder speeds up the build time as it servers as a cache.
 
-```
+```json
 {
     "output": "Arduino_Output",
     "arduino.enableCache": true,
@@ -61,24 +73,30 @@ Open up the repository with VSCode. Once the `.vscode` directory is generated, n
 
 For this project Arduino IDE `2.3.4` was used.
 
-Follow this [link](https://www.arduino.cc/en/software) for the installer for Arduino IDE
+Here is the [installer](https://www.arduino.cc/en/software) for Arduino IDE
 
-If you want to install via the commandline - 
+If you want to install via the commandline -
 
-#### macOS
-    
-    brew install arduino-ide
+#### macOS - Arduino IDE Install
 
-#### Linux
-    
-    sudo apt install arduino-ide
+```bash
+brew install arduino-ide
+```
+
+#### Linux - Arduino IDE Install
+
+```bash
+sudo apt install arduino-ide
+```
 
 ### Setup ESP Exception Decode
-This is useful for debugging when you have a stack trace from ESP32. Follow this [link](https://github.com/dankeboy36/esp-exception-decoder) for instructions.
+
+ESP Exception Decoder is a useful debugging tool when you have a stack trace from ESP32. Follow [this](https://github.com/dankeboy36/esp-exception-decoder) for instructions.
 
 ## Setup Instructions for Both VSCode and Arduino IDE
 
-### Install ESP32 Core 
+### Install ESP32 Core
+
 This is the ESP32 package file that is kep under the Arduino15 folder
 
 For this project ESP32 Core Version: `2.0.11` has been used
@@ -87,37 +105,43 @@ The board manager on VSCode (Arduino extension) or on Arduino IDE can be used.
 
 To install via command line:
 
-#### macOS
+#### macOS - Install arduino-cli
 
-    brew install arduino-cli
+```bash
+brew install arduino-cli
+```
 
-#### Linux
-    
-    sudo apt install arduino-cli
+#### Linux - Install arduino-cli
+
+```bash
+sudo apt install arduino-cli
+```
 
 Then run
 
-    arduino-cli core install esp32:esp32@2.0.11
+```bash
+arduino-cli core install esp32:esp32@2.0.11
+```
 
 ### Edit pins_arduino.h
 
 This project uses custom SPI pins, `pins_arduino.h` needs to be edited and can be found with the file paths provided below based on your platform.
 
-#### macOS
+#### macOS - Path to pins_arduino.h
 
-    ~/Library/Arduino15/packages/esp32/hardware/esp32/<version>/variants/esp32s3
+`~/Library/Arduino15/packages/esp32/hardware/esp32/<version>/variants/esp32s3`
 
-#### Windows
+#### Windows - Path to pins_arduino.h
 
-    C:\Users\<Username>\AppData\Local\Arduino15\packages\esp32\hardware\esp32\<version>\variants\esp32s3
+`C:\Users\<Username>\AppData\Local\Arduino15\packages\esp32\hardware\esp32\<version>\variants\esp32s3`
 
-#### Linux 
+#### Linux - Path to pins_arduino.h
 
-    ~/.arduino15/packages/esp32/hardware/esp32/2.0.11/variants/esp32s3/
+`~/.arduino15/packages/esp32/hardware/esp32/2.0.11/variants/esp32s3/`
 
 Edit the file's MOSI, MISO and SCK lines to the following:
 
-```
+```C++
 static const uint8_t MOSI  = 15;
 static const uint8_t MISO  = 7;
 static const uint8_t SCK   = 16;
@@ -129,37 +153,45 @@ or replace the file with the one found in this repository `Libraries/BoardSuppor
 
 #### Libraries for Dashboard Program
 
-    FastLED                  3.6.0
-    LovyanGFX                1.1.7
-    NimBLE-Arduino           1.4.2
-    lvgl                     8.3.8
-    autowp-mcp2515           1.2.1
+```plain
+FastLED                  3.6.0
+LovyanGFX                1.1.7
+NimBLE-Arduino           1.4.2
+lvgl                     8.3.8
+autowp-mcp2515           1.2.1
+```
 
 #### Libraries for Testing Programs
 
-    Adafruit BusIO           1.16.1
-    Adafruit HMC5883 Unified 1.2.3
-    Adafruit MPU6050         2.2.6
-    Adafruit Unified Sensor  1.1.14
-    EspSoftwareSerial        8.1.0
-    GFX Library for Arduino  1.4.1
-    TinyGPSPlus              1.0.3 
+```plain
+Adafruit BusIO           1.16.1
+Adafruit HMC5883 Unified 1.2.3
+Adafruit MPU6050         2.2.6
+Adafruit Unified Sensor  1.1.14
+EspSoftwareSerial        8.1.0
+GFX Library for Arduino  1.4.1
+TinyGPSPlus              1.0.3 
+```
 
 Use the Library Manager to install the correct version of these libraries.
 
-This can also be done via `arduino-cli` like so 
+This can also be done via `arduino-cli` like so
 
 `arduino-cli lib install <library>@<version>`
 
 To install all of the dependences in one go use the following command
 
-Libraries for the Dashboard Program - 
+Libraries for the Dashboard Program -
 
-    arduino-cli lib install "FastLED@3.6.0" "LovyanGFX@1.1.7" "NimBLE-Arduino@1.4.2" "lvgl@8.3.8" "autowp-mcp2515@1.2.1"
+```bash
+arduino-cli lib install "FastLED@3.6.0" "LovyanGFX@1.1.7" "NimBLE-Arduino@1.4.2" "lvgl@8.3.8" "autowp-mcp2515@1.2.1"
+```
 
-Libraries for the testing Programs - 
+Libraries for the testing Programs -
 
-    arduino-cli lib install "Adafruit BusIO@1.16.1" "Adafruit HMC5883 Unified@1.2.3" "GFX Library for Arduino@1.4.1" "EspSoftwareSerial@8.1.0" "TinyGPSPlus@1.0.3" "Adafruit MPU6050@2.2.6" "Adafruit Unified Sensor@1.1.14"
+```bash
+arduino-cli lib install "Adafruit BusIO@1.16.1" "Adafruit HMC5883 Unified@1.2.3" "GFX Library for Arduino@1.4.1" "EspSoftwareSerial@8.1.0" "TinyGPSPlus@1.0.3" "Adafruit MPU6050@2.2.6" "Adafruit Unified Sensor@1.1.14"
+```
 
 ### Custom Libraries for Required Project
 
@@ -171,9 +203,11 @@ In the lvgl library place the `lv_conf.h` found in `Libraries/DashboardLibraries
 
 Setup the board config as per the following settings:
 
+```plain
     Board: ESP32S3 Dev Module (esp32)
     Partition Scheme: Huge APP (3MB No OTA/1MB SPIFFS)
     Upload Speed: 115200
+```
 
 At this point you are ready to compile the code.
 
@@ -183,7 +217,9 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino: verify`
 
 From the commandline you can use the following command from the directory `Dashboard_Program/`
 
+```bash
     arduino-cli compile --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled --output-dir ../build --build-path ../Arduino_Output Dashboard_Program.ino
+```
 
 ### Upload
 
@@ -193,4 +229,6 @@ From VSCode enter `CMD+SHIFT+P` and enter `Arduino CLI: Upload`
 
 From the commandline you can use the following command from the the directory `Dashboard_Program/`
 
-    arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled,UploadSpeed=115200 --input-dir ../build Dashboard_Program.ino
+```bash
+arduino-cli upload -p /dev/ttyUSB0 --fqbn esp32:esp32:esp32s3:FlashSize=8M,PartitionScheme=huge_app,PSRAM=enabled,UploadSpeed=115200 --input-dir ../build Dashboard_Program.ino
+```
