@@ -23,7 +23,7 @@ Depth: `16 bit`\
 Rotation: `0 degree`\
 Offset X: `0`\
 Offset Y: `0`\
-Shape: `Rectange`
+Shape: `Rectangle`
 
 ### Board Properties
 Board Group: `Arduino`\
@@ -34,7 +34,7 @@ LVGL: `8.3.6`
 ### File Export
 Project Export Root - Set this to the SquareLine Studio project directory. `~/<Path to Repository>/Dashboard/GUI`
 
-UI Files Export Path - This can be any location of your choosing but is recommneded to be within the main dashboard directory like so. `~/<Path to Repository>/Dashboard/GUI/UI`
+UI Files Export Path - This can be any location of your choosing but is recommended to be within the main dashboard directory like so. `~/<Path to Repository>/Dashboard/GUI/UI`
 
 Multilanguage Support: `Disable`\
 Call functions export file: `.c`\

@@ -539,7 +539,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
     return;
   }
   if (file.print(message)) {
-    Serial.println(F("Appened to file"));
+    Serial.println(F("Appended to file"));
   } else {
     Serial.println(F("Append failed"));
   }

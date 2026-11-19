@@ -13,7 +13,7 @@ The below table are for components used for evaluating the feasibility of the Da
 | CAN Bus Module | | [Amazon](https://www.amazon.co.uk/ALAMSCN-MCP2515-Receiver-Compatible-Raspberry/dp/B091DXBT6F/ref=sr_1_7?crid=NVLJTZ3FJIJL&keywords=mcp2515&qid=1695242647&sprefix=alamscn+4pcs+mcp2515%2Caps%2C273&sr=8-7) |                  |                  |
 | RGB LEDs | | [EBay](https://www.ebay.co.uk/itm/126010077289?hash=item1d56c93069:g:JMoAAOSwyvJkrQVZ&amdata=enc%3AAQAIAAAA8JLVYpBUR2wWPel8B3e58c4Wz1ysuXTZ7Eod5I0wfizlKxO%2F%2B2Q34Pzm8E2V55fuI9oWa%2B9c1d3rfm9BfHjeVw9CcydXsumm%2BnVXzZDUI7o1ecw85UeLP%2Bg6pqcevH7ysv3EVCnk7qtfdtKbLnrApEKwoE%2F4%2BbpmxlWO%2B6dlBT6ySK6QwZBJ5fCjAHYKBfRU80knJ6E8i8oa1JgW28OL4Wjgz%2BchIXLWQzXmPFINlGe0Af1l8WvpojTDCJGQKJLO%2BDJfrbUmb4Iup1NdVl1Du9P897WapQYKvvq1j4J9XRBlceujV8hcG2tbBiTGqOuIrw%3D%3D%7Ctkp%3ABk9SR6SjhcbWYg) |                  |                  |
 
-## Evalution Kit Wiring Table
+## Evaluation Kit Wiring Table
 
 ### Abbreviation Key
 

@@ -183,7 +183,7 @@ void my_print(const char *buf) {
 
 
 //-----------------------------
-// Dispay
+// Display
 //-----------------------------
 
 void display_task(void *pvParameters) {
@@ -284,7 +284,7 @@ void display_update_task(void *pvParameters) {
       g_mag = sqrt(gX * gX + gY * gY + gZ * gZ);
 
       lv_label_set_text_fmt(ui_MainScreen_Label_LabelSpeed, "%.0f", (speed / 1000.0) * 2.23694); // Speed converted from m/s to mph
-      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // Number of connected satelites
+      lv_label_set_text_fmt(ui_MainScreen_Label_LabelGPSTrack, "GPS Fix: %i", numSVs);           // Number of connected satellites
       lv_label_set_text(ui_MainScreen_Label_LabelGForce, String(gX, 1).c_str());                 // G Force
 
       // Time                                         
@@ -354,10 +354,10 @@ void display_update_task(void *pvParameters) {
       }
     }
 
-    // Netural Status - Active Low
-    if(NETURAL_DETECT_PCB_EN) {
-      if(!gpio_get_level(NETURAL_DETECT)) {
-        Serial.println(F("Netural Gear"));
+    // Neutral Status - Active Low
+    if(NEUTRAL_DETECT_PCB_EN) {
+      if(!gpio_get_level(NEUTRAL_DETECT)) {
+        Serial.println(F("Neutral Gear"));
         lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
       }
     }
@@ -446,7 +446,7 @@ void can_bus_standard_ecu(void *pvParameters) {
       mcp2515.sendMessage(&canReqMsg);
 
       send_rq_timeout = 0; // reset
-      send_rq = 1;         // await recieved data before resend
+      send_rq = 1;         // await received data before resend
     }
 
     if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
@@ -587,7 +587,7 @@ void can_bus_s60_ecu(void *pvParameters) {
             if(gear > 0) {
               lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "%i", gear);
             } else {
-              if(NETURAL_DETECT_PCB_EN == 0) {
+              if(NEUTRAL_DETECT_PCB_EN == 0) {
                 lv_label_set_text_fmt(ui_MainScreen_Label_LabelGear, "N");
               }
             }
@@ -1049,7 +1049,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
       sdCardOutput += String(day) + "/" + String(month) + "/" + String(year); // Date and Time
       sdCardOutput += "," + String(timeString); // Time
       sdCardOutput += "," + fixStatusText + "," + String(numSVs); // GPS Fix and Number of Satellites
-      sdCardOutput += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7); // Lattitude and longitude
+      sdCardOutput += "," + String(latitude / 1e7, 7)  + "," + String(longitude / 1e7, 7); // Latitude and longitude
       sdCardOutput += "," + String(wgsAltitude / 1000.0, 2) + "," + String(mslAltitude / 1000.0, 2); // WGS and MSL Altitude
       sdCardOutput += "," + String(speed * 3.6 / 1000.0, 2); // Speed
       sdCardOutput += "," + String(headingDegrees, 1) + "," + String(compass_direction); // Heading and compass direction
@@ -1073,7 +1073,7 @@ void print_RaceBox_Data_message_payload_to_serial() {
         Serial.println(F("----------------------------------------------------------------------"));
         Serial.println(F("--- Updated Data From RaceBox: ---"));
         Serial.println(F("----------------------------------------------------------------------"));
-        Serial.println(serialOutput); // Write GPS datea to serial
+        Serial.println(serialOutput); // Write GPS data to serial
         Serial.println(F("----------------------------------------------------------------------"));
         Serial.println(F(""));
         xSemaphoreGive(serial_mutex);
@@ -1343,9 +1343,9 @@ void setup_bps() {
 }
 
 void setup_neutral_detect() {
-  if(NETURAL_DETECT_PCB_EN) {
-    gpio_set_direction(NETURAL_DETECT, GPIO_MODE_INPUT);
-    gpio_set_pull_mode(NETURAL_DETECT, GPIO_PULLUP_ONLY);
+  if(NEUTRAL_DETECT_PCB_EN) {
+    gpio_set_direction(NEUTRAL_DETECT, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(NEUTRAL_DETECT, GPIO_PULLUP_ONLY);
   }
   return;
 }

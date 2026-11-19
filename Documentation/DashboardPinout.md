@@ -30,4 +30,4 @@
 | 32           | 39       | CANBUS INIT    |
 | 33           | 40       | CANBUS CS      |
 | 34           | 41       | SDCARD CS      |
-| 35           | 42       | NETURAL DETECT |
+| 35           | 42       | NEUTRAL DETECT |

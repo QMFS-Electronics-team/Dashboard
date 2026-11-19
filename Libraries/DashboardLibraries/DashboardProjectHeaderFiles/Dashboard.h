@@ -7,7 +7,7 @@
 #define CANBUS_CS      40
 #define SD_CS 		   41
 #define BPS            GPIO_NUM_1
-#define NETURAL_DETECT GPIO_NUM_42
+#define NEUTRAL_DETECT GPIO_NUM_42
 #define SD_DETECT_GPIO GPIO_NUM_46
 
 // CUSTOM SPI PIN DEFINITIONS (corresponding to arduino_pin.h)
@@ -35,7 +35,7 @@
 
 // Preferences
 #define BPS_PCB_EN                   0 // When 1, the BPS is read from the PCB Pin and not the CAN BUS
-#define NETURAL_DETECT_PCB_EN        0 // When 1, the Netural is determined by the PCB Pin and not the CAN BUS
+#define NEUTRAL_DETECT_PCB_EN        0 // When 1, the Neutral is determined by the PCB Pin and not the CAN BUS
 #define ECU_TYPE 					 1 // 1 For S60 ECU, 0 For Standard ECU
 #define CAN_BUS_SERIAL_OUTPUT_EN     0
 #define BLE_GPS_SERIAL_OUTPUT_EN     0

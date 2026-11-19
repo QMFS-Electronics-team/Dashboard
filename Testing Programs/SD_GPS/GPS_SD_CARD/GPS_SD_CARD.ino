@@ -87,7 +87,7 @@ void get_gps_data() {
       // Write GPS data to SD card
       File file = SD.open("/gpsdata.txt", FILE_APPEND);
       if (file) {
-        file.print("Lattitude: ");
+        file.print("Latitude: ");
         file.print(gps.location.lat(), 6);
         file.print(", Longitude: ");
         file.println(gps.location.lng(), 6);

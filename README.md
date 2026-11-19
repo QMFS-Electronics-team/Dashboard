@@ -1,7 +1,7 @@
 # Dashboard
 
 ## Introduction
-This repoistory is for a Formula Student Dashboard project.
+This repository is for a Formula Student Dashboard project.
 
 The dashboard is an compact, 3.5" display, GPS & logger module, designed to provide the driver with vital real-time data from engine ECU and sensors via CANBUS. The uses range from engine diagnostics to analysis on driver performance post race.
 
@@ -20,7 +20,7 @@ The display comes with a capacitive touch screen to provide the driver with addi
 ## Repository Structure
     .
     ├── Dashboard Program
-    ├── Documentation (Containes instructions and information about the project)
+    ├── Documentation (Contains instructions and information about the project)
     ├── Images
     ├── Libraries (Directory for libraries needed for Arduino code)
     ├── Release Hex

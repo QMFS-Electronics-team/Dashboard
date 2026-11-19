@@ -39,6 +39,6 @@ void loop() {
     }
     Serial.println();      
   } else {
-    Serial.println("No Data Recieved");
+    Serial.println("No Data Received");
   }
 }
