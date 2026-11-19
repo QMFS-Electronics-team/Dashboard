@@ -11,7 +11,7 @@ There are two options for IDEs
 
 ### Install VSCode
 
-At the time of development VSCode `1.96.2` was used.
+At the time of development VSCode `1.147.0` was used.
 
 Here is the [installer](https://code.visualstudio.com/download) for the VSCode.
 
@@ -35,7 +35,7 @@ or follow this [guide](https://code.visualstudio.com/docs/setup/linux) if you wa
 
 If you want to use the devcontainer make sure you have Docker installed on your computer. `CMD+SHIFT+P` or `CTL+SHIFT+P` and select `reopen in container`. Everything should be configured for you automatically.
 
-#### Windows configuration
+#### Windows VSCode Devcontainer COM Port Setup
 
 If you are using the dev container on Windows make sure you can access the com ports on the machine.
 
@@ -71,7 +71,7 @@ Open up the repository with VSCode. Once the `.vscode` directory is generated, n
 
 ### Install Arduino IDE
 
-For this project Arduino IDE `2.3.4` was used.
+For this project Arduino IDE `2.3.11` was used.
 
 Here is the [installer](https://www.arduino.cc/en/software) for Arduino IDE
 
@@ -97,11 +97,9 @@ ESP Exception Decoder is a useful debugging tool when you have a stack trace fro
 
 ### Install ESP32 Core
 
-This is the ESP32 package file that is kep under the Arduino15 folder
+For this project, ESP32 Core Version: `2.0.11` has been used and the ESP32 package file that is kept under the Arduino15 folder.
 
-For this project ESP32 Core Version: `2.0.11` has been used
-
-The board manager on VSCode (Arduino extension) or on Arduino IDE can be used.
+This version of the ESP32 Core can be installed via the board manager on VSCode (Arduino extension) or on Arduino IDE.
 
 To install via command line:
 
