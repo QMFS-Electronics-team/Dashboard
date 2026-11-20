@@ -1,4 +1,4 @@
-# IDE Setup
+# Setup
 
 This markdown file gives instructions on how to setup an IDE for software development for the Dashboard.
 
