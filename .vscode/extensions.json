@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "ms-vscode.vscode-serial-monitor",
+        "ms-vscode.cpptools",
+        "vscode-arduino.vscode-arduino-community",
+        "mathematic.vscode-pdf",
+        "DavidAnson.vscode-markdownlint"
+    ]
+}

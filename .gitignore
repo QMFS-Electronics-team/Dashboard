@@ -80,7 +80,9 @@ Arduino_Output
 build
 
 # Ignore Vscode files
-.vscode
+.vscode/arduino.json
+.vscode/c_cpp_properties.json
+.vscode/settings.json
 
 # SquareLine Studio Files
 CMakeLists.txt
