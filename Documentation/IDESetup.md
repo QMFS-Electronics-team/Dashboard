@@ -2,14 +2,16 @@
 
 This markdown file gives instructions on how to setup an IDE for software development for the Dashboard.
 
+## IDE Setup
+
 There are two options for IDEs
 
 - VSCode
 - Arduino IDE
 
-## VSCode
+### VSCode
 
-### Install VSCode
+#### Install VSCode
 
 At the time of development VSCode `1.147.0` was used.
 
@@ -17,13 +19,13 @@ Here is the [installer](https://code.visualstudio.com/download) for the VSCode.
 
 If you want to install via the commandline -
 
-#### macOS - VSCode Commandline Install
+##### macOS - VSCode Commandline Install
 
 ```bash
 brew install visual-studio-code
 ```
 
-#### Linux (Ubuntu) - VSCode Commandline Install
+##### Linux (Ubuntu) - VSCode Commandline Install
 
 ```bash
     sudo snap install --classic code
@@ -31,11 +33,11 @@ brew install visual-studio-code
 
 or follow this [guide](https://code.visualstudio.com/docs/setup/linux) if you want to install with `apt`
 
-### VSCode Devcontainer
+#### VSCode Devcontainer
 
 If you want to use the devcontainer make sure you have Docker installed on your computer. `CMD+SHIFT+P` or `CTL+SHIFT+P` and select `reopen in container`. Everything should be configured for you automatically.
 
-#### Windows VSCode Devcontainer COM Port Setup
+##### Windows VSCode Devcontainer COM Port Setup
 
 If you are using the dev container on Windows make sure you can access the com ports on the machine.
 
@@ -53,9 +55,13 @@ usbipd bind --busid 2-3 # Replace the number with your busid
 usbipd attach --wsl --busid 2-3
 ```
 
-### Install Arduino Extension for VS Code
+##### Limitations of Devcontainer
 
-From the extensions tab install the extension Arduino extension `vscode-arduino.vscode-arduino-community`
+With the Arduino Community Edition extension in the devcontiner it is not possible to select the serial port from the IDE. It is recommended to use the commandline to upload if using the devcontainer.
+
+#### Install Recommended Extensions for VSCode
+
+Install the recommended extensions for VSCode, use the following shortcut - `CTRL + SHIFT + X` or `CMD + SHIFT + X`, then install recommended extensions.
 
 Open up the repository with VSCode. Once the `.vscode` directory is generated, navigate to `arduino.json`. Append the following lines in addition to what is already present. The `Output` folder contains the build and having this folder speeds up the build time as it servers as a cache.
 
@@ -67,7 +73,7 @@ Open up the repository with VSCode. Once the `.vscode` directory is generated, n
 }
 ```
 
-## Arduino IDE
+### Arduino IDE
 
 ### Install Arduino IDE
 
@@ -93,7 +99,7 @@ sudo apt install arduino-ide
 
 ESP Exception Decoder is a useful debugging tool when you have a stack trace from ESP32. Follow [this](https://github.com/dankeboy36/esp-exception-decoder) for instructions.
 
-## Setup Instructions for Both VSCode and Arduino IDE
+## Dependency Setup
 
 ### Install ESP32 Core
 
@@ -196,6 +202,8 @@ arduino-cli lib install "Adafruit BusIO@1.16.1" "Adafruit HMC5883 Unified@1.2.3"
 Additionally place the header files used in this project (`Libraries/DashboardLibraries/DashboardProjectHeaderFiles`) under `~/Documents/Arduino/libraries/`
 
 In the lvgl library place the `lv_conf.h` found in `Libraries/DashboardLibraries/lv_conf.h` of this repository into `~/Documents/Arduino/libraries/lvgl/src/`.
+
+## Usage - Compile and Uploading
 
 ### Compile
 
